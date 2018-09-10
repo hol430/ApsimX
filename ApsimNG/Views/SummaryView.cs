@@ -31,6 +31,22 @@ namespace UserInterface.Views
         private CellRendererText comboRender = new CellRendererText();
 
         /// <summary>
+        /// Dropdown box which displays a list of model names to filter on.
+        /// </summary>
+        private ComboBox modelFilter;
+
+        /// <summary>
+        /// Model behind the model filter dropdown box.
+        /// </summary>
+        private ListStore modelFilterData;
+
+        /// <summary>
+        /// Cell which displays the model whose output we are displaying.
+        /// </summary>
+        private CellRendererText modelFilterCell = new CellRendererText();
+
+        private CellRendererToggle modelFilterCellCheckbox = new CellRendererToggle();
+        /// <summary>
         /// View which displays the summary data.
         /// </summary>
         private HTMLView htmlview;
@@ -46,6 +62,15 @@ namespace UserInterface.Views
             combobox1.AddAttribute(comboRender, "text", 0);
             combobox1.Model = comboModel;
             combobox1.Changed += comboBox1_TextChanged;
+
+            modelFilter = new ComboBox();
+            modelFilter.PackStart(modelFilterCell, true);
+            modelFilter.PackStart(modelFilterCellCheckbox, false);
+            modelFilter.AddAttribute(modelFilterCell, "text", 0);
+            modelFilter.Model = comboModel;
+            modelFilterCellCheckbox.Toggled += OnModelFilterChanged;
+            modelFilterData = new ListStore(typeof(string), typeof(bool));
+
             htmlview = new HTMLView(this);
             htmlview.Copy += OnCopy;
             vbox1.PackEnd(htmlview.MainWidget, true, true, 0);
@@ -61,6 +86,11 @@ namespace UserInterface.Views
 
         /// <summary>Occurs when the name of the simulation is changed by the user</summary>
         public event EventHandler SimulationNameChanged;
+
+        /// <summary>
+        /// Invoked when the user changes the model on which they wish to filter output.
+        /// </summary>
+        public event EventHandler ModelFilterChanged;
 
         /// <summary>Gets or sets the currently selected simulation name.</summary>
         public string SimulationName
@@ -89,6 +119,32 @@ namespace UserInterface.Views
             }
         }
 
+        /// <summary>
+        /// List of names of models whose output we want to display.
+        /// </summary>
+        public List<string> SelectedComponentNames
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        /// <summary>
+        /// List of names of models whose output we can filter.
+        /// </summary>
+        public List<string> ModelNames
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+            set
+            {
+                PopulateModelNames(value);
+            }
+        }
+
         /// <summary>Gets or sets the simulation names.</summary>
         public IEnumerable<string> SimulationNames
         {
@@ -114,6 +170,19 @@ namespace UserInterface.Views
                 else
                     combobox1.Active = -1;
             }
+        }
+
+        private void PopulateModelNames(List<string> modelNames)
+        {
+            modelFilter.Clear();
+            modelFilterData.Clear();
+            modelFilterData.AppendValues(string.Empty, true);
+            foreach (string modelName in modelNames)
+            {
+                modelFilterData.AppendValues(modelName, true);
+            }
+            modelFilter.Model = modelFilterData;
+            modelFilter.QueueDraw();
         }
 
         /// <summary>Sets the content of the summary window.</summary>
@@ -145,6 +214,15 @@ namespace UserInterface.Views
             Copy?.Invoke(sender, e);
         }
 
+        /// <summary>
+        /// Invoked when the select model to filter by is changed.
+        /// </summary>
+        /// <param name="sender">Sender object.</param>
+        /// <param name="e">Event arguments.</param>
+        private void OnModelFilterChanged(object sender, EventArgs e)
+        {
+            ModelFilterChanged?.Invoke(this, EventArgs.Empty);
+        }
 
         private void MainWidgetDestroyed(object sender, EventArgs e)
         {

@@ -7,6 +7,7 @@ using EventArguments;
 using System;
 using System.IO;
 using System.Linq;
+using System.Data;
 using Models;
 using Models.Core;
 using Models.Factorial;
@@ -69,6 +70,8 @@ namespace UserInterface.Presenters
 
                 // Subscribe to the view's copy event.
                 this.view.Copy += OnCopy;
+
+                this.view.ModelFilterChanged += OnModelFilterChanged;
             }
         }
 
@@ -86,6 +89,8 @@ namespace UserInterface.Presenters
             Summary.WriteReport(this.dataStore, this.view.SimulationName, writer, Utility.Configuration.Settings.SummaryPngFileName, outtype: Summary.OutputType.html);
             this.view.SetSummaryContent(writer.ToString());
             writer.Close();
+            //DataTable modelNames = dataStore.GetData("_Messages", filter: "ComponentName='Clock'");
+            view.ModelNames = dataStore.GetData("_Messages", fieldNames: new string[] { "ComponentName" }).AsEnumerable().Select(x => x[0].ToString()).Distinct().ToList();
         }
 
         /// <summary>Handles the SimulationNameChanged event of the view control.</summary>
@@ -104,6 +109,16 @@ namespace UserInterface.Presenters
         private void OnCopy(object sender, CopyEventArgs e)
         {
             this.presenter.SetClipboardText(e.Text, "CLIPBOARD");
+        }
+
+        /// <summary>
+        /// Event handelr for the view's model filter changed event.
+        /// </summary>
+        /// <param name="sender">Sender object.</param>
+        /// <param name="e">Event arugments.</param>
+        private void OnModelFilterChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

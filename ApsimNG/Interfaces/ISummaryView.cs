@@ -15,6 +15,16 @@ namespace UserInterface.Views
         /// <summary>Gets or sets the currently selected simulation name.</summary>
         string SimulationName { get; set; }
 
+        /// <summary>
+        /// List of names of models whose output we want to display.
+        /// </summary>
+        List<string> SelectedComponentNames { get; }
+
+        /// <summary>
+        /// List of names of models whose output we can filter.
+        /// </summary>
+        List<string> ModelNames { get; set; }
+
         /// <summary>Gets or sets the simulation names.</summary>
         IEnumerable<string> SimulationNames { get; set; }
 
@@ -28,5 +38,10 @@ namespace UserInterface.Views
         /// browsers are capable of handling the copy event themselves.
         /// </summary>
         event EventHandler<CopyEventArgs> Copy;
+
+        /// <summary>
+        /// Invoked when the user changes the model on which they wish to filter output.
+        /// </summary>
+        event EventHandler ModelFilterChanged;
     }
 }
