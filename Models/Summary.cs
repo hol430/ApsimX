@@ -25,7 +25,7 @@ namespace Models
     [Serializable]
     [ViewName("UserInterface.Views.SummaryView")]
     [PresenterName("UserInterface.Presenters.SummaryPresenter")]
-    [ValidParent(ParentType=typeof(Simulation))]
+    [ValidParent(DropAnywhere = true)]
     public class Summary : Model, ISummary
     {
         /// <summary>A link to a storage service</summary>
