@@ -14,16 +14,16 @@ if exist %apsimx%\bin.zip (
 
 if exist %apsimx%\results.7z (
 	echo Unzipping %apsimx%\results.7z...
+	pushd %apsimx% > nul
 	7z x -y %apsimx%\results.7z
+	popd >nul
 	if errorlevel 1 (
 		echo Error unzipping %apsimx%\results.7z
 		exit /b %errorlevel%
 	)
 )
 
-if not exist %apsimx%\lib (
-	robocopy /e /NJS /np %apsimx%\DeploymentSupport\Windows\lib %apsimx%\lib
-)
+robocopy /e /NJS /np %apsimx%\DeploymentSupport\Windows\Bin64\lib %apsimx%\lib
 
 call %apsimx%\Documentation\GenerateDocumentation.bat
 
