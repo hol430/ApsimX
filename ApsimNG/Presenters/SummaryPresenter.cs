@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------
 using EventArguments;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Data;
@@ -43,36 +44,40 @@ namespace UserInterface.Presenters
             this.presenter = explorerPresenter;
             this.view = view as ISummaryView;
             // populate the simulation names in the view.
-            Simulation parentSimulation = Apsim.Parent(this.summaryModel, typeof(Simulation)) as Simulation;
-            if (parentSimulation != null)
+            Simulation parentSimulation = Apsim.Parent(summaryModel, typeof(Simulation)) as Simulation;
+            Experiment parentExperiment = Apsim.Parent(summaryModel, typeof(Experiment)) as Experiment;
+            if (parentExperiment != null)
+                this.view.SimulationNames = parentExperiment.GetSimulationNames().ToList();
+            else if (parentSimulation != null)
             {
-                if (parentSimulation.Parent is Experiment)
-                {
-                    Experiment experiment = parentSimulation.Parent as Experiment;
-                    string[] simulationNames = experiment.GetSimulationNames().ToArray();
-                    this.view.SimulationNames = simulationNames;
-                    if (simulationNames.Length > 0)
-                    {
-                        this.view.SimulationName = simulationNames[0];
-                    }
-                }
-                else
-                {
-                    this.view.SimulationNames = new string[] { parentSimulation.Name };
-                    this.view.SimulationName = parentSimulation.Name;
-                }
-
-                // Populate the view.
-                this.SetHtmlInView();
-
-                // Subscribe to the simulation name changed event.
-                this.view.SimulationNameChanged += this.OnSimulationNameChanged;
-
-                // Subscribe to the view's copy event.
-                this.view.Copy += OnCopy;
-
-                this.view.ModelFilterChanged += OnModelFilterChanged;
+                this.view.SimulationNames = new string[] { parentSimulation.Name };
+                this.view.SimulationName = parentSimulation.Name;
             }
+            else
+            {
+                List<string> simulationNames = new List<string>();
+                foreach (Experiment childExperiment in Apsim.ChildrenRecursively(summaryModel.Parent, typeof(Experiment)))
+                    foreach (string simulationName in childExperiment.GetSimulationNames())
+                        simulationNames.Add(simulationName);
+
+                foreach (Simulation childSimulation in Apsim.ChildrenRecursively(summaryModel.Parent, typeof(Simulation)).Where(s => !(s.Parent is Experiment)))
+                    simulationNames.Add(childSimulation.Name);
+                this.view.SimulationNames = simulationNames;
+            }
+
+            if (this.view.SimulationNames.Count() > 0)
+                this.view.SimulationName = this.view.SimulationNames.First();
+
+            // Populate the view.
+            this.SetHtmlInView();
+
+            // Subscribe to the simulation name changed event.
+            this.view.SimulationNameChanged += this.OnSimulationNameChanged;
+
+            // Subscribe to the view's copy event.
+            this.view.Copy += OnCopy;
+
+            this.view.ModelFilterChanged += OnModelFilterChanged;
         }
 
         /// <summary>Detach the model from the view.</summary>
