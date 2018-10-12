@@ -11,6 +11,7 @@ namespace UserInterface.Views
     using System;
     using System.Collections.Generic;
     using System.Drawing;
+    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Runtime.Serialization;
     using System.Timers;
@@ -71,7 +72,6 @@ namespace UserInterface.Views
             treeview1.TooltipColumn = 2;
 
             treeview1.CursorChanged += OnAfterSelect;
-            treeview1.ButtonReleaseEvent += OnButtonUp;
             treeview1.ButtonPressEvent += OnButtonPress;
             treeview1.RowActivated += OnRowActivated;
             treeview1.FocusInEvent += OnTreeGainFocus;
@@ -252,7 +252,6 @@ namespace UserInterface.Views
             treeview1.FocusInEvent -= OnTreeGainFocus;
             treeview1.FocusOutEvent -= OnTreeLoseFocus;
             treeview1.CursorChanged -= OnAfterSelect;
-            treeview1.ButtonReleaseEvent -= OnButtonUp;
             treeview1.ButtonPressEvent -= OnButtonPress;
             treeview1.RowActivated -= OnRowActivated;
             treeview1.DragMotion -= OnDragOver;
@@ -465,6 +464,17 @@ namespace UserInterface.Views
                     }
                 }
             }
+            else if (e.Event.Button == 3 && ContextMenu != null)
+            {
+                TreePath path;
+                treeview1.GetPathAtPos((int)e.Event.X, (int)e.Event.Y, out path);
+
+                // By default, Gtk will un-select the selected rows when a normal (non-shift/ctrl) click is registered.
+                // Setting e.Retval to true will stop the default Gtk ButtonPress event handler from being called after
+                // we return from this handler, which in turn means that the rows will not be deselected.
+                e.RetVal = treeview1.Selection.GetSelectedRows().Contains(path);
+                ContextMenu.Show();
+            }
         }
 
         /// <summary>
@@ -493,17 +503,6 @@ namespace UserInterface.Views
             else
                 treeview1.ExpandRow(e.Path, false);
             e.RetVal = true;
-        }
-
-        /// <summary>
-        /// Displays the popup menu when the right mouse button is released
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void OnButtonUp(object sender, ButtonReleaseEventArgs e)
-        {
-            if (e.Event.Button == 3 && ContextMenu != null)
-                ContextMenu.Show();
         }
 
         /// <summary>Node has begun to be dragged.</summary>
