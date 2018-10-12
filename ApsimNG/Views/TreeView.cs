@@ -47,6 +47,9 @@ namespace UserInterface.Views
         {
             treeview1 = treeView;
             treeview1.Model = treemodel;
+            // Rubber banding controls whether users can select multiple nodes simultaneously.
+            treeview1.RubberBanding = true;
+            treeview1.Selection.Mode = SelectionMode.Multiple;
             TreeViewColumn column = new TreeViewColumn();
             CellRendererPixbuf iconRender = new Gtk.CellRendererPixbuf();
             column.PackStart(iconRender, false);
