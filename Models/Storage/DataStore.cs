@@ -396,9 +396,9 @@
             if (hasSimulationName)
                 sql.Append(", S.Name AS SimulationName,S.ID AS SimulationID");
 
-            fieldList.Remove("CheckpointID");
-            fieldList.Remove("SimulationName");
-            fieldList.Remove("SimulationID");
+            fieldList.RemoveAll(f => f.Contains("CheckpointID"));
+            fieldList.RemoveAll(f => f.Contains("SimulationName"));
+            fieldList.RemoveAll(f => f.Contains("SimulationID"));
 
             foreach (string fieldName in fieldList)
             {
