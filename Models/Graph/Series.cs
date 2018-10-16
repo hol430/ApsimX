@@ -638,7 +638,7 @@ namespace Models.Graph
                 filterToUse = Filter + " AND (" + CreateRowFilter(storage, factors, columnsInTable) + ")";
 
             Simulations sims = Apsim.Parent(this, typeof(Simulations)) as Simulations;
-            PostSimulationTools.PredictedObserved poModel = Apsim.Find(sims, typeof(PostSimulationTools.PredictedObserved)) as PostSimulationTools.PredictedObserved;
+            PostSimulationTools.PredictedObserved poModel = Apsim.ChildrenRecursively(sims, typeof(PostSimulationTools.PredictedObserved)).Cast<PostSimulationTools.PredictedObserved>().FirstOrDefault(t => t.PredictedTableName == TableName || t.ObservedTableName == TableName);
             // If there is a PredictedObserved
             if (poModel != null && (TableName == poModel.PredictedTableName || TableName == poModel.ObservedTableName))
                 foreach (Series sibling in Parent.Children.OfType<Series>())
