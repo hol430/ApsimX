@@ -346,6 +346,140 @@
         }
 
         /// <summary>
+        /// Return all data from the specified simulation and table name. If simulationName = "*"
+        /// the all simulation data will be returned.
+        /// </summary>
+        /// <param name="tableNames">Name of the tablaes.</param>
+        /// <param name="fieldsToJoinOn">List of fields on which to join the tables.</param>
+        /// <param name="checkpointName">Name of the checkpoint.</param>
+        /// <param name="simulationName">Name of the simulation.</param>
+        /// <param name="fieldNames">Optional column names to retrieve from storage</param>
+        /// <param name="filter">Optional filter</param>
+        /// <param name="from">Optional start index. Only used when 'count' specified. The record number to offset.</param>
+        /// <param name="count">Optional number of records to return or all if 0.</param>
+        /// <param name="orderBy">Optional column name to order by</param>
+        /// <returns></returns>
+        public DataTable GetData(IEnumerable<string> tableNames, IEnumerable<string> fieldsToJoinOn, string checkpointName = null, string simulationName = null, IEnumerable<string> fieldNames = null,
+                                 string filter = null,
+                                 int from = 0, int count = 0,
+                                 string orderBy = null)
+        {
+            Open(readOnly: true);
+
+            if (connection == null)
+                return null;
+
+            Table[] tables = new Table[tableNames.Count()];
+            for (int i = 0; i < tableNames.Count(); i++)
+            {
+                Table foundTable = this.tables.Find(t => t.Name == tableNames.ElementAt(i));
+                if (foundTable == null)
+                    throw new Exception(string.Format("Unrecognised table name: {0}", tableNames.ElementAt(i)));
+                tables[i] = foundTable;
+            }
+
+            StringBuilder sql = new StringBuilder();
+
+            bool hasToday = false;
+
+            // Write SELECT clause
+            List<string> fieldList = null;
+            if (fieldNames == null)
+                foreach (Table t in tables)
+                    fieldList.AddRange(t.Columns.Select(c => c.Name));
+            else
+                fieldList = fieldNames.ToList();
+
+            bool hasSimulationName = fieldList.Any(f => f.Contains("SimulationID") || f.Contains("SimulationName") || simulationName != null);
+
+            sql.Append("SELECT C.Name AS CheckpointName, C.ID AS CheckpointID");
+            if (hasSimulationName)
+                sql.Append(", S.Name AS SimulationName,S.ID AS SimulationID");
+
+            fieldList.Remove("CheckpointID");
+            fieldList.Remove("SimulationName");
+            fieldList.Remove("SimulationID");
+
+            foreach (string fieldName in fieldList)
+            {
+                if (tables.Any(t => t.HasColumn(fieldName)))
+                {
+                    sql.Append(",");
+                    sql.Append(fieldName);
+                    if (fieldName == "Clock.Today")
+                        hasToday = true;
+                }
+            }
+
+            // Write FROM clause
+            sql.Append(" FROM [_Checkpoints] C");
+            if (hasSimulationName)
+                sql.Append(", [_Simulations] S");
+            // sql.Append(", [" + tableName);
+            // sql.Append("] T ");
+            foreach (string tableName in tables.Select(t => t.Name))
+                sql.Append(", [" + tableName + "]");
+
+            // Write WHERE clause
+            sql.Append("WHERE C.ID = C.ID");
+            if (hasSimulationName)
+            {
+                sql.Append(" AND S.ID = S.ID");
+                if (simulationName != null)
+                {
+                    sql.Append(" AND S.Name = '");
+                    sql.Append(simulationName);
+                    sql.Append('\'');
+                }
+            }
+
+            if (tables.Length > 1)
+                foreach (string fieldName in fieldsToJoinOn)
+                    for (int i = 0; i < tables.Length - 1; i++)
+                        if (tables[i].HasColumn(fieldName) && tables[i + 1].HasColumn(fieldName))
+                            sql.Append(string.Format(" AND [{0}].[{1}] = [{2}].[{1}]", tables[i].Name, fieldName, tables[i + 1].Name));
+
+            // Write checkpoint name
+            if (checkpointName == null)
+                sql.Append(" AND C.Name = 'Current'");
+            else
+                sql.Append(" AND C.Name = '" + checkpointName + "'");
+
+            if (filter != null)
+            {
+                sql.Append(" AND (");
+                sql.Append(filter);
+                sql.Append(")");
+            }
+
+            // Write ORDER BY clause
+            if (orderBy == null)
+            {
+                if (hasSimulationName)
+                {
+                    sql.Append(" ORDER BY S.ID");
+                    if (hasToday)
+                        sql.Append(", " + tables.First().Name + ".[Clock.Today]");
+                }
+            }
+            else
+            {
+                sql.Append(" ORDER BY " + orderBy);
+            }
+
+            // Write LIMIT/OFFSET clause
+            if (count > 0)
+            {
+                sql.Append(" LIMIT ");
+                sql.Append(count);
+                sql.Append(" OFFSET ");
+                sql.Append(from);
+            }
+
+            return connection.ExecuteQuery(sql.ToString());
+        }
+
+        /// <summary>
         /// Obtain the units for a column of data
         /// </summary>
         /// <param name="tableName">Name of the table</param>

@@ -33,6 +33,24 @@ namespace Models.Core
                           int from = 0, int count = 0,
                           string orderBy = null);
 
+        /// <summary>
+        /// Return all data from the specified simulation and table name. If simulationName = "*"
+        /// the all simulation data will be returned.
+        /// </summary>
+        /// <param name="tableNames">Name of the tablaes.</param>
+        /// <param name="fieldsToJoinOn">List of fields on which to join the tables.</param>
+        /// <param name="checkpointName">Name of the checkpoint.</param>
+        /// <param name="simulationName">Name of the simulation.</param>
+        /// <param name="fieldNames">Optional column names to retrieve from storage</param>
+        /// <param name="filter">Optional filter</param>
+        /// <param name="from">Optional start index. Only used when 'count' specified. The record number to offset.</param>
+        /// <param name="count">Optional number of records to return or all if 0.</param>
+        /// <param name="orderBy">Optional column name to order by</param>
+        DataTable GetData(IEnumerable<string> tableNames, IEnumerable<string> fieldsToJoinOn, string checkpointName = null, string simulationName = null, IEnumerable<string> fieldNames = null,
+                                 string filter = null,
+                                 int from = 0, int count = 0,
+                                 string orderBy = null);
+
         /// <summary>Get a simulation ID for the specified simulation name</summary>
         /// <param name="simulationName">The simulation name to look for</param>
         /// <returns>The database ID or -1 if not found</returns>

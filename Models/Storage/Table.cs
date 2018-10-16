@@ -227,7 +227,7 @@ namespace Models.Storage
         /// <param name="fieldName">Column name to look for</param>
         public bool HasColumn(string fieldName)
         {
-            return Columns.Find(column => column.Name.Equals(fieldName, StringComparison.CurrentCultureIgnoreCase)) != null;
+            return Columns.Find(column => column.Name.Equals(fieldName, StringComparison.CurrentCultureIgnoreCase) || (Name + "." + column.Name).Equals(fieldName.Replace("[", "").Replace("]", ""), StringComparison.CurrentCultureIgnoreCase)) != null;
         }
 
 

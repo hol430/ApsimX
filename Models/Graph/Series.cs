@@ -632,11 +632,30 @@ namespace Models.Graph
                 fieldNames.Add(annotation.ColumnName);
 
             string filterToUse;
-            if (Filter == null || Filter == string.Empty)
+            if (string.IsNullOrEmpty(Filter))
                 filterToUse = CreateRowFilter(storage, factors, columnsInTable);
             else
                 filterToUse = Filter + " AND (" + CreateRowFilter(storage, factors, columnsInTable) + ")";
 
+            Simulations sims = Apsim.Parent(this, typeof(Simulations)) as Simulations;
+            PostSimulationTools.PredictedObserved poModel = Apsim.Find(sims, typeof(PostSimulationTools.PredictedObserved)) as PostSimulationTools.PredictedObserved;
+            // If there is a PredictedObserved
+            if (poModel != null && (TableName == poModel.PredictedTableName || TableName == poModel.ObservedTableName))
+                foreach (Series sibling in Parent.Children.OfType<Series>())
+                    if (sibling != this && sibling.TableName != TableName && (sibling.TableName == poModel.ObservedTableName || sibling.TableName == poModel.PredictedTableName))
+                    {
+                        List<string> tableNames = new List<string>() { poModel.PredictedTableName, poModel.ObservedTableName };
+                        List<string> fieldNamesToJoinOn = new List<string>() { poModel.FieldNameUsedForMatch };
+                        if (!string.IsNullOrEmpty(poModel.FieldName2UsedForMatch))
+                            fieldNamesToJoinOn.Add(poModel.FieldName2UsedForMatch);
+                        if (!string.IsNullOrEmpty(poModel.FieldName3UsedForMatch))
+                            fieldNamesToJoinOn.Add(poModel.FieldName3UsedForMatch);
+                        // The same column often exists in both tables - e.g. Wheat.AboveGround.Wt
+                        // Therefore we need to provide a table name for each field name.
+                        fieldNames = fieldNames.Select(f => "[" + TableName + "].[" + f + "]").Distinct().ToList();
+                        filterToUse = filterToUse.Replace("Zone", "[" + poModel.PredictedTableName + "].[Zone]");
+                        return storage.GetData(tableNames, fieldNamesToJoinOn, Checkpoint, fieldNames: fieldNames, filter: filterToUse);
+                    }
             return storage.GetData(tableName: TableName, checkpointName: Checkpoint, fieldNames: fieldNames.Distinct(), filter: filterToUse);
         }
 

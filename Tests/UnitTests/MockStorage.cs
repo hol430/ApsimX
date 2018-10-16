@@ -140,5 +140,10 @@ namespace UnitTests
         {
             throw new NotImplementedException();
         }
+
+        public DataTable GetData(IEnumerable<string> tableNames, IEnumerable<string> fieldsToJoinOn, string checkpointName = null, string simulationName = null, IEnumerable<string> fieldNames = null, string filter = null, int from = 0, int count = 0, string orderBy = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
