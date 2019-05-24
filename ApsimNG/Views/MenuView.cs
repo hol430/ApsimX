@@ -65,26 +65,10 @@ namespace UserInterface.Views
 
                 if (!String.IsNullOrEmpty(description.ShortcutKey))
                 {
-                    string keyName = String.Empty;
-                    Gdk.ModifierType modifier = Gdk.ModifierType.None;
-                    string[] keyNames = description.ShortcutKey.Split(new Char[] { '+' });
-                    foreach (string name in keyNames)
-                    {
-                        if (name == "Ctrl")
-                            modifier |= Gdk.ModifierType.ControlMask;
-                        else if (name == "Shift")
-                            modifier |= Gdk.ModifierType.ShiftMask;
-                        else if (name == "Alt")
-                            modifier |= Gdk.ModifierType.Mod1Mask;
-                        else if (name == "Del")
-                            keyName = "Delete";
-                        else
-                            keyName = name;
-                    }
                     try
                     {
-                        Gdk.Key accelKey = (Gdk.Key)Enum.Parse(typeof(Gdk.Key), keyName, false);
-                        item.AddAccelerator("activate", Accelerators, (uint)accelKey, modifier, AccelFlags.Visible);
+                        GetAccelKey(description.ShortcutKey, out Gdk.Key key, out Gdk.ModifierType modifier);
+                        item.AddAccelerator("activate", Accelerators, (uint)key, modifier, AccelFlags.Visible);
                     }
                     catch
                     {
@@ -100,7 +84,34 @@ namespace UserInterface.Views
             }
             menu.ShowAll();
         }
-        
+
+        /// <summary>
+        /// Generates a Gdk AccelKey from a string description (e.g. "ctrl + s").
+        /// </summary>
+        /// <param name="description"></param>
+        /// <returns></returns>
+        public static void GetAccelKey(string description, out Gdk.Key key, out Gdk.ModifierType modifier)
+        {
+            string keyName = string.Empty;
+            modifier = Gdk.ModifierType.None;
+            string[] keyNames = description.Split(new Char[] { '+' });
+            foreach (string name in keyNames)
+            {
+                if (name == "Ctrl")
+                    modifier |= Gdk.ModifierType.ControlMask;
+                else if (name == "Shift")
+                    modifier |= Gdk.ModifierType.ShiftMask;
+                else if (name == "Alt")
+                    modifier |= Gdk.ModifierType.Mod1Mask;
+                else if (name == "Del")
+                    keyName = "Delete";
+                else
+                    keyName = name;
+            }
+
+            key = (Gdk.Key)Enum.Parse(typeof(Gdk.Key), keyName, false);
+        }
+
         /// <summary>Low level method to attach this menu to a widget</summary>
         /// <param name="w">Widget to attach to</param>
         public void AttachToWidget(Widget w)

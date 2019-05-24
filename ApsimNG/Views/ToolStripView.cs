@@ -18,6 +18,8 @@ namespace UserInterface.Views
     {
         private Toolbar toolStrip = null;
 
+        private AccelGroup accelerators = new AccelGroup();
+
         /// <summary>Constructor</summary>
         public ToolStripView(Toolbar toolbar)
         {
@@ -27,6 +29,10 @@ namespace UserInterface.Views
         /// <summary>Destroy the toolstrip</summary>
         public void Destroy()
         {
+            if (toolStrip?.Parent?.Parent is Notebook)
+                (toolStrip.Parent.Parent as Notebook).SwitchPage -= OnSwitchPage;
+            toolStrip.FocusInEvent -= OnFocusIn;
+            toolStrip.FocusOutEvent -= OnFocusOut;
             foreach (Widget child in toolStrip.Children)
             {
                 if (child is ToolButton)
@@ -87,6 +93,12 @@ namespace UserInterface.Views
                 else
                 {
                     ToolButton button = new ToolButton(image, description.Name);
+                    if (!string.IsNullOrEmpty(description.ShortcutKey))
+                    {
+                        MenuView.GetAccelKey(description.ShortcutKey, out Gdk.Key key, out Gdk.ModifierType modifier);
+                        button.AddAccelerator("clicked", accelerators, (uint)key, modifier, AccelFlags.Visible);
+                    }
+
                     button.Homogeneous = false;
                     button.LabelWidget = new Label(description.Name);
                     button.Clicked += description.OnClick;
@@ -95,6 +107,98 @@ namespace UserInterface.Views
                 toolStrip.Add(item);
             }
             toolStrip.ShowAll();
+        }
+
+        /// <summary>
+        /// Intialises automatic adding/removal of hotkeys when a tab gains/loses focus.
+        /// </summary>
+        public void InitHotkeys()
+        {
+            if (toolStrip.Parent.Parent is Notebook)
+            {
+                (toolStrip.Parent.Parent as Notebook).SwitchPage += OnSwitchPage; // fixme
+                toolStrip.FocusInEvent += OnFocusIn;
+                toolStrip.FocusOutEvent += OnFocusOut;
+            }
+        }
+
+        /// <summary>
+        /// Registers the hotkeys by adding the accel group to the main window.
+        /// </summary>
+        private void AddHotkeys()
+        {
+            Console.WriteLine("Adding hotkeys.");
+            if (toolStrip != null && toolStrip.Toplevel is Window)
+                (toolStrip.Toplevel as Window).AddAccelGroup(accelerators);
+        }
+
+        /// <summary>
+        /// Removes the hotkeys by removing the accel group from the main window.
+        /// </summary>
+        private void RemoveHotkeys()
+        {
+            Console.WriteLine("Removing hotkeys.");
+            if (toolStrip != null && toolStrip.Toplevel is Window)
+                (toolStrip.Toplevel as Window).RemoveAccelGroup(accelerators);
+        }
+
+        /// <summary>
+        /// Invoked when the toolbar loses focus
+        /// </summary>
+        /// <param name="o">Sender object.</param>
+        /// <param name="args">Event args.</param>
+        [GLib.ConnectBefore]
+        private void OnFocusOut(object o, FocusOutEventArgs args)
+        {
+            try
+            {
+                RemoveHotkeys();
+            }
+            catch //(Exception err)
+            {
+                //ShowError(err);
+            }
+        }
+
+        /// <summary>
+        /// Invoked when the toolbar gains focus
+        /// </summary>
+        /// <param name="o">Sender object.</param>
+        /// <param name="args">Event args.</param>
+        [GLib.ConnectBefore]
+        private void OnFocusIn(object sender, EventArgs e)
+        {
+            try
+            {
+                AddHotkeys();
+            }
+            catch //(Exception err)
+            {
+                //ShowError(err);
+            }
+        }
+
+        /// <summary>
+        /// Invoked when tab is changed.
+        /// </summary>
+        /// <param name="o">Sender object.</param>
+        /// <param name="args">Event arguments.</param>
+        private void OnSwitchPage(object o, SwitchPageArgs args)
+        {
+            try
+            {
+                if (toolStrip.Parent == null)
+                    return;
+
+                if ((toolStrip.Parent.Parent as Notebook).CurrentPageWidget == toolStrip.Parent)
+                    AddHotkeys();
+                else
+                    RemoveHotkeys();
+            }
+            catch //(Exception err)
+            {
+                //ShowError(err);
+            }
         }
     }
 }

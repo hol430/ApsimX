@@ -18,5 +18,10 @@ namespace Models.Core
         /// Gets or sets the main menu name.
         /// </summary>
         public string MenuName { get; set; }
+
+        /// <summary>
+        /// Keyboard shortcut which can be used to activate the menu item.
+        /// </summary>
+        public string Hotkey { get; set; }
     } 
 }

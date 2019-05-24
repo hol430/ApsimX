@@ -33,7 +33,7 @@ namespace UserInterface.Presenters
         /// </summary>
         /// <param name="sender">Sender of the event</param>
         /// <param name="e">Event arguments</param>
-        [MainMenu(MenuName = "Save")]
+        [MainMenu(MenuName = "Save", Hotkey = "Ctrl+S")]
         public void OnSaveClick(object sender, EventArgs e)
         {
             this.explorerPresenter.Save();
@@ -44,7 +44,7 @@ namespace UserInterface.Presenters
         /// </summary>
         /// <param name="sender">Sender of the event</param>
         /// <param name="e">Event arguments</param>
-        [MainMenu(MenuName = "Save As")]
+        [MainMenu(MenuName = "Save As", Hotkey = "Ctrl+Shift+S")]
         public void OnSaveAsClick(object sender, EventArgs e)
         {
             this.explorerPresenter.SaveAs();
@@ -55,7 +55,7 @@ namespace UserInterface.Presenters
         /// </summary>
         /// <param name="sender">Sender of the event</param>
         /// <param name="e">Event arguments</param>
-        [MainMenu(MenuName = "Undo")]
+        [MainMenu(MenuName = "Undo", Hotkey = "Ctrl+Z")]
         public void OnUndoClick(object sender, EventArgs e)
         {
             this.explorerPresenter.CommandHistory.Undo();
@@ -66,7 +66,7 @@ namespace UserInterface.Presenters
         /// </summary>
         /// <param name="sender">Sender of the event</param>
         /// <param name="e">Event arguments</param>
-        [MainMenu(MenuName = "Redo")]
+        [MainMenu(MenuName = "Redo", Hotkey = "Ctrl+Y")]
         public void OnRedoClick(object sender, EventArgs e)
         {
             this.explorerPresenter.CommandHistory.Redo();
@@ -77,7 +77,7 @@ namespace UserInterface.Presenters
         /// </summary>
         /// <param name="sender">Sender of the event</param>
         /// <param name="e">Event arguments</param>
-        [MainMenu(MenuName = "Split screen")]
+        [MainMenu(MenuName = "Split screen", Hotkey = "Ctrl+T")]
         public void ToggleSecondExplorerViewVisible(object sender, EventArgs e)
         {
             this.explorerPresenter.MainPresenter.ToggleSecondExplorerViewVisible();
@@ -88,7 +88,7 @@ namespace UserInterface.Presenters
         /// </summary>
         /// <param name="sender">Sender object.</param>
         /// <param name="args">Event arguments.</param>
-        [MainMenu(MenuName = "Clear Status")]
+        [MainMenu(MenuName = "Clear Status", Hotkey = "Ctrl+G")]
         public void ClearStatusPanel(object sender, EventArgs args)
         {
             explorerPresenter.MainPresenter.ClearStatusPanel();
@@ -99,7 +99,7 @@ namespace UserInterface.Presenters
         /// </summary>
         /// <param name="sender">Sender of the event</param>
         /// <param name="e">Event arguments</param>
-        [MainMenu(MenuName = "Help")]
+        [MainMenu(MenuName = "Help", Hotkey = "Ctrl+H")]
         public void OnHelp(object sender, EventArgs e)
         {
             Process process = new Process();

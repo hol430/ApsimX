@@ -18,5 +18,10 @@ namespace UserInterface.Interfaces
 
         /// <summary>Destroy the toolstrip</summary>
         void Destroy();
+
+        /// <summary>
+        /// Register the hotkeys.
+        /// </summary>
+        void InitHotkeys();
     }
 }

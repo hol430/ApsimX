@@ -741,6 +741,7 @@
                 if (mainMenuName != null)
                 {
                     MenuDescriptionArgs desc = new MenuDescriptionArgs();
+                    desc.ShortcutKey = mainMenuName.Hotkey;
                     desc.Name = mainMenuName.MenuName;
                     desc.ResourceNameForImage = "ApsimNG.Resources.MenuImages." + desc.Name + ".png";
 

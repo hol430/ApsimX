@@ -96,10 +96,18 @@ namespace UserInterface.Views
             // event from firing, and as a result, the keyboard shortcuts don't
             // work. To fix this, we select the first node in the tree when it
             // is "realized" (rendered).
-            TreeIter iter;
-            treeviewWidget.Model.GetIterFirst(out iter);
-            string firstNodeName = treeviewWidget.Model.GetValue(iter, 0)?.ToString();
-            Tree.SelectedNode = "." + firstNodeName;
+            try
+            {
+                TreeIter iter;
+                treeviewWidget.Model.GetIterFirst(out iter);
+                string firstNodeName = treeviewWidget.Model.GetValue(iter, 0)?.ToString();
+                ToolStrip.InitHotkeys();
+                Tree.SelectedNode = "." + firstNodeName;
+            }
+            catch (Exception err)
+            {
+                ShowError(err);
+            }
         }
         
         /// <summary>
