@@ -1,0 +1,183 @@
+Courier
+Songti TC
+Farah
+Telugu Sangam MN
+Geneva
+Al Tarikh
+Trattatello
+Hiragino Sans
+Gurmukhi Sangam MN
+Beirut
+Monaco
+Gurmukhi MT
+STIXGeneral
+Hiragino Kaku Gothic StdN
+Symbol
+Gurmukhi MN
+Sinhala Sangam MN
+Arial
+Corsiva Hebrew
+.SF NS Text
+Kokonor
+Krungthep
+STIXSizeOneSym
+Kohinoor Bangla
+Songti SC
+DecoType Naskh
+STIXIntegralsUp
+Didot
+Savoye LET
+PingFang HK
+Lao MN
+Serif
+GB18030 Bitmap
+STIXSizeThreeSym
+Luminari
+Sans
+Arial Black
+Chalkboard
+Oriya Sangam MN
+Arial Hebrew Scholar
+Sukhumvit Set
+Khmer MN
+Microsoft Sans Serif
+PT Sans
+Sathu
+Avenir
+Apple Braille
+Telugu MN
+Bodoni 72 Smallcaps
+Diwan Thuluth
+Khmer Sangam MN
+Noteworthy
+Charter
+Mishafi Gold
+STIXSizeFiveSym
+Heiti TC
+Hiragino Mincho ProN
+Sana
+Al Bayan
+Nadeem
+Hiragino Maru Gothic ProN
+Baghdad
+Zapf Dingbats
+Bodoni 72
+PT Sans Narrow
+Phosphate
+Trebuchet MS
+STIXSizeFourSym
+Raanana
+Cochin
+Myanmar MN
+Hiragino Sans GB
+PT Serif
+American Typewriter
+Times New Roman
+Farisi
+New Peninim MT
+Kefa
+Hoefler Text
+Webdings
+Comic Sans MS
+PT Sans Caption
+Andale Mono
+STIXIntegralsSm
+Heiti SC
+Futura
+Gujarati MT
+ITF Devanagari
+Plantagenet Cherokee
+AppleGothic
+Bodoni Ornaments
+Malayalam Sangam MN
+Optima
+KufiStandardGK
+Mshtakan
+Brush Script MT
+Avenir Next Condensed
+Tamil Sangam MN
+Zapfino
+STIXIntegralsUpSm
+Apple Symbols
+ITF Devanagari Marathi
+Apple Color Emoji
+Bradley Hand
+Arial Narrow
+Apple SD Gothic Neo
+Copperplate
+SignPainter
+DIN Alternate
+Wingdings
+Geeza Pro
+Muna
+Thonburi
+Georgia
+Skia
+STIXIntegralsD
+Waseem
+PT Mono
+Avenir Next
+Baskerville
+Wingdings 3
+Lao Sangam MN
+Wingdings 2
+PingFang TC
+Ayuthaya
+AppleMyungjo
+Sinhala MN
+DIN Condensed
+Gill Sans
+Al Nile
+Mishafi
+PT Serif Caption
+Silom
+STSong
+Kannada MN
+Helvetica Neue
+Shree Devanagari 714
+Arial Rounded MT Bold
+Kohinoor Devanagari
+PingFang SC
+Noto Nastaliq Urdu
+Kailasa
+Monospace
+Helvetica
+Verdana
+Snell Roundhand
+Herculanum
+Tahoma
+STIXSizeTwoSym
+Menlo
+Apple Chancery
+Lucida Grande
+Papyrus
+Bodoni 72 Oldstyle
+Malayalam MN
+STIXIntegralsUpD
+STIXNonUnicode
+Marker Felt
+Bangla MN
+Impact
+Times
+Chalkboard SE
+Bangla Sangam MN
+Damascus
+Devanagari Sangam MN
+Gujarati Sangam MN
+Arial Hebrew
+Palatino
+Diwan Kufi
+Oriya MN
+STIXVariants
+Big Caslon
+Arial Unicode MS
+InaiMathi
+Euphemia UCAS
+Devanagari MT
+Myanmar Sangam MN
+Chalkduster
+Courier New
+Tamil MN
+Kannada Sangam MN
+Kohinoor Telugu
+Rockwell
