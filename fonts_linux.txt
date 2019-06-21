@@ -1,0 +1,193 @@
+Noto Sans Symbols
+Noto Sans Cherokee
+DejaVu Serif
+Noto Sans
+Noto Sans NKo
+Noto Sans Telugu UI
+Noto Serif Thai
+Noto Sans Telugu
+Noto Sans Canadian Aboriginal
+Noto Sans Sinhala
+Noto Sans Mono
+Noto Serif Display
+Noto Sans Sharada
+Noto Serif Hebrew
+Source Code Variable
+DejaVu Math TeX Gyre
+Noto Serif Tibetan
+Noto Sans Newa
+Noto Serif Myanmar
+Noto Sans Display
+Noto Sans Oriya UI
+Noto Sans Khmer UI
+Noto Serif Tamil Slanted
+Noto Sans Tamil UI
+D050000L
+Noto Sans Khmer
+Noto Sans Cuneiform
+Noto Sans Arabic
+Noto Sans Devanagari
+Noto Serif Gujarati
+Noto Serif Armenian
+Noto Serif Georgian
+Noto Sans Kannada
+DejaVu Sans
+Noto Sans Georgian
+Noto Sans Tamil
+Noto Sans Lao
+Noto Sans Lydian
+Noto Sans Mro
+Noto Sans Gothic
+DejaVu Sans Mono
+Noto Sans Syriac
+Noto Sans Meetei Mayek
+Noto Sans Ol Chiki
+Noto Sans Manichaean
+Noto Sans Thai
+Noto Sans Armenian
+Noto Sans Samaritan
+P052
+Noto Sans Kannada UI
+Noto Serif Khmer
+Noto Sans Cypriot
+Noto Serif Lao
+Noto Sans Lao UI
+Noto Sans Mandaic
+Source Code Pro
+Noto Sans Tibetan
+C059
+Noto Sans Myanmar
+Noto Sans Limbu
+Noto Sans Malayalam UI
+Noto Sans Malayalam
+URW Gothic
+Noto Serif Tamil
+Noto Sans Ethiopic
+Z003
+Noto Sans Devanagari UI
+Hack
+Noto Sans Bengali
+Noto Sans Duployan
+Noto Sans Bassa Vah
+Noto Serif Ethiopic
+Noto Sans Sundanese
+Noto Sans Bengali UI
+Noto Serif
+Nimbus Sans Narrow
+Noto Sans Vai
+Noto Sans Multani
+Noto Serif Ahom
+Noto Sans Javanese
+Noto Sans Gujarati UI
+Noto Sans Hebrew
+Noto Sans Bamum
+Noto Sans Tagbanwa
+Noto Sans Takri
+Noto Sans Old North Arabian
+Noto Serif Kannada
+Noto Sans Psalter Pahlavi
+Noto Serif Malayalam
+Noto Sans Mongolian
+Noto Sans Warang Citi
+Noto Naskh Arabic
+Nimbus Roman
+Noto Sans Old Persian
+Noto Serif Telugu
+Nimbus Sans
+Noto Sans Inscriptional Parthian
+Noto Serif Sinhala
+Noto Serif Gurmukhi
+Noto Sans Palmyrene
+Noto Sans Buginese
+Noto Sans Carian
+Noto Sans Tifinagh
+Noto Sans Thaana
+Noto Sans Marchen
+Noto Sans Oriya
+Noto Sans New Tai Lue
+Noto Sans Myanmar UI
+Noto Sans Hanunoo
+Noto Sans Deseret
+Noto Sans Sinhala UI
+Noto Sans Old Permic
+Noto Sans Thai UI
+Noto Sans Phoenician
+Noto Sans Anatolian Hieroglyphs
+Noto Color Emoji
+Noto Sans Kaithi
+Noto Serif Bengali
+Noto Sans Avestan
+URW Bookman
+Noto Sans Gurmukhi UI
+Noto Sans Shavian
+Noto Sans Ogham
+Nimbus Mono PS
+Noto Sans Coptic
+Noto Sans Rejang
+Noto Sans Symbols2
+Noto Sans Mende Kikakui
+Noto Kufi Arabic
+Cantarell
+Noto Sans Imperial Aramaic
+Noto Sans Lycian
+Noto Sans Tai Le
+Noto Sans Cham
+Noto Sans Meroitic
+Noto Sans Old Turkic
+Noto Sans Tai Tham
+Noto Serif Devanagari
+Noto Sans Caucasian Albanian
+Noto Sans PhagsPa
+Noto Sans Arabic UI
+Noto Sans Osmanya
+Noto Sans Inscriptional Pahlavi
+Noto Sans Nabataean
+Noto Sans Ugaritic
+Noto Sans Syloti Nagri
+Noto Sans Adlam
+Noto Sans Gurmukhi
+Noto Sans Yi
+Noto Nastaliq Urdu
+Noto Sans Glagolitic
+Noto Music
+Noto Sans Buhid
+Noto Sans Saurashtra
+Noto Sans Runic
+Noto Sans Chakma
+Noto Sans Old Hungarian
+Noto Naskh Arabic UI
+Noto Sans Grantha
+Noto Sans Gujarati
+Noto Sans Brahmi
+Noto Sans Kayah Li
+Noto Sans Tai Viet
+Noto Sans Tirhuta
+Noto Sans Miao
+Noto Sans Pahawh Hmong
+Noto Sans Lepcha
+Noto Sans Modi
+Noto Sans Sora Sompeng
+Noto Sans Batak
+Noto Sans Old South Arabian
+Noto Sans Lisu
+Noto Sans Math
+Noto Sans Osage
+Noto Serif Balinese
+Noto Sans Old Italic
+Noto Sans Elbasan
+Noto Sans Adlam Unjoined
+Noto Sans Khudawadi
+Noto Sans Mahajani
+Standard Symbols PS
+Noto Sans Kharoshthi
+Noto Sans Linear A
+Noto Sans Linear B
+Noto Sans Pau Cin Hau
+Noto Sans Hatran
+Noto Sans Egyptian Hieroglyphs
+Noto Sans Tagalog
+Noto Sans Bhaiksuki
+Noto Sans Khojki
+Sans
+Serif
+Monospace
