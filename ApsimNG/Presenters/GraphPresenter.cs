@@ -64,7 +64,7 @@ namespace UserInterface.Presenters
             explorerPresenter.CommandHistory.ModelChanged += OnGraphModelChanged;
             this.graphView.AddContextAction("Copy graph to clipboard", CopyGraphToClipboard);
             this.graphView.AddContextOption("Include in auto-documentation?", IncludeInDocumentationClicked, graph.IncludeInDocumentation);
-
+            graphView.FontSize = this.graph.LegendFontSize;
             DrawGraph();
         }
 

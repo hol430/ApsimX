@@ -8,6 +8,7 @@ namespace UserInterface.Presenters
 {
     using System;
     using System.Collections.Generic;
+    using APSIM.Shared.Utilities;
     using Models.Graph;
     using Views;
 
@@ -61,6 +62,7 @@ namespace UserInterface.Presenters
 
             // Trap events from the view.
             this.view.OnPositionChanged += this.OnTitleChanged;
+            this.view.FontSizeChanged += this.OnFontSizeChanged;
 
             // Tell the view to populate the axis.
             this.PopulateView();
@@ -78,6 +80,7 @@ namespace UserInterface.Presenters
             this.view.OnPositionChanged -= this.OnTitleChanged;
 
             this.view.DisabledSeriesChanged -= this.OnDisabledSeriesChanged;
+            this.view.FontSizeChanged -= this.OnFontSizeChanged;
         }
 
         /// <summary>Populates the view.</summary>
@@ -90,7 +93,7 @@ namespace UserInterface.Presenters
             }
 
             this.view.Populate(this.graph.LegendPosition.ToString(), values.ToArray());
-
+            this.view.FontSize = graph.LegendFontSize;
             List<string> seriesNames = this.GetSeriesNames();
             this.view.SetSeriesNames(seriesNames.ToArray());
             if (graph.DisabledSeries != null)
@@ -169,6 +172,20 @@ namespace UserInterface.Presenters
             catch (Exception err)
             {
                 explorerPresenter.MainPresenter.ShowError(err);
+            }
+        }
+
+        /// <summary>
+        /// Invoked when the user changes the font size.
+        /// </summary>
+        /// <param name="sender">Sender object.</param>
+        /// <param name="args">Event arguments.</param>
+        private void OnFontSizeChanged(object sender, EventArgs args)
+        {
+            if (!MathUtilities.FloatsAreEqual(view.FontSize, graph.LegendFontSize))
+            {
+                this.explorerPresenter.CommandHistory.Add(new Commands.ChangeProperty(this.graph, "LegendFontSize", view.FontSize));
+                this.graphPresenter.DrawGraph();
             }
         }
     }

@@ -82,6 +82,11 @@ namespace Models.Graph
         public LegendPositionType LegendPosition { get; set; }
 
         /// <summary>
+        /// Font size used for the legend.
+        /// </summary>
+        public double LegendFontSize { get; set; }
+
+        /// <summary>
         /// Gets or sets a list of raw grpah series that should be disabled.
         /// </summary>
         public List<string> DisabledSeries { get; set; }

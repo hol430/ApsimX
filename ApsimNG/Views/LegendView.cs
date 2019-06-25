@@ -12,6 +12,17 @@ namespace UserInterface.Views
     interface ILegendView
     {
         event PositionChangedDelegate OnPositionChanged;
+
+        /// <summary>
+        /// Invoked when the user changes the legend font size.
+        /// </summary>
+        event EventHandler FontSizeChanged;
+
+        /// <summary>
+        /// Font size as shown in font size textbox.
+        /// </summary>
+        double FontSize { get; set; }
+
         void Populate(string title, string[] values);
 
         void SetSeriesNames(string[] seriesNames);
@@ -31,13 +42,18 @@ namespace UserInterface.Views
         public event PositionChangedDelegate OnPositionChanged;
         public event EventHandler DisabledSeriesChanged;
 
+        /// <summary>
+        /// Invokd when the user changes the legend font size.
+        /// </summary>
+        public event EventHandler FontSizeChanged;
+
         private ComboBox combobox1 = null;
-        private HBox hbox1 = null;
+        private Table table1 = null;
         private Gtk.TreeView listview = null;
 
         private ListStore comboModel = new ListStore(typeof(string));
         private CellRendererText comboRender = new CellRendererText();
-
+        private Entry entryFontSize;
         private ListStore listModel = new ListStore(typeof(Boolean), typeof(string));
         private CellRendererText listRender = new CellRendererText();
         private CellRendererToggle listToggle = new CellRendererToggle();
@@ -48,15 +64,17 @@ namespace UserInterface.Views
         public LegendView(ViewBase owner) : base(owner)
         {
             Builder builder = BuilderFromResource("ApsimNG.Resources.Glade.LegendView.glade");
-            hbox1 = (HBox)builder.GetObject("hbox1");
+            table1 = (Table)builder.GetObject("table1");
             combobox1 = (ComboBox)builder.GetObject("combobox1");
             listview = (Gtk.TreeView)builder.GetObject("listview");
-            mainWidget = hbox1;
+            entryFontSize = (Entry)builder.GetObject("entryFontSize");
+            mainWidget = table1;
             combobox1.Model = comboModel;
             combobox1.PackStart(comboRender, false);
             combobox1.AddAttribute(comboRender, "text", 0);
             combobox1.Changed += OnPositionComboChanged;
-            combobox1.Focused += OnTitleTextBoxEnter; 
+            combobox1.Focused += OnTitleTextBoxEnter;
+            entryFontSize.FocusOutEvent += OnFontSizeChanged;
 
             listview.Model = listModel;
             TreeViewColumn column = new TreeViewColumn();
@@ -72,8 +90,29 @@ namespace UserInterface.Views
             mainWidget.Destroyed += _mainWidget_Destroyed;
         }
 
+        /// <summary>
+        /// Font size as shown in font size textbox.
+        /// </summary>
+        public double FontSize
+        {
+            get
+            {
+                if (entryFontSize == null)
+                    return 0;
+                if (!double.TryParse(entryFontSize.Text, out double result))
+                    throw new Exception($"Invalid legend font size: '{entryFontSize.Text}'");
+                return result;
+            }
+            set
+            {
+                if (entryFontSize != null)
+                    entryFontSize.Text = value.ToString();
+            }
+        }
+
         private void _mainWidget_Destroyed(object sender, EventArgs e)
         {
+            entryFontSize.FocusOutEvent -= OnFontSizeChanged;
             combobox1.Changed -= OnPositionComboChanged;
             combobox1.Focused -= OnTitleTextBoxEnter;
             listToggle.Toggled -= OnItemChecked;
@@ -213,5 +252,22 @@ namespace UserInterface.Views
                 DisabledSeriesChanged.Invoke(this, new EventArgs());
         }
         
+        /// <summary>
+        /// Event handler for when the user changes the legend font size.
+        /// </summary>
+        /// <param name="sender">Sender object.</param>
+        /// <param name="args">Event arguments.</param>
+        [GLib.ConnectBefore]
+        private void OnFontSizeChanged(object sender, EventArgs args)
+        {
+            try
+            {
+                FontSizeChanged?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception err)
+            {
+                ShowError(err);
+            }
+        }
     }
 }

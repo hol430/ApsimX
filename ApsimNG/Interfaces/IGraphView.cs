@@ -53,6 +53,11 @@ namespace UserInterface.Interfaces
         int LeftRightPadding { get; set; }
 
         /// <summary>
+        /// Overall font size for the graph.
+        /// </summary>
+        double FontSize { get; set; }
+
+        /// <summary>
         /// Show the specified editor.
         /// </summary>
         /// <param name="editor">Show the specified series editor</param>
