@@ -95,6 +95,8 @@ namespace Models.PMF
         #endregion
         private List<IModel> uptakeModels = null;
         private List<IModel> zones = null;
+        private bool firstEstimate;
+        private List<ZoneWaterAndN> cachedZones;
 
         /// <summary>Called at the start of the simulation.</summary>
         /// <param name="sender">The sender of the event</param>
@@ -104,6 +106,12 @@ namespace Models.PMF
         {
             uptakeModels = Apsim.ChildrenRecursively(Parent, typeof(IUptake));
             zones = Apsim.ChildrenRecursively(this.Parent, typeof(Zone));
+        }
+
+        [EventSubscribe("StartOfDay")]
+        private void OnStartOfDay(object sender, EventArgs e)
+        {
+            firstEstimate = true;
         }
 
         #region IUptake interface
@@ -194,6 +202,13 @@ namespace Models.PMF
                 var totalAvailPot = myZone.PotentialAvailableSW.Sum();
                 var totalSupply = myZone.Supply.Sum();
                 WatSupply = totalSupply; 
+
+                // Set reporting variables.
+                Avail = myZone.AvailableSW;
+                PotAvail = myZone.PotentialAvailableSW;
+                TotalAvail = myZone.AvailableSW.Sum();
+                TotalPotAvail = myZone.PotentialAvailableSW.Sum();
+
                 //used for SWDef PhenologyStress table lookup
                 SWAvailRatio = MathUtilities.Bound(MathUtilities.Divide(totalAvail, totalAvailPot, 1.0),0.0,10.0);
 
@@ -214,6 +229,18 @@ namespace Models.PMF
         ///Same as SDRatio?? used to calculate Photosynthesis stress in calculating yield (Grain)
         public double PhotoStress { get; set; }
 
+        /// <summary>Available SW by layer.</summary>
+        public double[] Avail { get; private set; }
+
+        /// <summary>Pot. Available SW by layer.</summary>
+        public double[] PotAvail { get; private set; }
+
+        /// <summary>Total available SW.</summary>
+        public double TotalAvail { get; private set; }
+
+        /// <summary>Total potential available SW.</summary>
+        public double TotalPotAvail { get; private set; }
+
         /// <summary>
         /// Calculate the potential N uptake for today. Should return null if crop is not in the ground (this is not true for old sorghum).
         /// </summary>
@@ -221,6 +248,12 @@ namespace Models.PMF
         {
             if (Plant.IsEmerged)
             {
+                // ----- fixme -----
+                if (!firstEstimate)
+                    return cachedZones;
+                firstEstimate = false;
+                // ----- fixme -----
+
                 var nSupply = 0.0;//NOTE: This is in kg, not kg/ha, to arbitrate N demands for spatial simulations.
 
                 //this function is called 4 times as part of estimates
@@ -246,11 +279,14 @@ namespace Models.PMF
                 // dh - In old sorghum, root only has one type of NDemand - it doesn't have a structural/metabolic division.
                 // In new apsim, root only uses structural, metabolic is always 0. Therefore, we have to include root's structural
                 // NDemand in this calculation.
-                var nDemand = Math.Max(0, N.TotalMetabolicDemand + N.StructuralDemand[rootIndex] - grainDemand); // to replicate calcNDemand in old sorghum 
-                                
+                //
+                // dh - In old sorghum, totalDemand is metabolic demand for all organs. However in new apsim, grain has no metabolic
+                // demand, so we must include its structural demand in this calculation.
+                double totalDemand = N.TotalMetabolicDemand + N.StructuralDemand[rootIndex] + N.StructuralDemand[grainIndex];
+                double nDemand = Math.Max(0, totalDemand - grainDemand); // to replicate calcNDemand in old sorghum 
                 for (int i = 0; i < Organs.Count; i++)
                     N.UptakeSupply[i] = 0;
-                List<ZoneWaterAndN> zones = new List<ZoneWaterAndN>();
+                cachedZones = new List<ZoneWaterAndN>();
 
                 foreach (ZoneWaterAndN zone in soilstate.Zones)
                 {
@@ -293,10 +329,11 @@ namespace Models.PMF
                         var maxDiffusionConst = root.MaxDiffusion.Value();
 
                         double ttElapsed = (Apsim.Find(this, "TTFMFromFlowering") as Functions.IFunction).Value();
-                        if (ttElapsed > 570)
+                        double NUptakeCease = (Apsim.Find(this, "NUptakeCease") as Functions.IFunction).Value();
+                        if (ttElapsed > NUptakeCease)
                             totalMassFlow = 0;
 
-                        if (totalMassFlow < nDemand && ttElapsed < 570) // fixme && ttElapsed < nUptakeCease
+                        if (totalMassFlow < nDemand && ttElapsed < NUptakeCease) // fixme && ttElapsed < nUptakeCease
                         {
                             actualDiffusion = MathUtilities.Bound(nDemand - totalMassFlow, 0.0, totalDiffusion);
                             actualDiffusion = MathUtilities.Divide(actualDiffusion, maxDiffusionConst, 0.0);
@@ -331,25 +368,28 @@ namespace Models.PMF
                         throw new Exception("-ve no3 uptake demand");
                     UptakeDemands.NH4N = MathUtilities.Add(UptakeDemands.NH4N, organNH4Supply);
 
-                    N.UptakeSupply[rootIndex] += MathUtilities.Sum(organNO3Supply) * kgha2gsm * zone.Zone.Area / Plant.Zone.Area;  //g/^m
+                    N.UptakeSupply[rootIndex] += MathUtilities.Sum(organNO3Supply) * kgha2gsm * zone.Zone.Area / Plant.Zone.Area;  //g/m2
                     if (MathUtilities.IsNegative(N.UptakeSupply[rootIndex]))
                         throw new Exception($"-ve uptake supply for organ {(Organs[rootIndex] as IModel).Name}");
                     nSupply += MathUtilities.Sum(organNO3Supply) * zone.Zone.Area;
-                    zones.Add(UptakeDemands);
+                    cachedZones.Add(UptakeDemands);
                 }
 
-                var nDemandInKg = nDemand / kgha2gsm * Plant.Zone.Area; //NOTE: This is in kg, not kg/ha, to arbitrate N demands for spatial simulations.
-                if (nSupply > nDemandInKg)
-                {
-                    //Reduce the PotentialUptakes that we pass to the soil arbitrator
-                    double ratio = Math.Min(1.0, nDemandInKg / nSupply);
-                    foreach (ZoneWaterAndN UptakeDemands in zones)
-                    {
-                        UptakeDemands.NO3N = MathUtilities.Multiply_Value(UptakeDemands.NO3N, ratio);
-                        UptakeDemands.NH4N = MathUtilities.Multiply_Value(UptakeDemands.NH4N, ratio);
-                    }
-                }
-                return zones;
+                // dh - this code seems to prevent the plant from taking up more N than it needs.
+                // In old apsim however, the plant will take as much as it can get, and any extra
+                // leftover N will go into stem.
+                //var nDemandInKg = nDemand / kgha2gsm * Plant.Zone.Area; //NOTE: This is in kg, not kg/ha, to arbitrate N demands for spatial simulations.
+                //if (nSupply > nDemandInKg)
+                //{
+                //    //Reduce the PotentialUptakes that we pass to the soil arbitrator
+                //    double ratio = Math.Min(1.0, nDemandInKg / nSupply);
+                //    foreach (ZoneWaterAndN UptakeDemands in cachedZones)
+                //    {
+                //        UptakeDemands.NO3N = MathUtilities.Multiply_Value(UptakeDemands.NO3N, ratio);
+                //        UptakeDemands.NH4N = MathUtilities.Multiply_Value(UptakeDemands.NH4N, ratio);
+                //    }
+                //}
+                return cachedZones;
             }
             return null;
         }
@@ -363,12 +403,12 @@ namespace Models.PMF
             for (int layer = 0; layer <= currentLayer; layer++)
             {
                 var swdep = myZone.StartWater[layer]; //mm
-                var flow = myZone.WaterUptake[layer];
+                var dltSwdep = myZone.WaterUptake[layer];
                 
                 //NO3N is in kg/ha - old sorghum used g/m^2
-                var no3conc = zone.NO3N[layer] * kgha2gsm / swdep;
-                var no3massFlow = no3conc * (-flow);
-                myZone.MassFlow[layer] = no3massFlow;
+                var no3conc = MathUtilities.Divide(zone.NO3N[layer] * kgha2gsm, swdep, 0);
+                var no3massFlow = no3conc * (-dltSwdep);
+                myZone.MassFlow[layer] = Math.Min(no3massFlow, zone.NO3N[layer] * kgha2gsm);
 
                 //diffusion
                 var swAvailFrac = MathUtilities.Divide(myZone.AvailableSW[layer], myZone.PotentialAvailableSW[layer], 0);
@@ -457,6 +497,9 @@ namespace Models.PMF
                     double BiomassRetranslocated = 0;
                     if (MathUtilities.IsPositive(BAT.TotalRetranslocationSupply))
                     {
+                        var phenology = Apsim.Find(this, typeof(Phen.Phenology)) as Phen.Phenology;
+                        if (phenology.Beyond("EndGrainFill"))
+                            return;
                         arbitrator.DoAllocation(Organs, BAT.TotalRetranslocationSupply, ref BiomassRetranslocated, BAT);
 
                         int leafIndex = 2;

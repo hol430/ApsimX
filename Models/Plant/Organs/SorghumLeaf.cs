@@ -467,6 +467,17 @@ namespace Models.PMF.Organs
         }
 
         /// <summary>
+        /// Update globals
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        [EventSubscribe("EndOfDay")]
+        private void UpdateVars(object sender, EventArgs e)
+        {
+            sdRatio = Arbitrator.WDemand < 0.001 ? 1.0 : Math.Min(1, MathUtilities.Divide(Arbitrator.WatSupply, Arbitrator.WDemand, 0.0));
+        }
+
+        /// <summary>
         /// Calculates final leaf number. Doesn't update any globals.
         /// </summary>
         /// <returns></returns>
@@ -512,6 +523,10 @@ namespace Models.PMF.Organs
             culm.LeafAtAppearance = parameters.LeafAtAppearance;
             culm.VerticalAdjustment = parameters.VerticalAdjustment;
             culm.Density = SowingDensity;
+
+            culm.aX0 = (Apsim.Find(this, "aX0") as Functions.IFunction).Value();
+            culm.aMaxSlope = (Apsim.Find(this, "aMaxSlope") as Functions.IFunction).Value();
+            culm.aMaxIntercept = (Apsim.Find(this, "aMaxIntercept") as Functions.IFunction).Value();
 
             Culms.Add(culm);
         }
@@ -648,7 +663,7 @@ namespace Models.PMF.Organs
         /// <summary>Total LAII as a result of senescence.</summary>
         public double SenescedLai { get; set; }
 
-        /// <summary>Delta of N retranslocated.</summary>
+        /// <summary>Amount of N retranslocated today.</summary>
         public double DltRetranslocatedN { get; set; }
         /// <summary>Delta of N removed due to Senescence.</summary>
         public double DltSenescedN { get; set; }
@@ -663,6 +678,7 @@ namespace Models.PMF.Organs
         /// <summary>Delta of LAI removed due to Frost Senescence.</summary>
         public double DltSenescedLaiFrost { get; set; }
 
+        private double sdRatio;
         private double totalLaiEqlbLight;
         private double avgLaiEquilibLight;
         private Queue<double> laiEqlbLightTodayQ;
@@ -769,9 +785,6 @@ namespace Models.PMF.Organs
 
             avLaiEquilibWater = updateAvLaiEquilibWater(laiEquilibWaterToday, 10);
 
-            //var sdRatio = WaterDemand < 0.001 ? 1.0 : WaterDemand / Arbitrator.WatSupply;
-            //WaterDemand is not used currently - jb
-            var sdRatio = Arbitrator.WDemand < 0.001 ? 1.0 : MathUtilities.Divide(Arbitrator.WatSupply, Arbitrator.WDemand, 0.0);
             avSDRatio = updateAvSDRatio(sdRatio, 5);
             //// average of the last 10 days of laiEquilibWater`
             //laiEquilibWater.push_back(laiEquilibWaterToday);
@@ -841,12 +854,12 @@ namespace Models.PMF.Organs
                     var metabolicWtSenescing = Live.MetabolicWt * SenescingProportion;
                     Live.MetabolicWt -= metabolicWtSenescing;
                     Dead.MetabolicWt += metabolicWtSenescing;
-                    Senesced.StructuralWt += structuralWtSenescing;
+                    Senesced.MetabolicWt += metabolicWtSenescing;
 
                     var storageWtSenescing = Live.StorageWt * SenescingProportion;
                     Live.StorageWt -= storageWtSenescing;
                     Dead.StorageWt += storageWtSenescing;
-                    Senesced.StructuralWt += structuralWtSenescing;
+                    Senesced.StorageWt += storageWtSenescing;
 
                     double slnToday = MathUtilities.Divide(Live.N, laiToday, 0.0);
                     DltSenescedN += DltSenescedLai * Math.Max((slnToday - SenescedLeafSLN.Value()), 0.0);
@@ -1167,8 +1180,7 @@ namespace Models.PMF.Organs
                         requiredN -= laiN;
                         nProvided += laiN;
 
-                        // There is no guard clause here in old apsim.
-                        BAT.StructuralAllocation[leafIndex] = Math.Max(0, BAT.StructuralAllocation[leafIndex] - laiN);
+                        DltRetranslocatedN -= laiN;
                     }
                 }
 
