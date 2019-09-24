@@ -688,7 +688,7 @@
                 sumOfMeans = 0;
                 for (int m = 0; m < 12; m++)
                 {
-                    monthlyMeans[m, y] = monthlySums[m, y] / monthlyDays[m, y];  // calc monthly mean
+                    monthlyMeans[m, y] = MathUtilities.Divide(monthlySums[m, y], monthlyDays[m, y], 0);  // calc monthly mean
                     sumOfMeans += monthlyMeans[m, y];
                     maxMean = Math.Max(monthlyMeans[m, y], maxMean);
                     minMean = Math.Min(monthlyMeans[m, y], minMean);
