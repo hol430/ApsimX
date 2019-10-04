@@ -74,6 +74,7 @@ namespace Models.PMF
 
             // todo - what if root demand exceeds supply?
             double rootAllocation = BAT.SupplyDemandRatioN * BAT.StructuralDemand[rootIndex];
+            rootAllocation = Math.Min(rootAllocation, NotAllocated);
             BAT.StructuralAllocation[rootIndex] += rootAllocation;
             NotAllocated -= (rootAllocation);
             TotalAllocated += (rootAllocation);
@@ -98,7 +99,11 @@ namespace Models.PMF
             double stemProportion = MathUtilities.Bound(MathUtilities.Divide(stemDemand, totalMetabolicDemand, 0), 0, 1);
 
             double leafAlloc = NotAllocated * leafProportion;
+            leafAlloc = Math.Min(leafAlloc, leafDemand);
+
             double rachisAlloc = NotAllocated * rachisProportion;
+            rachisAlloc = Math.Min(rachisAlloc, rachisDemand);
+
             double stemAlloc = NotAllocated - leafAlloc - rachisAlloc;
 
             AllocateMetabolic(leafIndex, leafAlloc, BAT);
@@ -232,7 +237,7 @@ namespace Models.PMF
                 double nProvided = 0;
                 double dmGreen = source.Live.Wt;
                 double dltDmGreen = dm.StructuralAllocation[iSupply] + dm.MetabolicAllocation[iSupply];
-                double dltNGreen = n.StructuralAllocation[iSupply] + n.MetabolicAllocation[iSupply];
+                double dltNGreen = n.StructuralAllocation[iSupply] + n.MetabolicAllocation[iSupply] + n.StorageAllocation[iSupply];
 
                 if (dltNGreen > StructuralRequirement)
                 {

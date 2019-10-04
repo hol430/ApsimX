@@ -28,6 +28,7 @@ namespace UserInterface.Presenters
     using Models.Soils.Standardiser;
     using System.Xml;
     using Models.PMF;
+    using Models.Graph;
 
     /// <summary>
     /// This class contains methods for all context menu items that the ExplorerView exposes to the user.
@@ -92,7 +93,28 @@ namespace UserInterface.Presenters
                 // Run all child model post processors.
                 var runner = new Runner(explorerPresenter.ApsimXFile, runSimulations: false);
                 runner.Run();
+                (explorerPresenter.CurrentPresenter as DataStorePresenter).PopulateGrid();
                 this.explorerPresenter.MainPresenter.ShowMessage("Post processing models have successfully completed", Simulation.MessageType.Information);
+            }
+            catch (Exception err)
+            {
+                explorerPresenter.MainPresenter.ShowError(err);
+            }
+        }
+
+        /// <summary>
+        /// Clear graph panel cache.
+        /// </summary>
+        /// <param name="sender">Sender of the event</param>
+        /// <param name="e">Event arguments</param>
+        [ContextMenu(MenuName = "Clear Cache",
+                     AppliesTo = new Type[] { typeof(GraphPanel) })]
+        public void ClearGraphPanelCache(object sender, EventArgs e)
+        {
+            try
+            {
+                GraphPanel panel = Apsim.Get(explorerPresenter.ApsimXFile, explorerPresenter.CurrentNodePath) as GraphPanel;
+                panel.Cache.Clear();
             }
             catch (Exception err)
             {
@@ -165,190 +187,6 @@ namespace UserInterface.Presenters
 
         }
 
-        [ContextMenu(MenuName = "Import Cultivars",
-                     AppliesTo = new Type[]
-                     {
-                         typeof(CultivarFolder)
-                     })]
-        public void ImportCultivars(object sender, EventArgs e)
-        {
-            try
-            {
-                string fileName = @"C:\Users\hol430\Documents\Sorghum\cultivars.xml";
-                Dictionary<string, string> commands = GetCommandsLookup();
-
-                XmlDocument doc = new XmlDocument();
-                doc.Load(fileName);
-
-                List<Cultivar> cultivars = new List<Cultivar>();
-                List<Command> buster = new List<Command>();
-                IModel cultivarFolder = Apsim.Get(explorerPresenter.ApsimXFile, explorerPresenter.CurrentNodePath) as IModel;
-                foreach (XmlNode node in doc.FirstChild.ChildNodes)
-                {
-                    string cultivarName = node.Name;
-                    Cultivar cultivar = new Cultivar();
-                    cultivar.Name = cultivarName;
-                    List<Command> cultivarCommands = new List<Command>();
-                    foreach (XmlNode command in node.ChildNodes)
-                    {
-                        string oldCommand = command.Name;
-                        string value = command.FirstChild.Value;
-
-                        if (!commands.ContainsKey(oldCommand))
-                        {
-                            //Console.WriteLine($"WARNING - unknown command: '{oldCommand}'.");
-                            throw new Exception($"Error - unknown command '{oldCommand}' in cultivar '{cultivarName}'.");
-                        }
-                        else if (commands[oldCommand] == null)
-                            continue;
-
-                        if (oldCommand == "photoperiod_slope")
-                        {
-                            string str0 = "[Phenology].PhotoModifier.XYPairs.X[1]";
-                            string str1 = "[Phenology].PhotoModifier.XYPairs.X[2]";
-
-                            Command cmd0 = cultivarCommands.FirstOrDefault(c => c.Name == str0);
-                            Command cmd1 = cultivarCommands.FirstOrDefault(c => c.Name == str1);
-
-                            if (cmd0 == null)
-                                cmd0 = new Command(str0, double.Parse(Apsim.Get(cultivarFolder, str0.Replace("0", "1")).ToString()), oldCommand);
-
-                            if (cmd1 == null)
-                                cmd1 = new Command(str1, double.Parse(Apsim.Get(cultivarFolder, str1.Replace("1", "2")).ToString()), oldCommand);
-
-                            double x0 = cmd0.Value;
-                            double x1 = cmd1.Value;
-
-                            value = ((x1 - x0) * double.Parse(value)).ToString();
-                        }
-
-                        //string newCommand = commands[oldCommand] + " = " + value;
-                        Command newCommand = new Command(commands[oldCommand], double.Parse(value), oldCommand);
-
-                        if (buster == null || !buster.Any(c => c.Equals(newCommand)) && !MathUtilities.FloatsAreEqual(newCommand.Value, GetNewDefault(cultivarFolder, newCommand.Name)))
-                            cultivarCommands.Add(newCommand);
-                    }
-
-                    if (buster != null)
-                    {
-                        foreach (Command command in buster)
-                        {
-                            if (!cultivarCommands.Any(c => c.Name == command.Name))
-                            {
-                                // Property changed by buster is not changed by this cultivar. Therefore we need to fetch the
-                                // default value used in old apsim.
-                                double defaultValue = GetDefault(command.OldName);
-                                cultivarCommands.Add(new Command(command.Name, defaultValue, command.OldName));
-                            }
-                        }
-                    }
-
-                    cultivar.Command = cultivarCommands.Select(c => c.ToString()).ToArray();
-
-                    if (cultivarName == "Buster")
-                        buster = cultivarCommands;
-
-                    cultivars.Add(cultivar);
-                }
-
-                foreach (Cultivar cv in cultivars)
-                {
-                    Structure.Add(cv, cultivarFolder);
-                    var nodeDescription = explorerPresenter.GetNodeDescription(cv);
-                    var view = explorerPresenter.GetView() as Views.ExplorerView;
-                    view.Tree.AddChild(Apsim.FullPath(cultivarFolder), nodeDescription);
-                }
-            }
-            catch (Exception err)
-            {
-                explorerPresenter.MainPresenter.ShowError(err);
-            }
-        }
-
-        private double GetNewDefault(IModel relativeTo, string property)
-        {
-            object result = Apsim.Get(relativeTo, property);
-
-            if (result == null)
-                throw new Exception($"Unable to fetch apsimx property '{property}'.");
-
-            if (result is Array)
-            {
-                var match = System.Text.RegularExpressions.Regex.Match(property, @"\[(\d+)\]");
-                if (match.Groups.Count > 1)
-                {
-                    int index = int.Parse(match.Groups[1].Value);
-                    result = (result as Array).GetValue(index);
-                }
-            }
-            else if (result is IFunction)
-                result = (result as IFunction).Value();
-            return (double)result;
-        }
-
-        private double GetDefault(string property)
-        {
-            string fileName = @"C:\Users\hol430\Documents\Sorghum\apsim\Model\Sorghum.xml";
-            XmlDocument doc = new XmlDocument();
-            doc.Load(fileName);
-
-            return double.Parse(XmlUtilities.FindRecursively(doc, property).InnerText);
-        }
-
-        private Dictionary<string, string> GetCommandsLookup()
-        {
-            Dictionary<string, string> commands = new Dictionary<string, string>();
-            commands.Add("tt_emerg_to_endjuv", "[Phenology].Juvenile.Target.FixedValue");
-            commands.Add("photoperiod_crit1", "[Phenology].PhotoModifier.XYPairs.X[1]");// 1-indexed arrays!!!
-            commands.Add("photoperiod_crit2", "[Phenology].PhotoModifier.XYPairs.X[2]");
-            commands.Add("photoperiod_slope", "[Phenology].PhotoModifier.XYPairs.Y[2]");
-            commands.Add("tt_endjuv_to_init", "[Phenology].TTEndJuvToInit.FixedValue");
-            commands.Add("tt_flag_to_flower", "[Phenology].FlagLeafToFlowering.Target.FixedValue");
-            commands.Add("tt_flower_to_start_grain", "[Phenology].FloweringToGrainFilling.Target.FixedValue");
-            commands.Add("tt_flower_to_maturity", "[Phenology].TTFlowerToMaturity.FixedValue");
-            commands.Add("tt_maturity_to_ripe", "[Phenology].MaturityToHarvestRipe.Target.FixedValue");
-            commands.Add("dm_per_seed", "[Grain].FinalGrainNum.PostEventValue.DMPerSeed.FixedValue");
-            commands.Add("maxGfRate", "[Grain].PotGrainFillRate.MaxGrainFillRate");
-            commands.Add("x_stem_wt", null);
-            commands.Add("y_height", null);
-            commands.Add("partition_rate_leaf", "[Leaf].PartitionRate.FixedValue");
-            commands.Add("nUptakeCease", "[Root].NUptakeCease.FixedValue");
-            commands.Add("leaf_init_rate", "[Leaf].leafInitRate.FixedValue");
-            commands.Add("targetLeafSLN", "[Leaf].TargetSLN.PreEventValue.FixedValue");
-            commands.Add("aX0", "[Leaf].aX0.FixedValue");
-            commands.Add("aMaxS", "[Leaf].aMaxSlope.FixedValue");
-            commands.Add("aMaxI", "[Leaf].aMaxIntercept.FixedValue");
-            commands.Add("maxGFRate", "[Grain].PotGrainFillRate.MaxGrainFillRate");
-            commands.Add("rue", "[Leaf].Photosynthesis.RUE.FixedValue");
-            return commands;
-        }
-
-        private class Command
-        {
-            public string Name { get; private set; }
-
-            public double Value { get; private set; }
-
-            public string OldName { get; set; }
-
-            public Command(string name, double value, string oldName)
-            {
-                Name = name;
-                Value = value;
-                OldName = oldName;
-            }
-
-            public override string ToString()
-            {
-                return $"{Name} = {Value}";
-            }
-
-            public bool Equals(Command obj)
-            {
-                return Name == obj.Name && MathUtilities.FloatsAreEqual(Value, obj.Value);
-            }
-        }
-
         /// <summary>
         /// Event handler for generate .apsimx files option.
         /// </summary>
@@ -406,10 +244,9 @@ namespace UserInterface.Presenters
             string internalCBText = this.explorerPresenter.GetClipboardText("_APSIM_MODEL");
             string externalCBText = this.explorerPresenter.GetClipboardText("CLIPBOARD");
 
-            if (externalCBText == null || externalCBText == "")
-                this.explorerPresenter.Add(internalCBText, this.explorerPresenter.CurrentNodePath);
-            else
-                this.explorerPresenter.Add(externalCBText, this.explorerPresenter.CurrentNodePath);
+            string text = string.IsNullOrEmpty(externalCBText) ? internalCBText : externalCBText;
+
+            this.explorerPresenter.Add(text, this.explorerPresenter.CurrentNodePath);
         }
 
         /// <summary>
@@ -451,9 +288,31 @@ namespace UserInterface.Presenters
                 this.explorerPresenter.MoveDown(model);
         }
 
+        /// <summary>
+        /// Move up
+        /// </summary>
+        /// <param name="sender">Sender of the event</param>
+        /// <param name="e">Event arguments</param>
+        [ContextMenu(MenuName = "Collapse Children", ShortcutKey = "Ctrl+Left", FollowsSeparator = true)]
+        public void OnCollapseChildren(object sender, EventArgs e)
+        {
+            explorerPresenter.CollapseChildren(explorerPresenter.CurrentNodePath);
+        }
+
+        /// <summary>
+        /// Move down
+        /// </summary>
+        /// <param name="sender">Sender of the event</param>
+        /// <param name="e">Event arguments</param>
+        [ContextMenu(MenuName = "Expand Children", ShortcutKey = "Ctrl+Right")]
+        public void OnExpandChildren(object sender, EventArgs e)
+        {
+            explorerPresenter.ExpandChildren(explorerPresenter.CurrentNodePath);
+        }
 
         [ContextMenu(MenuName = "Copy path to node",
-                     ShortcutKey = "Ctrl+Shift+C")]
+                     ShortcutKey = "Ctrl+Shift+C",
+                     FollowsSeparator = true)]
         public void CopyPathToNode(object sender, EventArgs e)
         {
             string nodePath = explorerPresenter.CurrentNodePath;
@@ -587,7 +446,7 @@ namespace UserInterface.Presenters
         {
             Model factors = Apsim.Get(this.explorerPresenter.ApsimXFile, this.explorerPresenter.CurrentNodePath) as Model;
             if (factors != null)
-                this.explorerPresenter.Add("<Factor/>", this.explorerPresenter.CurrentNodePath);
+                this.explorerPresenter.Add(new Factor(), this.explorerPresenter.CurrentNodePath);
         }
 
         /// <summary>
@@ -614,6 +473,16 @@ namespace UserInterface.Presenters
                 string fileName = Path.ChangeExtension(storage.FileName, ".xlsx");
                 Utility.Excel.WriteToEXCEL(tables.ToArray(), fileName);
                 explorerPresenter.MainPresenter.ShowMessage("Excel successfully created: " + fileName, Simulation.MessageType.Information);
+
+                try
+                {
+                    if (ProcessUtilities.CurrentOS.IsWindows)
+                        Process.Start(fileName);
+                }
+                catch
+                {
+                    // Swallow exceptions - this was a non-critical operation.
+                }
             }
             catch (Exception err)
             {

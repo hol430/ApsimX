@@ -202,22 +202,6 @@ namespace Models.PMF.Organs
         [Units("/d")]
         private IFunction maintenanceRespirationFunction = null;
 
-        /// <summary>The soil.</summary>
-        [Link]
-        private Soil soil = null;
-
-        /// <summary>XF in current layer.</summary>
-        public double Xfc { get; set; }
-
-        /// <summary>Esw</summary>
-        public double Esw { get; private set; }
-
-        /// <summary>EswCap</summary>
-        public double EswCap { get; private set; }
-
-        /// <summary></summary>
-        public double[] SwDep { get; private set; }
-
         /// <summary>Do we need to recalculate (expensive operation) live and dead</summary>
         private bool needToRecalculateLiveDead = true;
 
@@ -559,8 +543,8 @@ namespace Models.PMF.Organs
             {
                 if (dmConversionEfficiency.Value() > 0.0)
                 {
-                    DMDemand.Structural = (dmDemands.Structural.Value() / dmConversionEfficiency.Value() + remobilisationCost.Value()) * parentPlant.populationFactor;
-                    DMDemand.Storage = Math.Max(0, dmDemands.Storage.Value() / dmConversionEfficiency.Value()) * parentPlant.populationFactor;
+                    DMDemand.Structural = (dmDemands.Structural.Value() / dmConversionEfficiency.Value() + remobilisationCost.Value());
+                    DMDemand.Storage = Math.Max(0, dmDemands.Storage.Value() / dmConversionEfficiency.Value()) ;
                     DMDemand.Metabolic = 0;
                 }
                 else
@@ -1320,14 +1304,8 @@ namespace Models.PMF.Organs
         {
             if (parentPlant.IsAlive)
             {
-                SwDep = soil.SoilWater.SWmm;
                 foreach (ZoneState Z in Zones)
-                {
                     Z.GrowRootDepth();
-                    Esw = Z.Esw;
-                    EswCap = Z.EswCap;
-                }
-                Xfc = soil.XF(parentPlant.Name)[Soil.LayerIndexOfDepth(Depth, soil.Thickness)];
                 if (RootFrontCalcSwitch?.Value() >= 1.0)
                 {
                     double senescedFrac = senescenceRate.Value();
