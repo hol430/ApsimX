@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UserInterface.Interfaces;
 using Utility;
 using Gtk;
+using ApsimNG.Cloud.Azure;
 
 namespace ApsimNG.Cloud
 {

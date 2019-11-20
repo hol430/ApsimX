@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using ApsimNG.Cloud;
-using Microsoft.Azure.Storage;
-using Microsoft.Azure.Batch;
+using ApsimNG.Cloud.Azure;
 using UserInterface.Interfaces;
 using System.IO;
 using System.ComponentModel;
 using Models.Core;
-using Microsoft.Azure.Storage.Blob;
 using UserInterface.Views;
+using System.Threading;
 
 namespace UserInterface.Presenters
 {
@@ -26,29 +25,9 @@ namespace UserInterface.Presenters
         private CloudJobDisplayView view;
 
         /// <summary>
-        /// ADT to hold Azure storage credentials.
+        /// Class which handles comms with the cloud platform.
         /// </summary>
-        private StorageCredentials storageAuth;
-
-        /// <summary>
-        /// ADT to hold Azure batch credentials.
-        /// </summary>
-        private BatchCredentials batchAuth;
-
-        /// <summary>
-        /// Interface to the Azure storage account.
-        /// </summary>
-        private CloudStorageAccount storageAccount;
-
-        /// <summary>
-        /// Interface to the Azure batch client.
-        /// </summary>
-        private BatchClient batchCli;
-
-        /// <summary>
-        /// Interface to the Azure blob client.
-        /// </summary>
-        private CloudBlobClient blobCli;
+        private ICloudInterface cloudInterface;
 
         /// <summary>
         /// This worker repeatedly fetches information about all Azure jobs on the batch account.
@@ -71,6 +50,7 @@ namespace UserInterface.Presenters
         /// <param name="primaryPresenter"></param>
         public AzureJobDisplayPresenter(MainPresenter primaryPresenter)
         {
+            cloudInterface = new AzureInterface();
             Presenter = primaryPresenter;
             jobList = new List<JobDetails>();
             logFileMutex = new object();            
@@ -98,7 +78,7 @@ namespace UserInterface.Presenters
         {
             this.view = (CloudJobDisplayView)view;
             this.view.Presenter = this;
-            GetCredentials();
+            fetchJobs.RunWorkerAsync();
         }
 
         /// <summary>
@@ -139,38 +119,6 @@ namespace UserInterface.Presenters
         {
             JobDetails job = GetJob(id);
             return withOwner ? job.DisplayName + " (" + job.Owner + ")" : job.DisplayName;
-        }
-
-        /// <summary>
-        /// Initialises the Azure credentials, batch client and blob client. Asks user for an Azure 
-        /// licence file and saves the credentials if the credentials have not previously been set.
-        /// Once credentials are saved, it starts the job load worker.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public void GetCredentials()
-        {
-            if (AzureCredentialsSetup.CredentialsExist())
-            {
-                // store credentials
-                storageAuth = StorageCredentials.FromConfiguration();
-                batchAuth = BatchCredentials.FromConfiguration();
-
-                storageAccount = new CloudStorageAccount(new Microsoft.Azure.Storage.Auth.StorageCredentials(storageAuth.Account, storageAuth.Key), true);
-                var sharedCredentials = new Microsoft.Azure.Batch.Auth.BatchSharedKeyCredentials(batchAuth.Url, batchAuth.Account, batchAuth.Key);
-                batchCli = BatchClient.Open(sharedCredentials);
-
-                blobCli = storageAccount.CreateCloudBlobClient();
-                blobCli.DefaultRequestOptions.RetryPolicy = new Microsoft.Azure.Storage.RetryPolicies.LinearRetry(TimeSpan.FromSeconds(3), 10);
-
-                if (!fetchJobs.IsBusy) fetchJobs.RunWorkerAsync();
-            }
-            else
-            {
-                // ask user for a credentials file
-                AzureCredentialsSetup cred = new AzureCredentialsSetup();
-                cred.Finished += (sender, e) => GetCredentials();
-            }
         }
 
         /// <summary>
@@ -455,7 +403,7 @@ namespace UserInterface.Presenters
         {
             try
             {
-                batchCli.JobOperations.TerminateJob(id);
+                cloudInterface.StopJob(Guid.Parse(id));
             }
             catch (Exception err)
             {
@@ -495,24 +443,13 @@ namespace UserInterface.Presenters
             {
                 try
                 {
-                    if (!Guid.TryParse(id, out parsedId)) continue;
-                    // delete the job from Azure
-                    CloudBlobContainer containerRef;
+                    if (!Guid.TryParse(id, out parsedId))
+                        continue;
 
-                    containerRef = blobCli.GetContainerReference(StorageConstants.GetJobOutputContainer(parsedId));
-                    if (containerRef.Exists()) containerRef.Delete();
-
-                    containerRef = blobCli.GetContainerReference(StorageConstants.GetJobContainer(parsedId));
-                    if (containerRef.Exists()) containerRef.Delete();
-
-                    containerRef = blobCli.GetContainerReference(parsedId.ToString());
-                    if (containerRef.Exists()) containerRef.Delete();
-
-                    var job = GetJob(id);
-                    if (job != null)
-                        batchCli.JobOperations.DeleteJob(id);
-
-                    // remove the job from the locally stored list of jobs
+                    // Delete the job.
+                    cloudInterface.DeleteJob(parsedId);
+                    
+                    // Remove the job from the locally stored list of jobs.
                     jobList.RemoveAt(jobList.IndexOf(GetJob(id)));
                 }
                 catch (Exception err)
@@ -520,10 +457,11 @@ namespace UserInterface.Presenters
                     ShowError(err);
                 }                
             }
-            // refresh the tree view
+            // Refresh the tree view.
             view.UpdateJobTable(jobList);
 
-            // restart the fetch jobs worker
+            // Restart the fetch jobs worker.
+            // fixme - this has more holes than swiss cheese
             try
             {
                 if (restart)
@@ -557,7 +495,10 @@ namespace UserInterface.Presenters
             while (!fetchJobs.CancellationPending) // this check is performed regularly inside the ListJobs() function as well.
             {
                 // update the list of jobs. this will take a bit of time                
-                var newJobs = ListJobs();
+                view.ShowLoadingProgressBar();
+                CancellationToken ct = new CancellationToken(); // fixme!!
+                var newJobs = cloudInterface.ListJobs(ct, p => view.JobLoadProgress = p);
+                view.HideLoadingProgressBar();
 
                 if (fetchJobs.CancellationPending)
                     return;
@@ -618,150 +559,6 @@ namespace UserInterface.Presenters
         }
 
         /// <summary>
-        /// Gets the list of jobs submitted to Azure.
-        /// </summary>
-        /// <returns>List of Jobs. Null if the thread is asked to cancel, or if unable to update the progress bar.</returns>
-        private List<JobDetails> ListJobs()
-        {
-            try
-            {
-                view.ShowLoadingProgressBar();
-                view.JobLoadProgress = 0;
-            }
-            catch (NullReferenceException)
-            {
-                return null;
-            }
-            catch (Exception err)
-            {
-                ShowError(err);
-            }
-
-            List<JobDetails> jobs = new List<JobDetails>();
-            var pools = batchCli.PoolOperations.ListPools();
-            var jobDetailLevel = new ODATADetailLevel { SelectClause = "id,displayName,state,executionInfo,stats", ExpandClause = "stats" };
-
-            IPagedEnumerable<CloudJob> cloudJobs = null;
-
-            // Attempt to download raw job list. If this fails more than 3 times, return.
-            int numTries = 0;
-            while (numTries < 4 && cloudJobs == null)
-            {
-                try
-                {
-                    cloudJobs = batchCli.JobOperations.ListJobs(jobDetailLevel);
-                }
-                catch (Exception err)
-                {
-                    if (numTries >= 3)
-                    {
-                        ShowError(new Exception("Unable to retrieve job list: ", err));
-                        return new List<JobDetails>();
-                    }
-                }
-                finally
-                {
-                    numTries++;
-                }
-            }
-
-            // Parse jobs into a list of JobDetails objects.            
-
-            var length = cloudJobs.Count();
-            int i = 0;
-
-            foreach (var cloudJob in cloudJobs)
-            {
-                if (fetchJobs.CancellationPending)
-                    return null;
-                try
-                {
-                    view.JobLoadProgress = 100.0 * i / length;
-                }
-                catch (NullReferenceException)
-                {
-                    return null;
-                }
-                catch (Exception err)
-                {
-                    ShowError(err);
-                }
-
-                string owner = GetAzureMetaData("job-" + cloudJob.Id, "Owner");
-
-                long numTasks = 1;
-                double jobProgress = 0;
-                try
-                {
-                    TaskCounts tasks = batchCli.JobOperations.GetJobTaskCounts(cloudJob.Id);
-                    numTasks = tasks.Active + tasks.Running + tasks.Completed;
-                    // if there are no tasks, set progress to 100%
-                    jobProgress = numTasks == 0 ? 100 : 100.0 * tasks.Completed / numTasks;
-                }
-                catch (Exception err)
-                {
-                    // sometimes an exception is thrown when retrieving the task counts
-                    // could be due to the job not being submitted correctly
-                    ShowError(err);
-
-                    numTasks = -1;
-                    jobProgress = 100;
-                }
-
-                // if cpu time is unavailable, set this field to 0
-                TimeSpan cpu = cloudJob.Statistics == null ? TimeSpan.Zero : cloudJob.Statistics.KernelCpuTime + cloudJob.Statistics.UserCpuTime;
-                var job = new JobDetails
-                {
-                    Id = cloudJob.Id,
-                    DisplayName = cloudJob.DisplayName,
-                    State = cloudJob.State.ToString(),
-                    Owner = owner,
-                    NumSims = numTasks - 1, // subtract one because one of these is the job manager
-                    Progress = jobProgress,
-                    CpuTime = cpu
-                };
-
-                if (cloudJob.ExecutionInformation != null)
-                {
-                    job.StartTime = cloudJob.ExecutionInformation.StartTime;
-                    job.EndTime = cloudJob.ExecutionInformation.EndTime;
-                }
-                jobs.Add(job);
-                i++;
-            }
-            view.HideLoadingProgressBar();
-            if (jobs == null) return new List<JobDetails>();
-            return jobs;
-        }
-
-        /// <summary>
-        /// Gets a value of particular metadata associated with a job.
-        /// </summary>
-        /// <param name="containerName">Container the job is stored in.</param>
-        /// <param name="key">Metadata key (e.g. owner).</param>
-        /// <returns></returns>
-        private string GetAzureMetaData(string containerName, string key)
-        {
-            try
-            {
-                var containerRef = storageAccount.CreateCloudBlobClient().GetContainerReference(containerName);
-                if (containerRef.Exists())
-                {
-                    containerRef.FetchAttributes();
-                    if (containerRef.Metadata.ContainsKey(key))
-                    {
-                        return containerRef.Metadata[key];
-                    }
-                }
-            }
-            catch (Exception err)
-            {
-                ShowError(err);
-            }
-            return "";
-        }
-
-        /// <summary>
         /// Tests if two jobs are equal.
         /// </summary>
         /// <param name="a">The first job.</param>
@@ -770,6 +567,11 @@ namespace UserInterface.Presenters
         private bool IsEqual(JobDetails a, JobDetails b)
         {
             return (a.Id == b.Id && a.State == b.State && a.Progress == b.Progress);
+        }
+
+        public void GetCredentials()
+        {
+            throw new NotImplementedException();
         }
     }
 }

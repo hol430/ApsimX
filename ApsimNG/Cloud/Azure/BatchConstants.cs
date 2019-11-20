@@ -6,7 +6,7 @@ namespace ApsimNG.Cloud
     class BatchConstants
     {
         public const string SevenZipFileName = "7za.exe";
-        public const string ModelZipFileName = "model.zip";
+        
         public const string JobManagerName = "JobManager";
         private const string ComputeNodeModelPath = "%AZ_BATCH_NODE_SHARED_DIR%\\{0}";
 

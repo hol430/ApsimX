@@ -1,20 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Configuration;
-
-namespace ApsimNG.Cloud
+﻿namespace ApsimNG.Cloud.Azure
 {
-    public class StorageCredentials
+    public class StorageAuth
     {
         //this class should perhaps be renamed so as not to be identical to the Azure-provided one
         public string Account { get; set; }
         public string Key { get; set; }
-        public static StorageCredentials FromConfiguration()
+        public static StorageAuth FromConfiguration()
         {
-            return new StorageCredentials
+            return new StorageAuth
             {
                 Account = (string)AzureSettings.Default["StorageAccount"],
                 Key = (string)AzureSettings.Default["StorageKey"]

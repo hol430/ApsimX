@@ -1,6 +1,6 @@
-﻿namespace ApsimNG.Cloud
-{    
-    public class BatchCredentials
+﻿namespace ApsimNG.Cloud.Azure
+{
+    public class BatchAuth
     {
         /// <summary>
         /// URL of the batch account.
@@ -21,9 +21,9 @@
         /// Generates an instance of BatchCredentials from the settings saved in ApsimNG.Cloud.AzureSettings.
         /// </summary>
         /// <returns></returns>
-        public static BatchCredentials FromConfiguration()
+        public static BatchAuth FromConfiguration()
         {
-            return new BatchCredentials
+            return new BatchAuth
             {
                 Url = (string)AzureSettings.Default["BatchUrl"],
                 Account = (string)AzureSettings.Default["BatchAccount"],

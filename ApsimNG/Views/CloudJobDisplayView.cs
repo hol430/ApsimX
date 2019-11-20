@@ -612,7 +612,14 @@ namespace UserInterface.Views
         /// <param name="e"></param>
         private void BtnStop_Click(object sender, EventArgs e)
         {
-            Presenter.StopJobs(GetSelectedJobIds());
+            try
+            {
+                Presenter.StopJobs(GetSelectedJobIds());
+            }
+            catch (Exception err)
+            {
+                ShowError(err);
+            }
         }
 
         /// <summary>
@@ -623,7 +630,14 @@ namespace UserInterface.Views
         /// <param name="e"></param>
         private void BtnDelete_Click(object sender, EventArgs e)
         {
-            Presenter.DeleteJobs(GetSelectedJobIds());
+            try
+            {
+                Presenter.DeleteJobs(GetSelectedJobIds());
+            }
+            catch (Exception err)
+            {
+                ShowError(err);
+            }
         }
 
         /// <summary>
@@ -632,9 +646,16 @@ namespace UserInterface.Views
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void BtnSetup_Click(object sender, EventArgs e)
-        {            
-            var setup = new AzureCredentialsSetup();
-            setup.Finished += delegate { Presenter.GetCredentials(); }; // this ensures that the changes actually have an effect
+        {
+            try
+            {
+                var setup = new AzureCredentialsSetup();
+                setup.Finished += delegate { Presenter.GetCredentials(); }; // this ensures that the changes actually have an effect
+            }
+            catch (Exception err)
+            {
+                ShowError(err);
+            }
         }
 
         /// <summary>
@@ -646,16 +667,22 @@ namespace UserInterface.Views
         /// <param name="e"></param>
         private void BtnDownload_Click(object sender, EventArgs e)
         {
-
-            List<string> jobIds = GetSelectedJobIds();
-            // Normally (when stopping or deleting) the presenter would check to make sure there is at least 1 job selected. 
-            // In this case though, we check here to prevent the download pop-up from appearing if nothing is selected.
-            if (jobIds.Count < 1)
+            try
             {
-                Presenter.ShowMessage("Unable to download jobs: no jobs are selected", Models.Core.Simulation.MessageType.Information);
-                return;
+                List<string> jobIds = GetSelectedJobIds();
+                // Normally (when stopping or deleting) the presenter would check to make sure there is at least 1 job selected. 
+                // In this case though, we check here to prevent the download pop-up from appearing if nothing is selected.
+                if (jobIds.Count < 1)
+                {
+                    Presenter.ShowMessage("Unable to download jobs: no jobs are selected", Models.Core.Simulation.MessageType.Information);
+                    return;
+                }
+                DownloadWindow dl = new DownloadWindow(Presenter, jobIds);
             }
-            DownloadWindow dl = new DownloadWindow(Presenter, jobIds);
+            catch (Exception err)
+            {
+                ShowError(err);
+            }
         }
 
         /// <summary>

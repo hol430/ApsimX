@@ -596,14 +596,13 @@
 
         /// <summary>
         /// Generates .apsimx files for each child model under a given model.
-        /// Returns false if errors were encountered, or true otherwise.
         /// </summary>
         /// <param name="model">Model to generate .apsimx files for.</param>
         /// <param name="path">
-        /// Path which the files will be saved to. 
+        /// Path to which the files will be saved. 
         /// If null, the user will be prompted to choose a directory.
         /// </param>
-        public bool GenerateApsimXFiles(IModel model, string path = null)
+        public void GenerateApsimXFiles(IModel model, string path = null)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -615,7 +614,7 @@
                 path = fileChooser.GetFile();
             }
 
-            if (!string.IsNullOrEmpty(path))
+            if (Directory.Exists(path))
             {
                 MainPresenter.ShowMessage("Generating simulation files: ", Simulation.MessageType.Information);
 
@@ -625,18 +624,11 @@
                     MainPresenter.ShowProgress(percent, false);
                 });
 
-                if (errors == null || errors.Count == 0)
-                {
+                if (errors == null || errors.Count < 1)
                     MainPresenter.ShowMessage("Successfully generated .apsimx files under " + path + ".", Simulation.MessageType.Information);
-                    return true;
-                }
                 else
-                {
-                    MainPresenter.ShowError(errors);
-                    return false;
-                }
+                    throw errors[0];
             }
-            return true;
         }
 
         /// <summary>Hide the right hand panel.</summary>

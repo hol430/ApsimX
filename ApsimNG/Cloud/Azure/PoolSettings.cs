@@ -1,4 +1,6 @@
-﻿namespace ApsimNG.Cloud
+﻿using ApsimNG.Cloud.Azure;
+
+namespace ApsimNG.Cloud
 {
     public class PoolSettings
     {

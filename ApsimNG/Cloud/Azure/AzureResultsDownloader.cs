@@ -16,6 +16,9 @@ using System.Text.RegularExpressions;
 using System.Data;
 using System.Data.SQLite;
 using System.Globalization;
+using Microsoft.Azure.Batch.Auth;
+using Microsoft.Azure.Storage.Auth;
+using ApsimNG.Cloud.Azure;
 
 namespace ApsimNG.Cloud
 {
@@ -165,11 +168,18 @@ namespace ApsimNG.Cloud
             }
             
             name = jobName;
-            StorageCredentials storageCredentials = StorageCredentials.FromConfiguration();
-            BatchCredentials batchCredentials = BatchCredentials.FromConfiguration();
-            storageAccount = new CloudStorageAccount(new Microsoft.Azure.Storage.Auth.StorageCredentials(storageCredentials.Account, storageCredentials.Key), true);
-            var sharedCredentials = new Microsoft.Azure.Batch.Auth.BatchSharedKeyCredentials(batchCredentials.Url, batchCredentials.Account, batchCredentials.Key);
-            batchClient = BatchClient.Open(sharedCredentials);
+
+            string storageAccountName = AzureSettings.Default["StorageAccount"]?.ToString();
+            string storageKey = AzureSettings.Default["StorageKey"]?.ToString();
+            StorageCredentials storageAuth = new StorageCredentials(storageAccountName, storageKey);
+            storageAccount = new CloudStorageAccount(storageAuth, true);
+
+            string batchAccount = AzureSettings.Default["BatchAccount"]?.ToString();
+            string batchKey = AzureSettings.Default["BatchKey"]?.ToString();
+            string batchUrl = AzureSettings.Default["BatchURL"]?.ToString();
+            BatchSharedKeyCredentials batchAuth = new BatchSharedKeyCredentials(batchUrl, batchAccount, batchKey);
+
+            batchClient = BatchClient.Open(batchAuth);
             blobClient = storageAccount.CreateCloudBlobClient();
             blobClient.DefaultRequestOptions.RetryPolicy = new Microsoft.Azure.Storage.RetryPolicies.LinearRetry(TimeSpan.FromSeconds(3), 10);        
         }

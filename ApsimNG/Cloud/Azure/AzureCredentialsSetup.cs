@@ -4,6 +4,7 @@ using System.Linq;
 using Gtk;
 using Utility;
 using UserInterface.Interfaces;
+using ApsimNG.Cloud.Azure;
 
 namespace ApsimNG.Cloud
 {
@@ -131,6 +132,15 @@ namespace ApsimNG.Cloud
         public EventHandler Finished { get; set; }
 
         /// <summary>
+        /// Prompt user to provide Azure credentials.
+        /// </summary>
+        public static void GetCredentialsFromUser()
+        {
+            if (!CredentialsExist())
+                new AzureCredentialsSetup();
+        }
+
+        /// <summary>
         /// Checks if Azure credentials exist in AzureSettings.Default. This method does not check their validity.
         /// It also does not check to see if the path to the Azure licence file exists there.
         /// </summary>
@@ -242,7 +252,7 @@ namespace ApsimNG.Cloud
         /// <param name="e"></param>
         private void ProvideHelp(object sender, EventArgs e)
         {
-            System.Diagnostics.Process.Start("http://apsimnextgeneration.netlify.com/usage/cloud/azure/gettingstarted/");            
+            System.Diagnostics.Process.Start("https://apsimnextgeneration.netlify.com/usage/cloud/azure/gettingstarted/");            
         }
     }
 }
