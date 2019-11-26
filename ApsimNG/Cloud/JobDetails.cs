@@ -2,68 +2,47 @@
 
 namespace ApsimNG.Cloud
 {
-    /// <summary>
-    /// This class holds the details about a cloud job which are displayed in the job viewer.
-    /// </summary>
+    /// <summary>Details about a cloud job which has already been submitted.</summary>
     public class JobDetails
     {
-        /// <summary>
-        /// Unique Identifier for the job.
-        /// </summary>
-        public string Id { get; set; }
+        /// <summary>Job ID.</summary>
+        public string ID { get; set; }
 
-        /// <summary>
-        /// Name/description for the job.
-        /// </summary>
-        public string DisplayName { get; set; }
+        /// <summary>Job display name.</summary>
+        public string Name { get; set; }
 
-        /// <summary>
-        /// Status of the job (uploading, finished, etc).
-        /// </summary>
+        /// <summary>Status of the job (uploading, finished, etc.).</summary>
         public string State { get; set; }
 
-        /// <summary>
-        /// Username of job owner.
-        /// </summary>
+        /// <summary>Owner of the job (user who submitted the job).</summary>
         public string Owner { get; set; }
 
-        /// <summary>
-        /// Proportion of simulations completed as a percentage.
-        /// </summary>
+        /// <summary>Job progress as a percentage.</summary>
         public double Progress { get; set; }
 
-        /// <summary>
-        /// Total number of simulations.
-        /// </summary>
+        /// <summary>Total number of simulations in the job.</summary>
         public long NumSims { get; set; }
 
-        /// <summary>
-        /// Start time of the job.
-        /// </summary>
+        /// <summary>Start time of the job.</summary>
+        /// <remarks>fixme: why is this nullable???</remarks>
         public DateTime? StartTime { get; set; }
 
-        /// <summary>
-        /// End time of the job.
-        /// </summary>
+        /// <summary>End time of the job.</summary>
         public DateTime? EndTime { get; set; }
 
-        /// <summary>
-        /// Duration of the job.
-        /// </summary>
-        public TimeSpan Duration()
+        /// <summary>Duration of the job.</summary>
+        public TimeSpan Duration
         {
-            if (StartTime == null || EndTime == null) return TimeSpan.Zero;
-            return EndTime.Value - StartTime.Value;
+            get
+            {
+                if (StartTime == null || EndTime == null)
+                    return TimeSpan.Zero;
+
+                return EndTime.Value - StartTime.Value;
+            }
         }
         
-        /// <summary>
-        /// Pool settings of the job.
-        /// </summary>
-        public PoolSettings PoolSettings { get; set; }
-
-        /// <summary>
-        /// Total CPU time of the job.
-        /// </summary>
+        /// <summary>Total CPU time of the job.</summary>
         public TimeSpan CpuTime { get; set; }
     }
 }

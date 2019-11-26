@@ -6,9 +6,13 @@ using Utility;
 using UserInterface.Interfaces;
 using ApsimNG.Cloud.Azure;
 
-namespace ApsimNG.Cloud
+namespace ApsimNG.Cloud.Azure
 {
-    class AzureCredentialsSetup : Window
+    /// <summary>
+    /// A small popup window which prompts the user to enter Azure credentials.
+    /// Use the static method <see cref="GetCredentialsFromUser"/>.
+    /// </summary>
+    public class AzureCredentialsSetup : Window
     {
         /// <summary>
         /// Input field for the batch account name.

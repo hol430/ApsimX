@@ -302,6 +302,10 @@ namespace UserInterface.Views
             {
                 return entryEmail.Text;
             }
+            set
+            {
+                entryEmail.Text = value;
+            }
         }
 
         /// <summary>

@@ -58,7 +58,7 @@ namespace ApsimNG.Interfaces
         /// <summary>
         /// Email address.
         /// </summary>
-        string EmailAddress { get; }
+        string EmailAddress { get; set; }
 
         /// <summary>
         /// Iff true, results will be automatically downloaded when the

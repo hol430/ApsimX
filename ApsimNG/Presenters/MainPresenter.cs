@@ -841,15 +841,10 @@
             //ExplorerView explorerView = new ExplorerView(null);
             //ExplorerPresenter presenter = new ExplorerPresenter(this);
             if (onLeftTabControl)
-            {
                 this.Presenters1.Add(newPresenter);
-            }
             else
-            {
                 this.presenters2.Add(newPresenter);
-            }
-
-            XmlDocument doc = new XmlDocument();
+            
             newPresenter.Attach(simulations, newView, null);
 
             this.view.AddTab(name, null, newView.MainWidget, onLeftTabControl);
@@ -1031,17 +1026,24 @@
         /// <param name="e">Event Arguments.</param>
         public void OnViewCloudJobs(object sender, EventArgs e)
         {
-            bool onLeftTabControl = view.IsControlOnLeft(sender);            
-            // Clear the message window
-            view.ShowMessage(" ", Simulation.ErrorLevel.Information);
+            bool onLeftTabControl = view.IsControlOnLeft(sender);
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
             {
-                CreateNewTab("View Cloud Jobs", null, onLeftTabControl, "UserInterface.Views.CloudJobDisplayView", "UserInterface.Presenters.AzureJobDisplayPresenter");
-            } else
+                AzureJobDisplayPresenter newPresenter = new AzureJobDisplayPresenter(this);
+                CloudJobDisplayView newView = new CloudJobDisplayView(this.view as ViewBase);
+                newPresenter.Attach(null, newView, null);
+
+                view.AddTab("View Cloud Jobs", null, newView.MainWidget, onLeftTabControl);
+                
+                if (onLeftTabControl)
+                    Presenters1.Add(newPresenter);
+                else
+                    presenters2.Add(newPresenter);
+            }
+            else
             {
                 ShowError("Microsoft Azure functionality is currently only available under Windows.");
             }
-            
         }
 
         /// <summary>

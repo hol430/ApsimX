@@ -19,8 +19,9 @@ using Microsoft.Azure.Batch.Common;
 using System.Threading;
 using APSIM.Shared.Utilities;
 using System.Text.RegularExpressions;
+using ApsimNG.Cloud.Azure;
 
-namespace ApsimNG.Cloud.Azure
+namespace ApsimNG.Cloud
 {
     public class AzureInterface : ICloudInterface
     {
@@ -30,10 +31,20 @@ namespace ApsimNG.Cloud.Azure
         /// <summary>An Azure batch client used to interact with a batch account.</summary>
         private BatchClient batchClient;
 
-        /// <summary>
-        /// The .apsimx files are uploaded in an archive with this name.
-        /// </summary>
-        public const string modelZipFileName = "model.zip";
+        /// <summary>The .apsimx files are uploaded in an archive with this name.</summary>
+        private const string modelZipFileName = "model.zip";
+
+        /// <summary>The results are compressed into a file with this name.</summary>
+        private const string resultsFileName = "Results.zip";
+
+        /// <summary>Path to model directory on the Azure compute nodes.</summary>
+        private const string computeNodeModelPath = "%AZ_BATCH_NODE_SHARED_DIR%\\{0}";
+
+        /// <summary>ID of the job manager task.</summary>
+        private const string jobManagerTaskName = "JobManager";
+
+        /// <summary>Array of all valid debug file formats.</summary>
+        private static readonly string[] debugFileFormats = { ".stdout", ".sum" };
 
         public AzureInterface()
         {
@@ -45,25 +56,32 @@ namespace ApsimNG.Cloud.Azure
         /// </summary>
         /// <param name="job">Job settings/options specified by the user.</param>
         /// <param name="UpdateStatus">Function which takes a status message and displays it to the user.</param>
-        public void SubmitJob(JobParameters job, Action<string> UpdateStatus)
+        /// <param name="ct">Cancellation token.</param>
+        public async Task SubmitJobAsync(JobParameters job, CancellationToken ct, Action<string> UpdateStatus)
         {
-            string workingDirectory = Path.Combine(Path.GetTempPath(), job.JobId.ToString());
+            string workingDirectory = Path.Combine(Path.GetTempPath(), job.ID.ToString());
             if (!Directory.Exists(workingDirectory))
                 Directory.CreateDirectory(workingDirectory);
 
             // Create an azure storage container for this job.
-            SetContainerMetaData("job-" + job.JobId, "Owner", Environment.UserName.ToLower());
+            SetContainerMetaDataAsync("job-" + job.ID, "Owner", Environment.UserName.ToLower());
 
             // Check Apsim version.
-            job.ApsimVersion = GetApsimVersion(job.ApsimPath);
+            string apsimVersion = GetApsimVersion(job.ApsimPath);
+
+            if (ct.IsCancellationRequested)
+            {
+                UpdateStatus("Job submission cancelled");
+                return;
+            }
 
             // Upload tools required by the job manager like 7zip, AzCopy, CMail, etc.
             UpdateStatus("Checking tools");
-            UploadTools(job, workingDirectory);
+            await UploadToolsAsync(job, workingDirectory);
 
             // Create/upload email config file if necessary.
             if (job.SendEmail)
-                UploadEmailFile(job, workingDirectory);
+                await UploadEmailFileAsync(job, workingDirectory);
 
             // If using apsim from a directory, it will need to be compressed.
             if (job.ApsimFromDir)
@@ -76,7 +94,13 @@ namespace ApsimNG.Cloud.Azure
 
             // Upload apsim binaries.
             UpdateStatus("Uploading apsim binaries");
-            UploadFileIfNeeded("apsim", job.ApsimPath);
+            await UploadFileAsync("apsim", job.ApsimPath);
+
+            if (ct.IsCancellationRequested)
+            {
+                UpdateStatus("Job submission cancelled");
+                return;
+            }
 
             // Generate .apsimx files.
             UpdateStatus("Generating .apsimx files");
@@ -92,7 +116,13 @@ namespace ApsimNG.Cloud.Azure
 
             // Upload .apsimx files.
             UpdateStatus("Uploading .apsimx files");
-            string modelZipFileSas = UploadFileIfNeeded(job.JobId.ToString(), job.ModelPath);
+            string modelZipFileSas = await UploadFileAsync(job.ID.ToString(), job.ModelPath);
+
+            if (ct.IsCancellationRequested)
+            {
+                UpdateStatus("Job submission cancelled");
+                return;
+            }
 
             // Remove temporary .apsimx files.
             File.Delete(job.ModelPath);
@@ -100,13 +130,19 @@ namespace ApsimNG.Cloud.Azure
             // Submit job.
             UpdateStatus("Submitting Job");
 
-            CloudJob cloudJob = batchClient.JobOperations.CreateJob(job.JobId.ToString(), GetPoolInfo(PoolSettings.FromConfiguration()));
-            cloudJob.DisplayName = job.JobDisplayName;
-            cloudJob.JobPreparationTask = CreateJobPreparationTask(job, modelZipFileSas);
-            cloudJob.JobReleaseTask = CreateJobReleaseTask(job, modelZipFileSas);
+            CloudJob cloudJob = batchClient.JobOperations.CreateJob(job.ID.ToString(), GetPoolInfo());
+            cloudJob.DisplayName = job.Name;
+            cloudJob.JobPreparationTask = CreateJobPreparationTask(job, modelZipFileSas, apsimVersion);
+            cloudJob.JobReleaseTask = CreateJobReleaseTask(job, modelZipFileSas, apsimVersion);
             cloudJob.JobManagerTask = CreateJobManagerTask(job);
 
-            cloudJob.Commit();
+            if (ct.IsCancellationRequested)
+            {
+                UpdateStatus("Job submission cancelled");
+                return;
+            }
+
+            await cloudJob.CommitAsync();
             UpdateStatus("Job Successfully submitted");
         }
 
@@ -115,7 +151,7 @@ namespace ApsimNG.Cloud.Azure
         /// </summary>
         /// <param name="ct">Cancellation token.</param>
         /// <param name="ShowProgress">Function to report progress as percentage in range [0, 100].</param>
-        public List<JobDetails> ListJobs(CancellationToken ct, Action<double> ShowProgress)
+        public async Task<List<JobDetails>> ListJobsAsync(CancellationToken ct, Action<double> ShowProgress)
         {
             ShowProgress(0);
 
@@ -130,54 +166,96 @@ namespace ApsimNG.Cloud.Azure
             for (int i = 0; i < cloudJobs.Count; i++)
             {
                 if (ct.IsCancellationRequested)
-                    return null;
+                    return jobs;
 
                 ShowProgress(100.0 * i / cloudJobs.Count);
-                jobs.Add(GetJobDetails(cloudJobs[i]));
+                jobs.Add(await GetJobDetails(cloudJobs[i]));
             }
 
             ShowProgress(100);
             return jobs;
         }
 
-        /// <summary>
-        /// Abort the execution of a running job.
-        /// </summary>
+        /// <summary>Abort the execution of a running job.</summary>
         /// <param name="jobId">Job ID.</param>
-        public void StopJob(Guid jobId)
+        /// <param name="ct">Cancellation token.</param>
+        public async Task StopJobAsync(Guid jobId, CancellationToken ct)
         {
-            batchClient.JobOperations.TerminateJob(jobId.ToString());
+            await batchClient.JobOperations.TerminateJobAsync(jobId.ToString(), cancellationToken: ct);
         }
 
         /// <summary>
         /// Aborts a job if still running and deletes all data associated with the job.
         /// </summary>
         /// <param name="jobId">Job ID. Unsure if we want to stick with GUID here in the long run but it'll do for now.
-        public void DeleteJob(Guid jobId)
+        /// <param name="ct">Cancellation token.</param>
+        public async Task DeleteJobAsync(Guid jobId, CancellationToken ct)
         {
-            CloudBlobContainer container = storageClient.GetContainerReference(GetJobOutputContainer(jobId));
-            if (container.Exists())
-                container.Delete();
+            CloudBlobContainer container = storageClient.GetContainerReference(OutputContainer(jobId));
+            if (await container.ExistsAsync(ct))
+                await container.DeleteAsync();
 
             container = storageClient.GetContainerReference(GetJobContainer(jobId));
-            if (container.Exists())
-                container.Delete();
+            if (await container.ExistsAsync(ct))
+                await container.DeleteAsync(ct);
 
             container = storageClient.GetContainerReference(jobId.ToString());
-            if (container.Exists())
-                container.Delete();
+            if (await container.ExistsAsync(ct))
+                await container.DeleteAsync(ct);
 
-            batchClient.JobOperations.DeleteJob(jobId.ToString());
+            await batchClient.JobOperations.DeleteJobAsync(jobId.ToString(), cancellationToken: ct);
         }
 
-        /// <summary>
-        /// Download the results of a job.
-        /// </summary>
-        /// <param name="jobId">Job ID.</param>
-        /// <param name="path">Path to which the results will be downloaded.</param>
-        public void DownloadResults(Guid jobId, string path)
+        /// <summary>Download the results of a job.</summary>
+        /// <param name="options">Download options.</param>
+        /// <param name="ct">Cancellation token.</param>
+        public async Task DownloadResultsAsync(DownloadOptions options, CancellationToken ct)
         {
-            throw new NotImplementedException();
+            if (!Directory.Exists(options.Path))
+                Directory.CreateDirectory(options.Path);
+
+            List<CloudBlockBlob> outputs = await GetJobOutputs(options.JobID);
+            List<CloudBlockBlob> toDownload = new List<CloudBlockBlob>();
+
+            // Build up a list of files to download.
+            CloudBlockBlob results = outputs.Find(b => string.Equals(b.Name, resultsFileName, StringComparison.InvariantCultureIgnoreCase));
+            if (results != null)
+                toDownload.Add(results);
+            else
+                // Always download debug files if no results archive can be found.
+                options.DownloadDebugFiles = true;
+
+            if (options.DownloadDebugFiles)
+                toDownload.AddRange(outputs.Where(blob => debugFileFormats.Contains(Path.GetExtension(blob.Name.ToLower()))));
+
+            // Now download the necessary files.
+            foreach (CloudBlockBlob blob in toDownload)
+            {
+                if (ct.IsCancellationRequested)
+                    return;
+                else
+                    // todo: Download in parallel?
+                    await blob.DownloadToFileAsync(Path.Combine(options.Path, blob.Name), FileMode.Create, ct);
+            }
+
+            if (options.ExtractResults)
+            {
+                string archive = Path.Combine(options.Path, resultsFileName);
+                string resultsDir = Path.Combine(options.Path, "results");
+                if (File.Exists(archive))
+                {
+                    // Extract the result files.
+                    using (ZipArchive zip = ZipFile.Open(archive, ZipArchiveMode.Read, Encoding.UTF8))
+                        zip.ExtractToDirectory(resultsDir);
+
+                    // Merge results into a single .db file.
+                    DBMerger.MergeFiles(Path.Combine(resultsDir, "*.db"), "combined.db");
+
+                    // TBI: merge into csv file.
+                    if (options.ExportToCsv)
+                        throw new NotImplementedException();
+                }
+            }
         }
 
         /// <summary>
@@ -201,9 +279,15 @@ namespace ApsimNG.Cloud.Azure
             batchClient = BatchClient.Open(batchAuth);
         }
 
-        private PoolInformation GetPoolInfo(PoolSettings settings)
+        /// <summary>Gets default pool settings. This isn't really configurable by the user. Maybe one day...</summary>
+        private PoolInformation GetPoolInfo()
         {
-            if (string.IsNullOrEmpty(settings.PoolName))
+            string maxTasks = AzureSettings.Default["PoolMaxTasksPerVM"]?.ToString();
+            string vmCount = AzureSettings.Default["PoolVMCount"]?.ToString();
+            string vmSize = AzureSettings.Default["PoolVMSize"]?.ToString();
+            string poolName = AzureSettings.Default["PoolName"]?.ToString();
+
+            if (string.IsNullOrEmpty(poolName))
             {
                 return new PoolInformation
                 {
@@ -212,56 +296,64 @@ namespace ApsimNG.Cloud.Azure
                         PoolLifetimeOption = PoolLifetimeOption.Job,
                         PoolSpecification = new PoolSpecification
                         {
-                            MaxTasksPerComputeNode = settings.MaxTasksPerVM,
+                            MaxTasksPerComputeNode = maxTasks == null ? (int?)null : int.Parse(maxTasks),
+                            TargetDedicatedComputeNodes = vmCount == null ? (int?)null : int.Parse(vmCount),
+                            VirtualMachineSize = vmSize,
 
                             // This specifies the OS that our VM will be running.
                             // OS Family 5 means .NET 4.6 will be installed. For more info see:
                             // https://docs.microsoft.com/en-us/azure/cloud-services/cloud-services-guestos-update-matrix#releases
                             CloudServiceConfiguration = new CloudServiceConfiguration("5"),
                             ResizeTimeout = TimeSpan.FromMinutes(15),
-                            TargetDedicatedComputeNodes = settings.VMCount,
-                            VirtualMachineSize = settings.VMSize,
                             TaskSchedulingPolicy = new TaskSchedulingPolicy(ComputeNodeFillType.Spread)
                         }
-                    }
+                    },
+                    PoolId = poolName
                 };
             }
             return new PoolInformation
             {
-                PoolId = settings.PoolName
+                PoolId = poolName
             };
         }
 
-        /// <summary>
-        /// Sets metadata value for a container in Azure cloud storage.
-        /// </summary>
+        /// <summary>Sets metadata value for a container in Azure cloud storage.</summary>
         /// <param name="containerName">Name of the container.</param>
         /// <param name="key">Metadata key.</param>
         /// <param name="val">Metadata value.</param>
-        private void SetContainerMetaData(string containerName, string key, string val)
+        private async void SetContainerMetaDataAsync(string containerName, string key, string val)
         {
             CloudBlobContainer containerRef = storageClient.GetContainerReference(containerName);
-            containerRef.CreateIfNotExists();
+            await containerRef.CreateIfNotExistsAsync();
             containerRef.Metadata.Add(key, val);
-            containerRef.SetMetadata();
+            await containerRef.SetMetadataAsync();
         }
 
-        /// <summary>
-        /// Gets metadata value for a container in Azure cloud storage.
-        /// </summary>
+        /// <summary>Gets metadata value for a container in Azure cloud storage.</summary>
         /// <param name="containerName">Name of the container.</param>
         /// <param name="key">Metadata key.</param>
-        private string GetContainerMetaData(string containerName, string key)
+        private async Task<string> GetContainerMetaDataAsync(string containerName, string key)
         {
             CloudBlobContainer containerRef = storageClient.GetContainerReference(containerName);
-            if (!containerRef.Exists())
+            if (!await containerRef.ExistsAsync())
                 throw new Exception($"Failed to fetch metadata '{key}' for container '{containerName}' - container does not exist");
 
-            containerRef.FetchAttributes();
+            await containerRef.FetchAttributesAsync();
             if (containerRef.Metadata.ContainsKey(key))
                 return containerRef.Metadata[key];
 
             throw new Exception($"Failed to fetch metadata '{key}' for container '{containerName}' - key does not exist");
+        }
+
+        /// <summary>Lists all output files of a given job.</summary>
+        /// <param name="jobID">Job ID.</param>
+        private async Task<List<CloudBlockBlob>> GetJobOutputs(Guid jobID)
+        {
+            CloudBlobContainer containerRef = storageClient.GetContainerReference(OutputContainer(jobID));
+            if (!await containerRef.ExistsAsync())
+                return null;
+            
+            return await containerRef.ListBlobsAsync();
         }
 
         /// <summary>
@@ -270,19 +362,19 @@ namespace ApsimNG.Cloud.Azure
         /// </summary>
         /// <param name="containerName">Name of the container to upload the file to</param>
         /// <param name="filePath">Path to the file on disk</param>
-        private string UploadFileIfNeeded(string containerName, string filePath)
+        private async Task<string> UploadFileAsync(string containerName, string filePath)
         {
             CloudBlobContainer containerRef = storageClient.GetContainerReference(containerName);
-            containerRef.CreateIfNotExists();
+            await containerRef.CreateIfNotExistsAsync();
             CloudBlockBlob blobRef = containerRef.GetBlockBlobReference(Path.GetFileName(filePath));
 
             string md5 = GetMd5(filePath);
 
             // If blob exists and md5 matches, no need to upload the file.
-            if (!blobRef.Exists() || !string.Equals(md5, blobRef.Properties.ContentMD5, StringComparison.InvariantCultureIgnoreCase))
+            if (!await blobRef.ExistsAsync() || !string.Equals(md5, blobRef.Properties.ContentMD5, StringComparison.InvariantCultureIgnoreCase))
             {
                 blobRef.Properties.ContentMD5 = md5;
-                blobRef.UploadFromFile(filePath);
+                await blobRef.UploadFromFileAsync(filePath);
             }
 
             var policy = new SharedAccessBlobPolicy
@@ -301,7 +393,7 @@ namespace ApsimNG.Cloud.Azure
         /// </summary>
         /// <param name="job">Job parameters.</param>
         /// <param name="workingDirectory">Working directory.</param>
-        private void UploadEmailFile(JobParameters job, string workingDirectory)
+        private async Task UploadEmailFileAsync(JobParameters job, string workingDirectory)
         {
             // Create a config file to store email settings.
             string configFile = Path.Combine(workingDirectory, "settings.txt");
@@ -312,16 +404,14 @@ namespace ApsimNG.Cloud.Azure
                         $"EmailPW={AzureSettings.Default["EmailPW"]}"
             });
 
-            UploadFileIfNeeded("job-" + job.JobId, configFile);
+            await UploadFileAsync("job-" + job.ID, configFile);
             File.Delete(configFile);
         }
 
-        /// <summary>
-        /// Upload all tools required to run a job.
-        /// </summary>
-        /// <param name="job"></param>
-        /// <param name="workingDirectory"></param>
-        private void UploadTools(JobParameters job, string workingDirectory)
+        /// <summary>Upload all tools required to run a job.</summary>
+        /// <param name="job">Job parameters.</param>
+        /// <param name="workingDirectory">Working directory.</param>
+        private async Task UploadToolsAsync(JobParameters job, string workingDirectory)
         {
             string tools = Path.Combine(job.ApsimPath, "Bin", "tools");
             if (!job.ApsimFromDir)
@@ -332,32 +422,25 @@ namespace ApsimNG.Cloud.Azure
             }
 
             foreach (string filePath in Directory.EnumerateFiles(tools))
-                UploadFileIfNeeded("tools", filePath);
+                await UploadFileAsync("tools", filePath);
 
             Directory.Delete(tools, true);
         }
 
-        /// <summary>
-        /// Extract all tools files from a zip archive of the bin
-        /// directory.
-        /// </summary>
+        /// <summary>Extract all tools files from a zip archive of the bin directory.</summary>
         /// <param name="archiveName">Archive of the apsim bin directory.</param>
         /// <param name="tools">Output directory.</param>
         private void ExtractTools(string archiveName, string tools)
         {
             using (FileStream stream = new FileStream(archiveName, FileMode.Open))
-            using (ZipArchive archive = new ZipArchive(stream))
-                foreach (ZipArchiveEntry file in archive.Entries)
-                    if (file.FullName.StartsWith("tools"))
-                        file.ExtractToFile(Path.Combine(tools, file.Name));
+                using (ZipArchive archive = new ZipArchive(stream))
+                    foreach (ZipArchiveEntry file in archive.Entries)
+                        if (file.FullName.StartsWith("tools"))
+                            file.ExtractToFile(Path.Combine(tools, file.Name));
         }
 
-        /// <summary>
-        /// Runs Models.exe and parses the output to figure out the
-        /// apsim version number.
-        /// </summary>
+        /// <summary>Runs Models.exe and parses the output to figure out the apsim version number.</summary>
         /// <param name="apsimPath">Path to .zip file containing Models.exe.</param>
-        /// <returns></returns>
         private string GetApsimVersion(string apsimPath)
         {
             string models = Path.Combine(Path.GetTempPath(), "Models.exe");
@@ -373,15 +456,13 @@ namespace ApsimNG.Cloud.Azure
             return match.Groups[0].Value;
         }
 
-        /// <summary>
-        /// Get the md5 hash of a file.
-        /// </summary>
+        /// <summary>Compute the md5 hash of a file.</summary>
         /// <param name="filePath">Path to the file.</param>
         private string GetMd5(string filePath)
         {
             using (var md5 = MD5.Create())
-            using (var stream = File.OpenRead(filePath))
-                return Convert.ToBase64String(md5.ComputeHash(stream));
+                using (var stream = File.OpenRead(filePath))
+                    return Convert.ToBase64String(md5.ComputeHash(stream));
         }
 
         /// <summary>
@@ -451,12 +532,13 @@ namespace ApsimNG.Cloud.Azure
         /// </summary>
         /// <param name="job">Job parameters.</param>
         /// <param name="sas">SAS of the compressed .apsimx files.</param>
-        private JobPreparationTask CreateJobPreparationTask(JobParameters job, string sas)
+        /// <param name="apsimVersion">Version of apsim to be run.</param>
+        private JobPreparationTask CreateJobPreparationTask(JobParameters job, string sas, string apsimVersion)
         {
             return new JobPreparationTask
             {
                 CommandLine = "cmd.exe /c jobprep.cmd",
-                ResourceFiles = GetJobResourceFiles(sas, job.ApsimVersion).ToList(),
+                ResourceFiles = GetJobResourceFiles(sas, apsimVersion).ToList(),
                 WaitForSuccess = true,
             };
         }
@@ -467,17 +549,18 @@ namespace ApsimNG.Cloud.Azure
         /// </summary>
         /// <param name="job">Job parameters.</param>
         /// <param name="sas">SAS of the compressed .apsimx files.</param>
-        private JobReleaseTask CreateJobReleaseTask(JobParameters job, string sas)
+        /// <param name="apsimVersion">Version of apsim to be run.</param>
+        private JobReleaseTask CreateJobReleaseTask(JobParameters job, string sas, string apsimVersion)
         {
             return new JobReleaseTask
             {
                 CommandLine = "cmd.exe /c jobrelease.cmd",
-                ResourceFiles = GetJobResourceFiles(sas, job.ApsimVersion).ToList(),
+                ResourceFiles = GetJobResourceFiles(sas, apsimVersion).ToList(),
                 EnvironmentSettings = new[]
                 {
                     new EnvironmentSetting("APSIM_STORAGE_ACCOUNT", AzureSettings.Default["StorageAccount"].ToString()/*job.StorageAuth.Account*/),
                     new EnvironmentSetting("APSIM_STORAGE_KEY", AzureSettings.Default["StorageKey"].ToString()/*job.StorageAuth.Key*/),
-                    new EnvironmentSetting("JOBNAME", job.JobDisplayName),
+                    new EnvironmentSetting("JOBNAME", job.Name),
                     new EnvironmentSetting("RECIPIENT", job.EmailAddress),
                 }
             };
@@ -491,16 +574,16 @@ namespace ApsimNG.Cloud.Azure
         {
             // todo : find a better way to handle credentials
             var cmd = string.Format("cmd.exe /c {0} job-manager {1} {2} {3} {4} {5} {6} {7} {8} {9}",
-                BatchConstants.GetJobManagerPath(job.JobId),
+                GetJobManagerPath(job.ID),
                 AzureSettings.Default["BatchURL"],//job.BatchAuth.Url,
                 AzureSettings.Default["BatchAccount"],//job.BatchAuth.Account,
                 AzureSettings.Default["BatchKey"],//job.BatchAuth.Key,
                 AzureSettings.Default["StorageAccount"],//job.StorageAuth.Account,
                 AzureSettings.Default["StorageKey"],//job.StorageAuth.Key,
-                job.JobId,
-                BatchConstants.GetModelPath(job.JobId),
-                job.JobManagerShouldSubmitTasks,
-                job.AutoScale
+                job.ID,
+                GetModelPath(job.ID),
+                true, // should job manager submit tasks - always true
+                job.AutoScale // No idea what this does but it needs to be true
             );
 
             return new JobManagerTask
@@ -508,16 +591,13 @@ namespace ApsimNG.Cloud.Azure
                 CommandLine = cmd,
                 DisplayName = "Job manager task",
                 KillJobOnCompletion = true,
-                Id = BatchConstants.JobManagerName,
+                Id = jobManagerTaskName,
                 RunExclusive = false,
                 ResourceFiles = GetResourceFiles("jobmanager").ToList(),
             };
         }
 
-        /// <summary>
-        /// Gets the resource files required by the job prep/release
-        /// tasks.
-        /// </summary>
+        /// <summary>Gets the resource files required by the job prep/release tasks.</summary>
         /// <param name="sas">SAS of the compressed .apimx files.</param>
         /// <param name="version">Version of apsim to be run.</param>
         private IEnumerable<ResourceFile> GetJobResourceFiles(string sas, string version)
@@ -536,9 +616,7 @@ namespace ApsimNG.Cloud.Azure
             return files;
         }
 
-        /// <summary>
-        /// Enumerates all files in an Azure container.
-        /// </summary>
+        /// <summary>Enumerates all files in an Azure container.</summary>
         /// <param name="containerName">Name of the container.</param>
         private IEnumerable<ResourceFile> GetResourceFiles(string containerName)
         {
@@ -561,11 +639,11 @@ namespace ApsimNG.Cloud.Azure
         /// presenter.
         /// </summary>
         /// <param name="cloudJob"></param>
-        private JobDetails GetJobDetails(CloudJob cloudJob)
+        private async Task<JobDetails> GetJobDetails(CloudJob cloudJob)
         {
-            string owner = GetContainerMetaData($"job-{cloudJob.Id}", "Owner");
+            string owner = await GetContainerMetaDataAsync($"job-{cloudJob.Id}", "Owner");
 
-            TaskCounts tasks = batchClient.JobOperations.GetJobTaskCounts(cloudJob.Id);
+            TaskCounts tasks = await batchClient.JobOperations.GetJobTaskCountsAsync(cloudJob.Id);
             int numTasks = tasks.Active + tasks.Running + tasks.Completed;
 
             // If there are no tasks, set progress to 100%.
@@ -575,8 +653,8 @@ namespace ApsimNG.Cloud.Azure
             TimeSpan cpu = cloudJob.Statistics == null ? TimeSpan.Zero : cloudJob.Statistics.KernelCpuTime + cloudJob.Statistics.UserCpuTime;
             JobDetails job = new JobDetails
             {
-                Id = cloudJob.Id,
-                DisplayName = cloudJob.DisplayName,
+                ID = cloudJob.Id,
+                Name = cloudJob.DisplayName,
                 State = cloudJob.State.ToString(),
                 Owner = owner,
                 NumSims = numTasks - 1, // subtract one because one of these is the job manager
@@ -593,22 +671,40 @@ namespace ApsimNG.Cloud.Azure
             return job;
         }
 
-        /// <summary>
-        /// Gets the name of a job's output container.
-        /// </summary>
+        /// <summary>Gets the name of a job's output container.</summary>
         /// <param name="jobId">Job ID.</param>
-        private static string GetJobOutputContainer(Guid jobId)
+        private static string OutputContainer(Guid jobId)
         {
             return string.Format("job-{0}-outputs", jobId);
         }
 
-        /// <summary>
-        /// Gets the name of a job's top-level container.
-        /// </summary>
+        /// <summary>Gets the name of a job's top-level container.</summary>
         /// <param name="jobId">Job ID.</param>
         private static string GetJobContainer(Guid jobId)
         {
             return string.Format("job-{0}", jobId);
+        }
+
+        /// <summary>Gets the path to the input files for a given job.</summary>
+        /// <param name="jobId">Job ID.</param>
+        private static string GetJobInputPath(Guid jobId)
+        {
+            return string.Format(computeNodeModelPath, jobId);
+        }
+
+        /// <summary>Gets the path to the .apsimx files for a given job.</summary>
+        /// <param name="jobId"></param>
+        private static string GetModelPath(Guid jobId)
+        {
+            return Path.Combine(GetJobInputPath(jobId), "Model");
+        }
+
+        /// <summary>Gets the name of the job manager executable.</summary>
+        /// <param name="jobId"></param>
+        /// <returns></returns>
+        private static string GetJobManagerPath(Guid jobId)
+        {
+            return string.Format("azure-apsim.exe");
         }
     }
 }

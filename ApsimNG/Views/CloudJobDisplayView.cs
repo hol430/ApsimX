@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using ApsimNG.Cloud;
 using Gtk;
+using UserInterface.EventArguments;
 
 namespace UserInterface.Views
 {
+
     public class CloudJobDisplayView : ViewBase
     {
         /// <summary>
@@ -81,18 +83,6 @@ namespace UserInterface.Views
         private Label lblDownloadProgress;
 
         /// <summary>
-        /// Allows the user to change the download directory.        
-        /// </summary>
-        private Button btnChangeDownloadDir;
-
-        /// <summary>
-        /// Contains the change download directory button. 
-        /// This should probably be removed, and the change download directory button moved into
-        /// hboxCHangeDownloadDir
-        /// </summary>
-        private Table tblButtonContainer;
-
-        /// <summary>
         /// Button to download the currently selected jobs.
         /// </summary>
         private Button btnDownload;
@@ -116,8 +106,8 @@ namespace UserInterface.Views
         /// Indices of the column headers. If columns are added or removed, change this.
         /// Name, ID, State, NumSims, Progress, StartTime, EndTime
         /// </summary>
-        private readonly string[] columnTitles = { "Name/Description", "Job ID", "State", "#Sims", "Progress", "Start Time", "End Time", "Duration", "CPU Time" };
-        private enum Columns { Name, ID, State, NumSims, Progress, StartTime, EndTime, Duration, CpuTime };
+        private readonly string[] columnTitles = { "Name/Description", "Job ID", "State", "#Sims", "Progress", "Start Time", "End Time", "Duration", "CPU Time", "Owner" };
+        private enum Columns { Name, ID, State, NumSims, Progress, StartTime, EndTime, Duration, CpuTime, Owner };
 
         /// <summary>
         /// Defines the format that the two TimeSpan fields (duration and CPU time) are to be displayed in.
@@ -130,13 +120,11 @@ namespace UserInterface.Views
         /// <param name="owner"></param>
         public CloudJobDisplayView(ViewBase owner) : base(owner)
         {
-            store = new ListStore(typeof(string), typeof(string), typeof(string), typeof(string), typeof(string), typeof(string), typeof(string), typeof(string), typeof(string));
-
-            Type[] types = new Type[columnTitles.Length];
+            Type[] types = Enumerable.Repeat(typeof(string), columnTitles.Length).ToArray();
             tree = new Gtk.TreeView() { CanFocus = true, RubberBanding = true };
             tree.Selection.Mode = SelectionMode.Multiple;
 
-            for (int i = 0; i < columnTitles.Length; i++)
+            for (int i = 0; i < columnTitles.Length - 1; i++)
             {
                 types[i] = typeof(string);
                 TreeViewColumn col = new TreeViewColumn
@@ -170,14 +158,6 @@ namespace UserInterface.Views
                 sort.SetSortFunc(i, (model, a, b) => SortData(model, a, b, count));
             }
 
-
-            // change the colour of every other row - makes it easier to read
-            //string style = "style \"custom-treestyle\"{ GtkTreeView::odd-row-color = \"#ECF2FD\" GtkTreeView::even-row-color = \"#FFFFFF\" GtkTreeView::allow-rules = 1 } widget \"*custom_treeview*\" style \"custom-treestyle\"";
-            ////tree.CanFocus = true;
-            //tree.RulesHint = true;
-            //Rc.ParseString(style);
-
-
             // the tree holds the sorted, filtered data
             tree.Model = sort;
 
@@ -185,7 +165,8 @@ namespace UserInterface.Views
             // to view more jobs
             ScrolledWindow scroll = new ScrolledWindow();
             scroll.Add(tree);
-            // never allow horizontal scrolling, and only allow vertical scrolling when needed
+
+            // Never allow horizontal scrolling, and only allow vertical scrolling when needed.
             scroll.HscrollbarPolicy = PolicyType.Automatic;
             scroll.VscrollbarPolicy = PolicyType.Automatic;
 
@@ -212,19 +193,11 @@ namespace UserInterface.Views
             loadingProgress.Adjustment.Lower = 0;
             loadingProgress.Adjustment.Upper = 100;
 
-
-
             lblDownloadStatus = new Label("");
             lblDownloadStatus.Xalign = 0;
-
-            btnChangeDownloadDir = new Button("Change Download Directory");
-            btnChangeDownloadDir.Clicked += BtnChangeDownloadDir_Click;
-
-            tblButtonContainer = new Table(1, 1, false);
-            tblButtonContainer.Attach(btnChangeDownloadDir, 0, 1, 0, 1, AttachOptions.Shrink, AttachOptions.Shrink, 0, 0);
-
+            
             btnDownload = new Button("Download");
-            btnDownload.Clicked += BtnDownload_Click;
+            btnDownload.Clicked += OnDownloadClicked;
             HBox downloadButtonContainer = new HBox();
             downloadButtonContainer.PackStart(btnDownload, false, true, 0);
 
@@ -239,7 +212,6 @@ namespace UserInterface.Views
             stopButtonContainer.PackStart(btnStop, false, true, 0);
 
             btnSetup = new Button("Credentials");
-            btnSetup.Clicked += BtnSetup_Click;
             HBox setupButtonContainer = new HBox();
             setupButtonContainer.PackStart(btnSetup, false, true, 0);
 
@@ -255,12 +227,10 @@ namespace UserInterface.Views
             controlsContainer.PackStart(stopButtonContainer, false, false, 0);
             controlsContainer.PackStart(deleteButtonContainer, false, false, 0);
             controlsContainer.PackStart(setupButtonContainer, false, false, 0);
-            controlsContainer.PackEnd(tblButtonContainer, false, false, 0);
 
             hboxPrimary = new HBox();
             hboxPrimary.PackStart(treeContainer, true, true, 0);
             hboxPrimary.PackStart(controlsContainer, false, true, 0);
-
 
             vboxPrimary = new VBox();
             vboxPrimary.PackStart(hboxPrimary);
@@ -275,14 +245,27 @@ namespace UserInterface.Views
             HideLoadingProgressBar();
         }
 
-        public Interfaces.ICloudJobPresenter Presenter { get; set; }
+        /// <summary>Invoked when the user wants to stop the execution of a job.</summary>
+        public event AsyncEventHandler StopJob;
+
+        /// <summary>Invoked when the user wants to delete a job.</summary>
+        public event AsyncEventHandler DeleteJob;
+
+        /// <summary>Invoked when the user wants to set credentials.</summary>
+        public event AsyncEventHandler SetCredentials;
+
+        /// <summary>Invoked when the user wants to download a job's results.</summary>
+        public event EventHandler DownloadJob;
 
         /// <summary>
         /// Gets or sets the value of the job download status.
         /// </summary>
         public string DownloadStatus
         {
-            get { return lblDownloadStatus.Text; }
+            get
+            {
+                return lblDownloadStatus.Text;
+            }
             set
             {
                 Invoke(delegate
@@ -297,7 +280,10 @@ namespace UserInterface.Views
         /// </summary>
         public double JobLoadProgress
         {
-            get { return loadingProgress.Adjustment.Value; }
+            get
+            {
+                return loadingProgress.Adjustment.Value;
+            }
             set
             {
                 // If the job load progress bar starts causing issues (e.g. not (dis)appearing correctly), 
@@ -314,11 +300,14 @@ namespace UserInterface.Views
         /// </summary>
         public double DownloadProgress
         {
-            get { return downloadProgress.Adjustment.Value; }
+            get
+            {
+                return downloadProgress.Adjustment.Value;
+            }
             set
             {
                 // Set progresss bar to whichever is smaller - the value being passed in, or the maximum value the progress bar can take.
-                Invoke(delegate { downloadProgress.Adjustment.Value = Math.Min(Math.Round(value, 2), downloadProgress.Adjustment.Upper); });
+                Invoke(delegate { downloadProgress.Adjustment.Value = Math.Min(value, downloadProgress.Adjustment.Upper); });
             }
         }
 
@@ -334,7 +323,7 @@ namespace UserInterface.Views
         /// <summary>
         /// Displays a warning to the user, and asks if they want to continue.
         /// </summary>
-        /// <param name="msg"></param>
+        /// <param name="msg">Message to be displayed.</param>
         /// <returns>True if the user wants to continue, false otherwise.</returns>
         public bool AskQuestion(string msg)
         {
@@ -394,13 +383,30 @@ namespace UserInterface.Views
                 {
                     string startTimeString = job.StartTime == null ? DateTime.UtcNow.ToLocalTime().ToString() : ((DateTime)job.StartTime).ToLocalTime().ToString();
                     string endTimeString = job.EndTime == null ? "" : ((DateTime)job.EndTime).ToLocalTime().ToString();
-                    string dispName = myJobsOnly ? job.DisplayName : job.DisplayName + " (" + job.Owner + ")";
+                    string dispName = myJobsOnly ? job.Name : job.Name + " (" + job.Owner + ")";
                     string progressString = job.Progress < 0 ? "Work in progress" : Math.Round(job.Progress, 2).ToString() + "%";
                     string timeStr = job.CpuTime == TimeSpan.Zero ? "" : job.CpuTime.ToString(TimespanFormat);
-                    string durationStr = job.Duration() == TimeSpan.Zero ? "" : job.Duration().ToString(TimespanFormat);
-                    store.AppendValues(dispName, job.Id, job.State, job.NumSims.ToString(), progressString, startTimeString, endTimeString, durationStr, timeStr);
+                    string durationStr = job.Duration == TimeSpan.Zero ? "" : job.Duration.ToString(TimespanFormat);
+                    store.AppendValues(dispName, job.ID, job.State, job.NumSims.ToString(), progressString, startTimeString, endTimeString, durationStr, timeStr, job.Owner);
                 }
             });
+        }
+
+        /// <summary>
+        /// Gets the IDs of all currently selected jobs.
+        /// </summary>
+        /// <returns></returns>
+        public List<string> GetSelectedJobIds()
+        {
+            TreePath[] selectedRows = tree.Selection.GetSelectedRows();
+            List<string> jobIds = new List<string>();
+            TreeIter iter;
+            for (int i = 0; i < selectedRows.Count(); i++)
+            {
+                tree.Model.GetIter(out iter, selectedRows[i]);
+                jobIds.Add((string)tree.Model.GetValue(iter, 1));
+            }
+            return jobIds;
         }
 
         /// <summary>
@@ -409,8 +415,7 @@ namespace UserInterface.Views
         private void RemoveEventHandlers()
         {
             chkFilterOwner.Toggled -= ApplyFilter;
-            btnChangeDownloadDir.Clicked -= BtnChangeDownloadDir_Click;
-            btnDownload.Clicked -= BtnDownload_Click;
+            btnDownload.Clicked -= OnDownloadClicked;
             btnDelete.Clicked -= BtnDelete_Click;
             btnSetup.Clicked -= BtnSetup_Click;
             btnStop.Clicked -= BtnStop_Click;
@@ -427,29 +432,17 @@ namespace UserInterface.Views
         private int SortData(TreeModel model, TreeIter a, TreeIter b, int i)
         {
             if (i == (int)Columns.Name || i == (int)Columns.ID || i == (int)Columns.State)
-            {
                 return SortStrings(model, a, b, i);
-            }
             else if (i == (int)Columns.StartTime || i == (int)Columns.EndTime)
-            {
                 return SortDateStrings(model, a, b, i);
-            }
             else if (i == (int)Columns.NumSims)
-            {
                 return SortInts(model, a, b, i);
-            }
             else if (i == (int)Columns.Progress)
-            {
                 return SortProgress(model, a, b);
-            }
             else if (i == (int)Columns.CpuTime || i == (int)Columns.Duration)
-            {
                 return SortCpuTime(model, a, b);
-            }
             else
-            {
                 return SortData(model, a, b, Math.Abs(i % columnTitles.Length));
-            }
         }
 
         /// <summary>
@@ -516,7 +509,64 @@ namespace UserInterface.Views
             if (!(n == (int)Columns.StartTime || n == (int)Columns.EndTime)) return -1;
             string str1 = (string)model.GetValue(a, n);
             string str2 = (string)model.GetValue(b, n);
-            return Presenter.CompareDateTimeStrings(str1, str2);
+            return CompareDateTimeStrings(str1, str2);
+        }
+
+        /// <summary>
+        /// Parses and compares two DateTime objects stored as strings.
+        /// </summary>
+        /// <param name="str1">First DateTime.</param>
+        /// <param name="str2">Second DateTime.</param>
+        /// <returns></returns>
+        private int CompareDateTimeStrings(string str1, string str2)
+        {
+            // if either of these strings is empty, the job is still running
+            if (string.IsNullOrEmpty(str1))
+            {
+                if (string.IsNullOrEmpty(str2)) // neither job has finished
+                    return 0;
+                else // first job is still running, second is finished
+                    return 1;
+            }
+            else if (string.IsNullOrEmpty(str2)) // first job is finished, second job still running
+                return -1;
+
+            // Otherwise, both jobs are still running.
+            DateTime t1 = GetDateTimeFromString(str1);
+            DateTime t2 = GetDateTimeFromString(str2);
+
+            return DateTime.Compare(t1, t2);
+        }
+
+        /// <summary>
+        /// Generates a DateTime object from a string.
+        /// </summary>
+        /// <param name="st">Date time string. MUST be in the format dd/mm/yyyy hh:mm:ss (A|P)M</param>
+        /// <returns>A DateTime object representing this string.</returns>
+        private DateTime GetDateTimeFromString(string st)
+        {
+            try
+            {
+                string[] separated = st.Split(' ');
+                string[] date = separated[0].Split('/');
+                string[] time = separated[1].Split(':');
+                int year, month, day, hour, minute, second;
+                day = Int32.Parse(date[0]);
+                month = Int32.Parse(date[1]);
+                year = Int32.Parse(date[2]);
+
+                hour = Int32.Parse(time[0]);
+                if (separated[separated.Length - 1].ToLower() == "pm" && hour < 12) hour += 12;
+                minute = Int32.Parse(time[1]);
+                second = Int32.Parse(time[2]);
+
+                return new DateTime(year, month, day, hour, minute, second);
+            }
+            catch (Exception err)
+            {
+                ShowError(err);
+            }
+            return new DateTime();
         }
 
         /// <summary>
@@ -554,10 +604,24 @@ namespace UserInterface.Views
             for (int i = 0; i < store.IterNChildren(); i++)
             {
                 string id = (string)store.GetValue(iter, 1);
-                string name = Presenter.GetFormattedJobName(id, !myJobsOnly);
+                string name = GetFormattedJobName(iter, !myJobsOnly);
                 store.SetValue(iter, 0, name);
                 store.IterNext(ref iter);
             }
+        }
+
+        /// <summary>
+        /// Gets the formatted display name of a job.
+        /// </summary>
+        /// <param name="id">ID of the job.</param>
+        /// <param name="withOwner">If true, the return value will include the job owner's name in brackets.</param>
+        /// <returns></returns>
+        public string GetFormattedJobName(TreeIter iter, bool withOwner)
+        {
+            string name = (string)store.GetValue(iter, (int)Columns.Name);
+            string owner = (string)store.GetValue(iter, (int)Columns.Owner);
+
+            return $"{name} ({owner})";
         }
 
         /// <summary>
@@ -568,123 +632,12 @@ namespace UserInterface.Views
         /// <returns>True if the display my jobs only checkbox is inactive, or if the job's owner is the same as the user's username. False otherwise.</returns>
         private bool FilterOwnerFunc(TreeModel model, TreeIter iter)
         {
-            object rawId = model.GetValue(iter, 1);
-            if (rawId is string)
-            {
-                return !myJobsOnly || Presenter.UserOwnsJob((string)rawId);
-            }
-            return true;
+            string id = model.GetValue(iter, 1) as string;
+            string owner = model.GetValue(iter, columnTitles.Length - 1) as string;
+            string username = Environment.UserName;
+            return !myJobsOnly || owner == username;
         }
-
-        /// <summary>
-        /// Tests if a string starts with a vowel.
-        /// </summary>
-        /// <param name="st"></param>
-        /// <returns>True if st starts with a vowel, false otherwise.</returns>
-        private bool StartsWithVowel(string st)
-        {
-            return "aeiou".Contains(st[0]);
-        }
-
-        /// <summary>
-        /// Gets the IDs of all currently selected jobs.
-        /// </summary>
-        /// <returns></returns>
-        private List<string> GetSelectedJobIds()
-        {
-            TreePath[] selectedRows = tree.Selection.GetSelectedRows();
-            List<string> jobIds = new List<string>();
-            TreeIter iter;
-            for (int i = 0; i < selectedRows.Count(); i++)
-            {                
-                tree.Model.GetIter(out iter, selectedRows[i]);
-                jobIds.Add((string)tree.Model.GetValue(iter, 1));
-            }
-            return jobIds;
-        }
-
-        /// <summary>
-        /// Event handler for the stop job button.
-        /// Asks the user for confirmation and halts the execution of any 
-        /// selected jobs which have not already finished.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void BtnStop_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                Presenter.StopJobs(GetSelectedJobIds());
-            }
-            catch (Exception err)
-            {
-                ShowError(err);
-            }
-        }
-
-        /// <summary>
-        /// Event handler for the click event on the delete job button.
-        /// Asks user for confirmation, then deletes each job the user has selected.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void BtnDelete_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                Presenter.DeleteJobs(GetSelectedJobIds());
-            }
-            catch (Exception err)
-            {
-                ShowError(err);
-            }
-        }
-
-        /// <summary>
-        /// Opens a window allowing the user to edit cloud account credentials.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void BtnSetup_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                var setup = new AzureCredentialsSetup();
-                setup.Finished += delegate { Presenter.GetCredentials(); }; // this ensures that the changes actually have an effect
-            }
-            catch (Exception err)
-            {
-                ShowError(err);
-            }
-        }
-
-        /// <summary>
-        /// Event handler for the click event on the download job button. 
-        /// Asks the user for confirmation, then downloads the results for each
-        /// job the user has selected.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void BtnDownload_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                List<string> jobIds = GetSelectedJobIds();
-                // Normally (when stopping or deleting) the presenter would check to make sure there is at least 1 job selected. 
-                // In this case though, we check here to prevent the download pop-up from appearing if nothing is selected.
-                if (jobIds.Count < 1)
-                {
-                    Presenter.ShowMessage("Unable to download jobs: no jobs are selected", Models.Core.Simulation.MessageType.Information);
-                    return;
-                }
-                DownloadWindow dl = new DownloadWindow(Presenter, jobIds);
-            }
-            catch (Exception err)
-            {
-                ShowError(err);
-            }
-        }
-
+        
         /// <summary>
         /// Gets the ID of a specific job.
         /// </summary>
@@ -698,53 +651,6 @@ namespace UserInterface.Views
         }
 
         /// <summary>
-        /// Asks the user to select a directory from via a GUI, then sets this to be the 
-        /// default download directory (stored in ApsimNG.Properties.Settings.Default).        
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void BtnChangeDownloadDir_Click(object sender, EventArgs e)
-        {
-            Presenter.SetDownloadDirectory(GetDirectory());
-        }
-
-        /// <summary>Opens a file chooser dialog for the user to choose a directory.</summary>	
-        /// <return>
-        /// The path of the chosen directory, or an empty string if the user pressed cancel or 
-        /// selected a nonexistent directory.
-        /// </return>
-        private string GetDirectory()
-        {
-            string path = "";
-            Application.Invoke(delegate
-            {
-                FileChooserDialog fc = new FileChooserDialog(
-                                                        "Choose the file to open",
-                                                        null,
-                                                        FileChooserAction.SelectFolder,
-                                                        "Cancel", ResponseType.Cancel,
-                                                        "Select Folder", ResponseType.Accept);
-                try
-                {
-                    if (fc.Run() == (int)ResponseType.Accept)
-                    {
-                        path = fc.Filename;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    (Owner as MainView).ShowMessage(ex.ToString(), Models.Core.Simulation.ErrorLevel.Error);
-                }
-                finally
-                {
-                    fc.Destroy();
-                }
-            });
-
-            return path;
-        }
-
-        /// <summary>
         /// Waits until all events in the main event queue are processed and then runs an action on the main UI thread.
         /// </summary>
         /// <param name="action"></param>
@@ -752,6 +658,79 @@ namespace UserInterface.Views
         {
             while (GLib.MainContext.Iteration()) ;
             Application.Invoke(delegate { action(); });
+        }
+
+        /// <summary>
+        /// Event handler for the stop job button.
+        /// Asks the user for confirmation and halts the execution of any 
+        /// selected jobs which have not already finished.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void BtnStop_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                await StopJob?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception err)
+            {
+                ShowError(err);
+            }
+        }
+
+        /// <summary>
+        /// Event handler for the click event on the delete job button.
+        /// Asks user for confirmation, then deletes each job the user has selected.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void BtnDelete_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                await DeleteJob?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception err)
+            {
+                ShowError(err);
+            }
+        }
+
+        /// <summary>
+        /// Opens a window allowing the user to edit cloud account credentials.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private async void BtnSetup_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                await SetCredentials?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception err)
+            {
+                ShowError(err);
+            }
+        }
+
+        /// <summary>
+        /// Event handler for the click event on the download job button. 
+        /// Asks the user for confirmation, then downloads the results for each
+        /// job the user has selected.
+        /// </summary>
+        /// <param name="sender">Sender object.</param>
+        /// <param name="args">Event arguments.</param>
+        private void OnDownloadClicked(object sender, EventArgs args)
+        {
+            try
+            {
+                DownloadJob?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception err)
+            {
+                ShowError(err);
+            }
         }
     }
 }

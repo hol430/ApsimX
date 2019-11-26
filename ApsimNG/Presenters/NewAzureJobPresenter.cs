@@ -15,6 +15,7 @@ using System.Reflection;
 using Models;
 using ApsimNG.Cloud.Azure;
 using ApsimNG.Interfaces;
+using System.Threading;
 
 namespace UserInterface.Presenters
 {
@@ -43,6 +44,11 @@ namespace UserInterface.Presenters
         private const string settingsFileName = "settings.txt";
 
         /// <summary>
+        /// Cancellation token for job submission.
+        /// </summary>
+        private CancellationTokenSource ct;
+
+        /// <summary>
         /// Default constructor.
         /// </summary>
         public NewAzureJobPresenter()
@@ -59,15 +65,20 @@ namespace UserInterface.Presenters
         {
             this.presenter = parentPresenter;
             this.view = (INewCloudJobView)view;
-
             this.model = (IModel)model;
-            this.view.JobName = this.model.Name;
 
+            ct = new CancellationTokenSource();
+
+            // Pre-populate some of the view's fields.
+            this.view.JobName = this.model.Name;
+            this.view.EmailAddress = AzureSettings.Default.EmailRecipient;
+
+            // Attach event handlers.
             this.view.OKClicked += OnOKClicked;
             this.view.CancelClicked += OnCancelClicked;
 
             submissionWorker = new BackgroundWorker();
-            submissionWorker.DoWork += SubmitJob_DoWork;
+            submissionWorker.DoWork += OnSubmitJob;
             submissionWorker.WorkerSupportsCancellation = true;
         }
 
@@ -86,7 +97,7 @@ namespace UserInterface.Presenters
         /// <param name="jp">Job Parameters.</param>
         private void SubmitJob(JobParameters jp)
         {
-            if (string.IsNullOrWhiteSpace(jp.JobDisplayName))
+            if (string.IsNullOrWhiteSpace(jp.Name))
                 throw new Exception("Display name not provided");
 
             if (string.IsNullOrWhiteSpace(jp.ApsimPath))
@@ -101,12 +112,6 @@ namespace UserInterface.Presenters
             if (jp.SaveModelFiles && string.IsNullOrWhiteSpace(jp.ModelPath))
                 throw new Exception("Model file output directory not provided.");
 
-            if (string.IsNullOrWhiteSpace(jp.OutputDir))
-                throw new Exception("Output directory not provided.");
-            
-            // save user's choices to ApsimNG.Properties.Settings
-            AzureSettings.Default["OutputDir"] = jp.OutputDir;
-            AzureSettings.Default.Save();
             submissionWorker.RunWorkerAsync(jp);
         }
 
@@ -119,7 +124,10 @@ namespace UserInterface.Presenters
         private void OnCancelClicked(object sender, EventArgs args)
         {
             if (submissionWorker != null)
+            {
+                ct.Cancel();
                 submissionWorker.CancelAsync();
+            }
         }
 
         /// <summary>
@@ -131,31 +139,30 @@ namespace UserInterface.Presenters
         {
             JobParameters parameters = new JobParameters
             {
-                JobId = Guid.NewGuid(),
-                JobDisplayName = view.JobName,
+                ID = Guid.NewGuid(),
+                Name = view.JobName,
                 PoolVMCount = view.NumCores / 16,
                 SaveModelFiles = view.SaveModelFiles,
                 ModelPath = view.ModelFilePath,
                 ApsimFromDir = view.ApsimFromDirectory,
-                OutputDir = view.OutputPath,
-                AutoDownload = view.AutoDownload,
-                ApsimVersion = null, // TBI
+                //ApsimVersion = null, // TBI
                 ApsimPath = view.ApsimPath,
                 Model = model,
                 SendEmail = view.SendEmail,
                 EmailAddress = view.EmailAddress,
             };
 
+            // Save some settings for next time.
+            AzureSettings.Default.EmailRecipient = view.EmailAddress;
+            AzureSettings.Default.Save();
+
             submissionWorker.RunWorkerAsync(parameters);
         }
 
-        /// <summary>
-        /// Handles the bulk of the work for submitting the job to the cloud. 
-        /// Zips up ApsimX (if necessary), uploads tools and ApsimX, 
-        /// </summary>
+        /// <summary>Creates and submits a job to be run on the cloud.</summary>
         /// <param name="sender">Sender object.</param>
         /// <param name="args">Event arguments containing the job parameters.</param>
-        private void SubmitJob_DoWork(object sender, DoWorkEventArgs args)
+        private async void OnSubmitJob(object sender, DoWorkEventArgs args)
         {
             try
             {
@@ -163,14 +170,7 @@ namespace UserInterface.Presenters
 
                 // TBI : a method of selecting a cloud platform.
                 AzureInterface azure = new AzureInterface();
-                azure.SubmitJob(job, status => view.Status = status);
-
-                if (job.AutoDownload)
-                {
-                    // Start a results downloader in another thread.
-                    AzureResultsDownloader dl = new AzureResultsDownloader(job.JobId, job.JobDisplayName, job.OutputDir, null, true, false, true, true, true);
-                    dl.DownloadResults(true);
-                }
+                await azure.SubmitJobAsync(job, ct.Token, status => view.Status = status);
             }
             catch (Exception err)
             {

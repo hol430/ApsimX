@@ -26,18 +26,6 @@ namespace ApsimNG.Cloud.Azure {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string OutputDir {
-            get {
-                return ((string)(this["OutputDir"]));
-            }
-            set {
-                this["OutputDir"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("")]
         public string AzureLicenceFilePath {
             get {
                 return ((string)(this["AzureLicenceFilePath"]));
@@ -176,6 +164,30 @@ namespace ApsimNG.Cloud.Azure {
             }
             set {
                 this["EmailPW"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string OutputDir {
+            get {
+                return ((string)(this["OutputDir"]));
+            }
+            set {
+                this["OutputDir"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string EmailRecipient {
+            get {
+                return ((string)(this["EmailRecipient"]));
+            }
+            set {
+                this["EmailRecipient"] = value;
             }
         }
     }
