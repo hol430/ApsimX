@@ -249,7 +249,7 @@ namespace ApsimNG.Cloud
                         zip.ExtractToDirectory(resultsDir);
 
                     // Merge results into a single .db file.
-                    DBMerger.MergeFiles(Path.Combine(resultsDir, "*.db"), "combined.db");
+                    DBMerger.MergeFiles(Path.Combine(resultsDir, "*.db"), false, "combined.db");
 
                     // TBI: merge into csv file.
                     if (options.ExportToCsv)
