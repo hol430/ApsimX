@@ -174,6 +174,7 @@ namespace UserInterface.Presenters
             }
             catch (Exception err)
             {
+                view.Status = "Cancelled due to error";
                 presenter.MainPresenter.ShowError(err);
             }
         }

@@ -11,11 +11,6 @@ namespace UserInterface.Views
     public class CloudJobDisplayView : ViewBase
     {
         /// <summary>
-        /// Whether or not only the jobs submitted by the user should be displayed.
-        /// </summary>
-        private bool myJobsOnly;
-
-        /// <summary>
         /// TreeView to display the data.
         /// </summary>
         private Gtk.TreeView tree;
@@ -24,12 +19,7 @@ namespace UserInterface.Views
         /// ListStore to hold the raw data being displayed.
         /// </summary>
         private ListStore store;
-
-        /// <summary>
-        /// Filters results based on whether or not they were submitted by the user.
-        /// </summary>
-        private TreeModelFilter filterOwner;
-
+        
         /// <summary>
         /// Sorts the results when the user clicks the column headings.
         /// </summary>
@@ -106,8 +96,8 @@ namespace UserInterface.Views
         /// Indices of the column headers. If columns are added or removed, change this.
         /// Name, ID, State, NumSims, Progress, StartTime, EndTime
         /// </summary>
-        private readonly string[] columnTitles = { "Name/Description", "Job ID", "State", "#Sims", "Progress", "Start Time", "End Time", "Duration", "CPU Time", "Owner" };
-        private enum Columns { Name, ID, State, NumSims, Progress, StartTime, EndTime, Duration, CpuTime, Owner };
+        private readonly string[] columnTitles = { "Name/Description", "Job ID", "State", "#Sims", "Progress", "Start Time", "End Time", "Duration", "CPU Time" };
+        private enum Columns { Name, ID, State, NumSims, Progress, StartTime, EndTime, Duration, CpuTime };
 
         /// <summary>
         /// Defines the format that the two TimeSpan fields (duration and CPU time) are to be displayed in.
@@ -124,7 +114,7 @@ namespace UserInterface.Views
             tree = new Gtk.TreeView() { CanFocus = true, RubberBanding = true };
             tree.Selection.Mode = SelectionMode.Multiple;
 
-            for (int i = 0; i < columnTitles.Length - 1; i++)
+            for (int i = 0; i < columnTitles.Length; i++)
             {
                 types[i] = typeof(string);
                 TreeViewColumn col = new TreeViewColumn
@@ -141,28 +131,20 @@ namespace UserInterface.Views
             }
             store = new ListStore(types);
 
-            // this filter holds the model (data) and is used to filter jobs based on whether 
-            // they were submitted by the user
-            filterOwner = new TreeModelFilter(store, null) { VisibleFunc = FilterOwnerFunc };
-            filterOwner.Refilter();
-
-            // the filter then goes into this TreeModelSort, which is used to sort results when
-            // the user clicks on a column header
-            sort = new TreeModelSort(filterOwner)
+            // Let the view handle sorting of data.
+            sort = new TreeModelSort(store)
             {
-                DefaultSortFunc = (model, a, b) => SortData(model, a, b, Array.IndexOf(columnTitles, "Start Time"))
+                DefaultSortFunc = (model, a, b) => SortData(model, a, b, (int)Columns.StartTime)
             };
+
             for (int i = 0; i < columnTitles.Length; i++)
             {
                 int count = i;
                 sort.SetSortFunc(i, (model, a, b) => SortData(model, a, b, count));
             }
-
-            // the tree holds the sorted, filtered data
             tree.Model = sort;
 
-            // the tree goes into this ScrolledWindow, allowing users to scroll down
-            // to view more jobs
+            // Make the treeview scrollable.
             ScrolledWindow scroll = new ScrolledWindow();
             scroll.Add(tree);
 
@@ -170,14 +152,13 @@ namespace UserInterface.Views
             scroll.HscrollbarPolicy = PolicyType.Automatic;
             scroll.VscrollbarPolicy = PolicyType.Automatic;
 
-            // the scrolled window goes into this frame to distinguish the job view 
-            // from the controls beside it
+            // The scrolled window goes into this frame to distinguish the job view 
+            // from the controls beside it.
             Frame treeContainer = new Frame("Cloud Jobs");
             treeContainer.Add(scroll);
 
+            // Display only jobs submitted by current user.
             chkFilterOwner = new CheckButton("Display my jobs only");
-            // display the user's jobs only by default
-            myJobsOnly = true;
             chkFilterOwner.Active = true;
             chkFilterOwner.Toggled += ApplyFilter;
             chkFilterOwner.Yalign = 0;
@@ -257,6 +238,9 @@ namespace UserInterface.Views
         /// <summary>Invoked when the user wants to download a job's results.</summary>
         public event EventHandler DownloadJob;
 
+        /// <summary>Invoked when the user toggles the 'display my jobs only' checkbox.</summary>
+        public event EventHandler ToggleMyJobsOnly;
+
         /// <summary>
         /// Gets or sets the value of the job download status.
         /// </summary>
@@ -311,6 +295,9 @@ namespace UserInterface.Views
             }
         }
 
+        /// <summary>Display only those jobs submitted by current user?</summary>
+        public bool MyJobsOnly { get { return chkFilterOwner.Active; } }
+
         /// <summary>
         /// Unbinds the event handlers.
         /// </summary>
@@ -318,16 +305,6 @@ namespace UserInterface.Views
         {
             RemoveEventHandlers();
             MainWidget.Destroy();
-        }
-
-        /// <summary>
-        /// Displays a warning to the user, and asks if they want to continue.
-        /// </summary>
-        /// <param name="msg">Message to be displayed.</param>
-        /// <returns>True if the user wants to continue, false otherwise.</returns>
-        public bool AskQuestion(string msg)
-        {
-            return (Owner as MainView).AskQuestion(msg) == QuestionResponseEnum.Yes;
         }
 
         /// <summary>
@@ -363,14 +340,10 @@ namespace UserInterface.Views
         }
 
         /// <summary>
-        /// Empties the TreeView and refills it with the contents of jobList.
-        /// Current sorting/filtering remains unchanged.
+        /// Populates the job list. Current sorting/filtering remains unchanged.
         /// </summary>
-        public void UpdateJobTable(List<JobDetails> jobs)
+        public void Populate(List<JobDetails> jobs)
         {
-            // This entire function is run on the Gtk main loop thread.
-            // This may cause problems if another thread wants to modify a view at the same time,
-            // but is probably better than the alternative, which is concurrent modification of live Gtk elements.
             Application.Invoke(delegate
             {
                 // remember which column is being sorted. If the results are not sorted at all, order by start time ascending
@@ -381,13 +354,13 @@ namespace UserInterface.Views
                 store.Clear();
                 foreach (JobDetails job in jobs)
                 {
+                    string name = MyJobsOnly ? job.Name : $"{job.Name} ({job.Owner})";
                     string startTimeString = job.StartTime == null ? DateTime.UtcNow.ToLocalTime().ToString() : ((DateTime)job.StartTime).ToLocalTime().ToString();
                     string endTimeString = job.EndTime == null ? "" : ((DateTime)job.EndTime).ToLocalTime().ToString();
-                    string dispName = myJobsOnly ? job.Name : job.Name + " (" + job.Owner + ")";
                     string progressString = job.Progress < 0 ? "Work in progress" : Math.Round(job.Progress, 2).ToString() + "%";
                     string timeStr = job.CpuTime == TimeSpan.Zero ? "" : job.CpuTime.ToString(TimespanFormat);
                     string durationStr = job.Duration == TimeSpan.Zero ? "" : job.Duration.ToString(TimespanFormat);
-                    store.AppendValues(dispName, job.ID, job.State, job.NumSims.ToString(), progressString, startTimeString, endTimeString, durationStr, timeStr, job.Owner);
+                    store.AppendValues(job.Name, job.ID, job.State, job.NumSims.ToString(), progressString, startTimeString, endTimeString, durationStr, timeStr);
                 }
             });
         }
@@ -591,65 +564,21 @@ namespace UserInterface.Views
             return TimeSpan.Compare(t1, t2);
         }
 
-        /// <summary>
-        /// Event Handler for toggling the "view my jobs only" checkbutton. Re-applies the job owner filter and modifies the jobs' display names.
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        /// <summary>Event Handler for toggling the "view my jobs only" checkbutton.</summary>
+        /// <param name="sender">Sender object.</param>
+        /// <param name="e">Event arguments.</param>
         private void ApplyFilter(object sender, EventArgs e)
-        {            
-            myJobsOnly = !myJobsOnly;
-            TreeIter iter;
-            store.GetIterFirst(out iter);
-            for (int i = 0; i < store.IterNChildren(); i++)
+        {
+            try
             {
-                string id = (string)store.GetValue(iter, 1);
-                string name = GetFormattedJobName(iter, !myJobsOnly);
-                store.SetValue(iter, 0, name);
-                store.IterNext(ref iter);
+                ToggleMyJobsOnly?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception err)
+            {
+                ShowError(err);
             }
         }
-
-        /// <summary>
-        /// Gets the formatted display name of a job.
-        /// </summary>
-        /// <param name="id">ID of the job.</param>
-        /// <param name="withOwner">If true, the return value will include the job owner's name in brackets.</param>
-        /// <returns></returns>
-        public string GetFormattedJobName(TreeIter iter, bool withOwner)
-        {
-            string name = (string)store.GetValue(iter, (int)Columns.Name);
-            string owner = (string)store.GetValue(iter, (int)Columns.Owner);
-
-            return $"{name} ({owner})";
-        }
-
-        /// <summary>
-        /// Tests whether a job should be displayed or not.
-        /// </summary>
-        /// <param name="model"></param>
-        /// <param name="iter"></param>
-        /// <returns>True if the display my jobs only checkbox is inactive, or if the job's owner is the same as the user's username. False otherwise.</returns>
-        private bool FilterOwnerFunc(TreeModel model, TreeIter iter)
-        {
-            string id = model.GetValue(iter, 1) as string;
-            string owner = model.GetValue(iter, columnTitles.Length - 1) as string;
-            string username = Environment.UserName;
-            return !myJobsOnly || owner == username;
-        }
         
-        /// <summary>
-        /// Gets the ID of a specific job.
-        /// </summary>
-        /// <param name="row">Path in the TreeView to the row containing the job.</param>
-        /// <returns></returns>
-        private string GetId(TreePath row)
-        {
-            TreeIter iter;
-            tree.Model.GetIter(out iter, row);
-            return (string)tree.Model.GetValue(iter, (int)Columns.ID);
-        }
-
         /// <summary>
         /// Waits until all events in the main event queue are processed and then runs an action on the main UI thread.
         /// </summary>

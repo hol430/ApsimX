@@ -243,8 +243,9 @@ namespace ApsimNG.Cloud
         {
             try
             {
-                keepRawOutputs.Active = false;
-                keepRawOutputs.Sensitive = false;
+                keepRawOutputs.Sensitive = !keepRawOutputs.Sensitive;
+                if (!keepRawOutputs.Sensitive)
+                    keepRawOutputs.Active = false;
             }
             catch (Exception err)
             {
@@ -261,8 +262,9 @@ namespace ApsimNG.Cloud
         {
             try
             {
-                generateCsv.Active = false;
-                generateCsv.Sensitive = false;
+                generateCsv.Sensitive = !generateCsv.Sensitive;
+                if (!generateCsv.Sensitive)
+                    generateCsv.Active = false;
             }
             catch (Exception err)
             {
@@ -279,8 +281,9 @@ namespace ApsimNG.Cloud
         {
             try
             {
-                unzipResults.Active = false;
-                unzipResults.Sensitive = false;
+                unzipResults.Sensitive = !unzipResults.Sensitive;
+                if (!unzipResults.Sensitive)
+                    unzipResults.Active = false;
             }
             catch (Exception err)
             {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using APSIM.Shared.Utilities;
+using System;
 
 namespace ApsimNG.Cloud
 {
@@ -44,5 +45,12 @@ namespace ApsimNG.Cloud
         
         /// <summary>Total CPU time of the job.</summary>
         public TimeSpan CpuTime { get; set; }
+
+        /// <summary>Check if two <see cref="Jobdetails"/> instances are equal. Checks ID, state and progress.</summary>
+        /// <param name="job">A <see cref="JobDetails"/> instance.</param>
+        public bool Equals(JobDetails job)
+        {
+            return ID == job.ID && State == job.State && MathUtilities.FloatsAreEqual(Progress, job.Progress);
+        }
     }
 }

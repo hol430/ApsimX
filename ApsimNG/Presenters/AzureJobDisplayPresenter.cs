@@ -60,6 +60,7 @@ namespace UserInterface.Presenters
             this.view.StopJob += StopJobs;
             this.view.DownloadJob += OnDownloadClicked;
             this.view.SetCredentials += SetCredentials;
+            this.view.ToggleMyJobsOnly += OnToggleMyJobsOnly;
 
             // Refresh job list every 10 seconds.
             refresh = new Timer(OnRefresh, null, 0, 10 * 1000);
@@ -84,7 +85,21 @@ namespace UserInterface.Presenters
         /// <param name="state">State variable passed in by timer. Unused.</param>
         private async void OnRefresh(object state)
         {
-            await RefreshAsync(cancelRefresh.Token);
+            try
+            {
+                await RefreshAsync(cancelRefresh.Token);
+            }
+            catch (Exception err)
+            {
+                Presenter.ShowError(err);
+            }
+        }
+
+        /// <summary>Start the timer responsible for refreshing the job list.</summary>
+        private void StartRefresh()
+        {
+            cancelRefresh = new CancellationTokenSource();
+            refresh.Change(0, 10 * 1000);
         }
 
         /// <summary>Refresh the list of jobs.</summary>
@@ -102,14 +117,14 @@ namespace UserInterface.Presenters
 
             // Only update the view if the new job list is different.
             if (newJobs.Count != jobList.Count)
-                view.UpdateJobTable(newJobs);
+                PopulateView(newJobs);
             else
             {
                 for (int i = 0; i < newJobs.Count; i++)
                 {
-                    if (i >= jobList.Count || !IsEqual(newJobs[i], jobList[i]))
+                    if (i >= jobList.Count || !newJobs[i].Equals(jobList[i]))
                     {
-                        view.UpdateJobTable(newJobs);
+                        PopulateView(newJobs);
                         break;
                     }
                 }
@@ -124,6 +139,18 @@ namespace UserInterface.Presenters
         private JobDetails GetJob(string id)
         {
             return jobList.FirstOrDefault(x => x.ID == id);
+        }
+
+        /// <summary>
+        /// Populate the view with data.
+        /// </summary>
+        private void PopulateView(List<JobDetails> jobs)
+        {
+            List<JobDetails> filtered = jobs;
+            if (view.MyJobsOnly)
+                filtered = filtered.Where(j => j.Owner.Equals(Environment.UserName, StringComparison.InvariantCultureIgnoreCase)).ToList();
+
+            view.Populate(filtered);
         }
 
         /// <summary>
@@ -244,7 +271,7 @@ namespace UserInterface.Presenters
             }
 
             // Refresh the tree view.
-            view.UpdateJobTable(jobList);
+            PopulateView(jobList);
 
             // Restart the fetch jobs worker.
             StartRefresh();
@@ -266,19 +293,12 @@ namespace UserInterface.Presenters
             view.HideLoadingProgressBar();
         }
 
-        /// <summary>Start the timer responsible for refreshing the job list.</summary>
-        private void StartRefresh()
+        /// <summary>Update the view after the user toggles the 'my jobs only' checkbutton.</summary>
+        /// <param name="sender">Sender object.</param>
+        /// <param name="e">Event arguments.</param>
+        private void OnToggleMyJobsOnly(object sender, EventArgs e)
         {
-            cancelRefresh = new CancellationTokenSource();
-            refresh.Change(0, 10 * 1000);
-        }
-
-        /// <summary>Tests if two jobs are equal (same ID, state and progress).</summary>
-        /// <param name="a">The first job.</param>
-        /// <param name="b">The second job.</param>
-        private bool IsEqual(JobDetails a, JobDetails b)
-        {
-            return (a.ID == b.ID && a.State == b.State && a.Progress == b.Progress);
+            PopulateView(jobList);
         }
     }
 }

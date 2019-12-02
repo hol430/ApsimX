@@ -66,9 +66,6 @@ namespace ApsimNG.Cloud
             // Create an azure storage container for this job.
             SetContainerMetaDataAsync("job-" + job.ID, "Owner", Environment.UserName.ToLower());
 
-            // Check Apsim version.
-            string apsimVersion = GetApsimVersion(job.ApsimPath);
-
             if (ct.IsCancellationRequested)
             {
                 UpdateStatus("Job submission cancelled");
@@ -91,6 +88,9 @@ namespace ApsimNG.Cloud
                 CompressApsimBinaries(job.ApsimPath, archive);
                 job.ApsimPath = archive;
             }
+
+            // Check Apsim version.
+            string apsimVersion = GetApsimVersion(job.ApsimPath);
 
             // Upload apsim binaries.
             UpdateStatus("Uploading apsim binaries");
@@ -282,10 +282,10 @@ namespace ApsimNG.Cloud
         /// <summary>Gets default pool settings. This isn't really configurable by the user. Maybe one day...</summary>
         private PoolInformation GetPoolInfo()
         {
-            string maxTasks = AzureSettings.Default["PoolMaxTasksPerVM"]?.ToString();
-            string vmCount = AzureSettings.Default["PoolVMCount"]?.ToString();
-            string vmSize = AzureSettings.Default["PoolVMSize"]?.ToString();
-            string poolName = AzureSettings.Default["PoolName"]?.ToString();
+            string maxTasks = AzureSettings.Default.PoolMaxTasksPerVM;
+            string vmCount = AzureSettings.Default.PoolVMCount;
+            string vmSize = AzureSettings.Default.PoolVMSize;
+            string poolName = AzureSettings.Default.PoolName;
 
             if (string.IsNullOrEmpty(poolName))
             {
@@ -296,9 +296,9 @@ namespace ApsimNG.Cloud
                         PoolLifetimeOption = PoolLifetimeOption.Job,
                         PoolSpecification = new PoolSpecification
                         {
-                            MaxTasksPerComputeNode = maxTasks == null ? (int?)null : int.Parse(maxTasks),
-                            TargetDedicatedComputeNodes = vmCount == null ? (int?)null : int.Parse(vmCount),
-                            VirtualMachineSize = vmSize,
+                            MaxTasksPerComputeNode = string.IsNullOrEmpty(maxTasks) ? (int?)null : int.Parse(maxTasks),
+                            TargetDedicatedComputeNodes = string.IsNullOrEmpty(vmCount) ? (int?)null : int.Parse(vmCount),
+                            VirtualMachineSize = string.IsNullOrEmpty(vmSize) ? "standard_d5_v2" : vmSize,
 
                             // This specifies the OS that our VM will be running.
                             // OS Family 5 means .NET 4.6 will be installed. For more info see:
@@ -424,7 +424,10 @@ namespace ApsimNG.Cloud
             foreach (string filePath in Directory.EnumerateFiles(tools))
                 await UploadFileAsync("tools", filePath);
 
-            Directory.Delete(tools, true);
+            if (!job.ApsimFromDir)
+                // If uploading apsim from a .zip archive, remember to
+                // delete the tools after extracting them.
+                Directory.Delete(tools, true);
         }
 
         /// <summary>Extract all tools files from a zip archive of the bin directory.</summary>
@@ -443,15 +446,29 @@ namespace ApsimNG.Cloud
         /// <param name="apsimPath">Path to .zip file containing Models.exe.</param>
         private string GetApsimVersion(string apsimPath)
         {
-            string models = Path.Combine(Path.GetTempPath(), "Models.exe");
+            string tmp = Path.Combine(Path.GetTempPath(), $"get-apsim-version-{Guid.NewGuid()}");
+            string models = Path.Combine(tmp, "Models.exe");
+            Directory.CreateDirectory(tmp);
+
+            string[] deps = new[] { "Models.exe", "APSIM.Shared.dll" };
             using (FileStream stream = new FileStream(apsimPath, FileMode.Open))
-            using (ZipArchive archive = new ZipArchive(stream))
-                archive.GetEntry("Models.exe").ExtractToFile(models, true);
+            {
+                using (ZipArchive archive = new ZipArchive(stream))
+                {
+                    foreach (string dep in deps)
+                    {
+                        string path = Path.Combine(tmp, dep);
+                        archive.GetEntry(dep).ExtractToFile(path, true);
+                    }
+                }
+            }
 
             ProcessUtilities.ProcessWithRedirectedOutput proc = new ProcessUtilities.ProcessWithRedirectedOutput();
             proc.Start(models, "/Version", Path.GetTempPath(), true);
             proc.WaitForExit();
 
+            Directory.Delete(tmp, true);
+            
             Match match = Regex.Match(proc.StdOut, @"((\d\.){3}\d)");
             return match.Groups[0].Value;
         }
