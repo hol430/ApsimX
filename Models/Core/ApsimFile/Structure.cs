@@ -26,6 +26,9 @@
             if (modelToAdd is Simulations s && s.Children.Count == 1)
                 modelToAdd = s.Children[0];
 
+            if (!Apsim.IsChildAllowable(parent, modelToAdd.GetType()))
+                throw new Exception($"Models of type {modelToAdd.GetType().Name} cannot be added to models of type {parent.GetType().Name}");
+
             modelToAdd.Parent = parent;
             Apsim.ParentAllChildren(modelToAdd);
             parent.Children.Add(modelToAdd as Model);
