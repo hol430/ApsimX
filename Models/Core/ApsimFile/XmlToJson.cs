@@ -514,7 +514,7 @@ namespace Models.Core.ApsimFile
 
             foreach (var type in types)
             {
-                if (type.Name == m)
+                if (string.Equals(type.Name, m, StringComparison.InvariantCultureIgnoreCase))
                 {
                     return type;
                 }
