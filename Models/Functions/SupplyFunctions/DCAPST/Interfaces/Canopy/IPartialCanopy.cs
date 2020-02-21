@@ -1,4 +1,6 @@
-﻿namespace DCAPST.Interfaces
+﻿using Models.Core;
+
+namespace DCAPST.Interfaces
 {
     /// <summary>
     /// An interface for a partial canopy
@@ -8,11 +10,13 @@
         /// <summary>
         /// A collection of predefined parameters used by the canopy
         /// </summary>
+        [Link]
         ICanopyParameters Canopy { get; }
 
         /// <summary>
         /// A collection of predefined parameters describing the assimilation pathway
         /// </summary>
+        [Link]
         IPathwayParameters Pathway { get; }
 
         /// <summary>

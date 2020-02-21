@@ -1,16 +1,18 @@
 ﻿using System;
 using DCAPST.Interfaces;
+using Models.Core;
 
 namespace DCAPST.Environment
 {
     /// <summary>
     /// Models the different forms of environmental radiation
     /// </summary>
-    public class SolarRadiationModel : ISolarRadiation
+    public class SolarRadiationModel : Model, ISolarRadiation
     {
         /// <summary>
         /// Models the solar geometry
         /// </summary>
+        [Link]
         private ISolarGeometry solar;
 
         /// <summary>
@@ -22,12 +24,6 @@ namespace DCAPST.Environment
         /// The radiation measured across a day
         /// </summary>
         public double Daily { get; set; }
-
-        /// <summary></summary>
-        public SolarRadiationModel(ISolarGeometry solar)
-        {
-            this.solar = solar;
-        }
 
         /// <summary>
         /// PAR energy fraction

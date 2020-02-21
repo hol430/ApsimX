@@ -1,28 +1,33 @@
 ﻿using System;
 using DCAPST.Interfaces;
+using Models.Core;
 
 namespace DCAPST.Canopy
 {
     /// <summary>
     /// Models a complete canopy
     /// </summary>
-    public class TotalCanopy : ITotalCanopy
+    public class TotalCanopy : Model, ITotalCanopy
     {
         /// <summary>
         /// The initial parameters of the canopy
         /// </summary>
-        public ICanopyParameters Canopy { get; set; }
+        [Link]
+        private ICanopyParameters Canopy;
 
+        [Link]
         private IPathwayParameters pathway;
 
         /// <summary>
         /// The part of the canopy in sunlight
         /// </summary>
+        [Link(ByName = true)]
         public IPartialCanopy Sunlit { get; private set; }
 
         /// <summary>
         /// The part of the canopy in shade
         /// </summary>
+        [Link(ByName = true)]
         public IPartialCanopy Shaded { get; private set; }
 
         /// <summary>
@@ -69,19 +74,6 @@ namespace DCAPST.Canopy
         /// The number of layers in the canopy
         /// </summary>
         public int Layers { get; set; } = 1;
-
-        /// <summary></summary>
-        public TotalCanopy(
-            ICanopyParameters canopy,
-            IPathwayParameters pathway,
-            IPartialCanopy sunlit,
-            IPartialCanopy shaded)
-        {
-            Canopy = canopy;
-            this.pathway = pathway;
-            Sunlit = sunlit;
-            Shaded = shaded;
-        }
 
         /// <summary>
         /// Establishes the initial conditions for the daily photosynthesis calculation

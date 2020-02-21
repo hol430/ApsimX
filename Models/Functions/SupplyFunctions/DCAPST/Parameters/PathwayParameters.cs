@@ -1,11 +1,12 @@
 using DCAPST.Interfaces;
+using Models.Core;
 
 namespace DCAPST
 {   
     /// <summary>
     /// Implements the pathwayparameters interface
     /// </summary>
-    public class PathwayParameters : IPathwayParameters
+    public class PathwayParameters : Model, IPathwayParameters
     {
         /// <inheritdoc/>
         public double IntercellularToAirCO2Ratio { get; set; }

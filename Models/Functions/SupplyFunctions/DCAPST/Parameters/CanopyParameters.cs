@@ -1,11 +1,12 @@
 ﻿using DCAPST.Interfaces;
+using Models.Core;
 
 namespace DCAPST
 {
     /// <summary>
     /// Implements the canopy parameters
     /// </summary>
-    public class CanopyParameters : ICanopyParameters
+    public class CanopyParameters : Model, ICanopyParameters
     {
         /// <inheritdoc/>
         public CanopyType Type { get; set; }

@@ -1,16 +1,18 @@
 using System;
 using DCAPST.Interfaces;
+using Models.Core;
 
 namespace DCAPST.Environment
 {
     /// <summary>
     /// Models the environmental temperature
     /// </summary>
-    public class TemperatureModel : ITemperature
+    public class TemperatureModel : Model, ITemperature
     {
         /// <summary>
         /// The solar geometry
         /// </summary>
+        [Link]
         private ISolarGeometry solar;
 
         /// <summary>
@@ -52,12 +54,6 @@ namespace DCAPST.Environment
         /// Air density in mols
         /// </summary>
         public double AirMolarDensity => ((AtmosphericPressure * 100000) / (287 * (AirTemperature + 273))) * (1000 / 28.966);
-
-        /// <summary></summary>
-        public TemperatureModel(ISolarGeometry solar)
-        {
-            this.solar = solar;
-        }
 
         /// <summary>
         /// Calculates the air temperature based on the current time

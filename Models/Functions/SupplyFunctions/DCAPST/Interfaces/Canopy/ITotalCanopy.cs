@@ -6,12 +6,7 @@ namespace DCAPST.Interfaces
     /// An interface describing a total canopy
     /// </summary>
     public interface ITotalCanopy
-    {
-        /// <summary>
-        /// A collection of predefined parameters used by the canopy
-        /// </summary>
-        ICanopyParameters Canopy { get; }
-
+    {       
         /// <summary>
         /// The section of canopy currently in sunlight
         /// </summary>

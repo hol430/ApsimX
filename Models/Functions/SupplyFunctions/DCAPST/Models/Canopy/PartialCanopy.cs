@@ -1,16 +1,19 @@
 ﻿using DCAPST.Interfaces;
+using Models.Core;
 
 namespace DCAPST.Canopy
 {
     /// <summary>
     /// Models a subsection of the canopy (used for distinguishing between sunlit and shaded)
     /// </summary>
-    public class PartialCanopy : IPartialCanopy
+    public class PartialCanopy : Model, IPartialCanopy
     {
         /// <inheritdoc/>
+        [Link]
         public ICanopyParameters Canopy { get; private set; }
 
         /// <inheritdoc/>
+        [Link]
         public IPathwayParameters Pathway { get; private set; }
 
         /// <inheritdoc/>
@@ -30,13 +33,6 @@ namespace DCAPST.Canopy
 
         /// <inheritdoc/>
         public double WaterUse { get; set; }
-
-        /// <summary></summary>
-        public PartialCanopy(ICanopyParameters canopy, IPathwayParameters pathway)
-        {
-            Canopy = canopy;
-            Pathway = pathway;
-        }
 
         /// <summary>
         /// Calculates the CO2 assimilated by the partial canopy during photosynthesis,

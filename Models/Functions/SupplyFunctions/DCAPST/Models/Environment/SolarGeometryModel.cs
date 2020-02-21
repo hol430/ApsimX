@@ -1,12 +1,13 @@
 ﻿using System;
 using DCAPST.Interfaces;
+using Models.Core;
 
 namespace DCAPST.Environment
 {
     /// <summary>
     /// Models the position of the sun
     /// </summary>
-    public class SolarGeometryModel : ISolarGeometry
+    public class SolarGeometryModel : Model, ISolarGeometry
     {
         /// <summary>
         /// Geographic latitude (radians)
@@ -51,7 +52,7 @@ namespace DCAPST.Environment
         /// <summary>
         /// Initialise the solar geometry model
         /// </summary>
-        public void Initialise()
+        public void InitialiseDay()
         {
             SolarDeclination = CalcSolarDeclination();
             SunsetAngle = CalcSunsetAngle();

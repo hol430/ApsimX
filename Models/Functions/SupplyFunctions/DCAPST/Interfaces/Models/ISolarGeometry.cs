@@ -28,7 +28,7 @@
         /// <summary>
         /// Initialises the solar geometry
         /// </summary>
-        void Initialise();
+        void InitialiseDay();
 
         /// <summary>
         /// Calculates the angle of the sun in the sky at the given time

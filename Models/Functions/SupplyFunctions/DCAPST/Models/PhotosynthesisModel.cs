@@ -1,37 +1,41 @@
 ﻿using System;
 using System.Linq;
 
-using DCAPST.Canopy;
-using DCAPST.Environment;
 using DCAPST.Interfaces;
+using Models.Core;
 
 namespace DCAPST
 {
     /// <summary>
     /// Models daily biomass growth due to photosynthetic activity
     /// </summary>
-    public class PhotosynthesisModel : IPhotosynthesisModel
+    public class PhotosynthesisModel : Model, IPhotosynthesisModel
     {
         /// <summary>
         /// The solar geometry
         /// </summary>
+        [Link]
         private ISolarGeometry Solar { get; set; }
 
         /// <summary>
         /// The solar radiation
         /// </summary>
+        [Link]
         private ISolarRadiation Radiation { get; set; }
 
         /// <summary>
         /// The environmental temperature
         /// </summary>
+        [Link]
         private ITemperature Temperature { get; set; }
-        
+
         /// <summary>
         /// The canopy undergoing photosynthesis
         /// </summary>
+        [Link]
         private ITotalCanopy Canopy { get; set; }
 
+        [Link]
         private IPathwayParameters pathway;
 
         /// <summary>
@@ -69,27 +73,12 @@ namespace DCAPST
         private readonly double timestep = 1.0;
         private int iterations;
 
-        /// <summary></summary>
-        public PhotosynthesisModel(
-            ISolarGeometry solar, 
-            ISolarRadiation radiation, 
-            ITemperature temperature, 
-            IPathwayParameters pathway,
-            ITotalCanopy canopy)
-        {
-            Solar = solar;
-            Radiation = radiation;
-            Temperature = temperature;
-            this.pathway = pathway;
-            Canopy = canopy;
-        }
-
         /// <summary>
         /// Initialises parameters
         /// </summary>
-        public void Initialise()
+        public void InitialiseDay()
         {
-            Solar.Initialise();
+            Solar.InitialiseDay();
 
             iterations = (int)Math.Floor(1.0 + ((end - start) / timestep));
         }
@@ -148,7 +137,6 @@ namespace DCAPST
         /// </summary>
         private bool IsSensible()
         {
-            var CPath = Canopy.Canopy;
             var temp = Temperature.AirTemperature;
 
             bool[] tempConditions = new bool[4]
