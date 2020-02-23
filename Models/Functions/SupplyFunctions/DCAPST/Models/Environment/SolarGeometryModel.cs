@@ -1,8 +1,7 @@
 ﻿using System;
-using DCAPST.Interfaces;
 using Models.Core;
 
-namespace DCAPST.Environment
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Models the position of the sun

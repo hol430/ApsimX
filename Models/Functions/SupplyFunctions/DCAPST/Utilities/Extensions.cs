@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DCAPST
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Extensions used by DCaPST

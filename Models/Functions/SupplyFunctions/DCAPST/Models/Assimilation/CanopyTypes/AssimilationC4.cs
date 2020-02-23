@@ -1,6 +1,4 @@
-﻿using DCAPST.Interfaces;
-
-namespace DCAPST
+﻿namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Defines the pathway functions for a C4 canopy

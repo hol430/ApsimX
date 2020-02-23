@@ -1,7 +1,6 @@
 ﻿using System;
-using DCAPST.Interfaces;
 
-namespace DCAPST.Environment
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Models how temperature impacts the water used by the leaf during photosynthesis

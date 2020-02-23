@@ -1,6 +1,4 @@
-﻿using DCAPST.Canopy;
-
-namespace DCAPST.Interfaces
+﻿namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// An interface describing a total canopy

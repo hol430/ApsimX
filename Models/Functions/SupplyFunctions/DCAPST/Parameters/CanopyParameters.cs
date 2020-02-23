@@ -1,7 +1,6 @@
-﻿using DCAPST.Interfaces;
-using Models.Core;
+﻿using Models.Core;
 
-namespace DCAPST
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Implements the canopy parameters

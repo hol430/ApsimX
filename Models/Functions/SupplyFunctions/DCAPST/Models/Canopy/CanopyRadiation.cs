@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DCAPST.Canopy
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Models solar radiation on the canopy

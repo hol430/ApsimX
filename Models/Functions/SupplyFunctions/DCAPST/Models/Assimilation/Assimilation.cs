@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using DCAPST.Environment;
-using DCAPST.Interfaces;
 
-namespace DCAPST
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Tracks the state of an assimilation type

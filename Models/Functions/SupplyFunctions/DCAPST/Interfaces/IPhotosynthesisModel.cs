@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DCAPST.Interfaces
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Describes a photosynthesis model

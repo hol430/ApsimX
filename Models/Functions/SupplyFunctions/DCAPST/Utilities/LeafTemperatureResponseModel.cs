@@ -1,8 +1,6 @@
 using System;
-using DCAPST.Canopy;
-using DCAPST.Interfaces;
 
-namespace DCAPST
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Models the parameters of the leaf necessary to calculate photosynthesis

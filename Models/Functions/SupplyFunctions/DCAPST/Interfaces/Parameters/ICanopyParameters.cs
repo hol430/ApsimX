@@ -1,4 +1,4 @@
-﻿namespace DCAPST.Interfaces
+﻿namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Possible canopy types

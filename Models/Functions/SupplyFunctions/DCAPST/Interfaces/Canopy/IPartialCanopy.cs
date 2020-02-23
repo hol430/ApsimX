@@ -1,6 +1,6 @@
 ﻿using Models.Core;
 
-namespace DCAPST.Interfaces
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// An interface for a partial canopy

@@ -1,4 +1,4 @@
-﻿namespace DCAPST.Interfaces
+﻿namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Describes a solar geometry model

@@ -1,6 +1,6 @@
 using System;
 
-namespace DCAPST
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Manages the calculation of CO2 assimilation rate

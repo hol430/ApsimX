@@ -1,7 +1,6 @@
 ﻿using System;
-using DCAPST.Interfaces;
 
-namespace DCAPST
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// The possible types of assimilation pathways

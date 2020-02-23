@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Linq;
 
-using DCAPST.Interfaces;
 using Models.Core;
 
-namespace DCAPST
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Models daily biomass growth due to photosynthetic activity

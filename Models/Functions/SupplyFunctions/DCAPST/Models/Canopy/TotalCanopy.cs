@@ -1,8 +1,7 @@
 ﻿using System;
-using DCAPST.Interfaces;
 using Models.Core;
 
-namespace DCAPST.Canopy
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Models a complete canopy

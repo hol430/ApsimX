@@ -1,7 +1,6 @@
-﻿using DCAPST.Interfaces;
-using Models.Core;
+﻿using Models.Core;
 
-namespace DCAPST.Canopy
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Models a subsection of the canopy (used for distinguishing between sunlit and shaded)
