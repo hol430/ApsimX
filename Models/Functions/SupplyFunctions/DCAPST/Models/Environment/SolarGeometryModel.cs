@@ -6,6 +6,10 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// <summary>
     /// Models the position of the sun
     /// </summary>
+    [Serializable]
+    [ViewName("UserInterface.Views.GridView")]
+    [PresenterName("UserInterface.Presenters.PropertyPresenter")]
+    [ValidParent(ParentType = typeof(IPhotosynthesisModel))]
     public class SolarGeometryModel : Model, ISolarGeometry
     {
         /// <summary>

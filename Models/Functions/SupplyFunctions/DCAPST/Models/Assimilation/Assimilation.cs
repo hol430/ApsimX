@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 
+using Models.Core;
+
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
@@ -12,17 +14,20 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// The part of the canopy undergoing CO2 assimilation
         /// </summary>
-        protected IPartialCanopy partial;
+        [Link]
+        protected IPartialCanopy Partial;
 
         /// <summary>
         /// The parameters describing the canopy
         /// </summary>
-        protected ICanopyParameters canopy;
+        [Link]
+        protected ICanopyParameters Canopy;
 
         /// <summary>
         /// The parameters describing the pathways
         /// </summary>
-        protected IPathwayParameters pway;
+        [Link]
+        protected IPathwayParameters Pathway;
 
         /// <summary>
         /// Models the leaf water interaction
@@ -37,19 +42,17 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Bundle sheath conductance
         /// </summary>
-        public double Gbs => pway.BundleSheathConductance * partial.LAI;
+        public double Gbs => Pathway.BundleSheathConductance * Partial.LAI;
         
         /// <summary>
         /// PEP regeneration
         /// </summary>
-        public double Vpr => pway.PEPRegeneration * partial.LAI;
+        public double Vpr => Pathway.PEPRegeneration * Partial.LAI;
 
         /// <summary> </summary>
         public Assimilation(IPartialCanopy partial, ITemperature temperature)
         {
-            this.partial = partial;
-            canopy = partial.Canopy;
-            pway = partial.Pathway;
+            this.Partial = partial;
 
             pathways = new List<AssimilationPathway>()
             {
@@ -91,25 +94,25 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             var func = GetFunction(pathway);
             if (!water.limited) /* Unlimited water calculation */
             {
-                pathway.IntercellularCO2 = pway.IntercellularToAirCO2Ratio * canopy.AirCO2;
+                pathway.IntercellularCO2 = Pathway.IntercellularToAirCO2Ratio * Canopy.AirCO2;
 
                 func.Ci = pathway.IntercellularCO2;
                 func.Rm = 1 / pathway.Leaf.GmT;
 
                 pathway.CO2Rate = func.Value();
 
-                resistance = LeafWater.UnlimitedWaterResistance(pathway.CO2Rate, canopy.AirCO2, pathway.IntercellularCO2);
-                pathway.WaterUse = LeafWater.HourlyWaterUse(resistance, partial.AbsorbedRadiation);
+                resistance = LeafWater.UnlimitedWaterResistance(pathway.CO2Rate, Canopy.AirCO2, pathway.IntercellularCO2);
+                pathway.WaterUse = LeafWater.HourlyWaterUse(resistance, Partial.AbsorbedRadiation);
             }
             else /* Limited water calculation */
             {
                 pathway.WaterUse = water.maxHourlyT * water.fraction;
                 var WaterUseMolsSecond = pathway.WaterUse / 18 * 1000 / 3600;
 
-                resistance = LeafWater.LimitedWaterResistance(pathway.WaterUse, partial.AbsorbedRadiation);
+                resistance = LeafWater.LimitedWaterResistance(pathway.WaterUse, Partial.AbsorbedRadiation);
                 var Gt = LeafWater.TotalCO2Conductance(resistance);
 
-                func.Ci = canopy.AirCO2 - WaterUseMolsSecond * canopy.AirCO2 / (Gt + WaterUseMolsSecond / 2.0);
+                func.Ci = Canopy.AirCO2 - WaterUseMolsSecond * Canopy.AirCO2 / (Gt + WaterUseMolsSecond / 2.0);
                 func.Rm = 1 / (Gt + WaterUseMolsSecond / 2) + 1.0 / pathway.Leaf.GmT;
 
                 pathway.CO2Rate = func.Value();
@@ -122,7 +125,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             UpdateChloroplasticCO2(pathway, func);
 
             // New leaf temperature
-            pathway.Leaf.Temperature = (LeafWater.LeafTemperature(resistance, partial.AbsorbedRadiation) + pathway.Leaf.Temperature) / 2.0;
+            pathway.Leaf.Temperature = (LeafWater.LeafTemperature(resistance, Partial.AbsorbedRadiation) + pathway.Leaf.Temperature) / 2.0;
 
             // If the assimilation is not sensible zero the values
             if (double.IsNaN(pathway.CO2Rate) || pathway.CO2Rate <= 0.0 || double.IsNaN(pathway.WaterUse) || pathway.WaterUse <= 0.0)

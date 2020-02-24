@@ -1,4 +1,5 @@
 ﻿using System;
+using Models.Core;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
@@ -28,6 +29,18 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// </summary>
     public class AssimilationPathway
     {
+        /// <summary>
+        /// The parameters describing the canopy
+        /// </summary>
+        [Link]
+        protected ICanopyParameters Canopy;
+
+        /// <summary>
+        /// The parameters describing the pathways
+        /// </summary>
+        [Link]
+        protected IPathwayParameters Pathway;
+
         /// <summary>
         /// The current pathway type
         /// </summary>
@@ -71,7 +84,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary></summary>
         public AssimilationPathway(IPartialCanopy partial)
         {
-            MesophyllCO2 = partial.Canopy.AirCO2 * partial.Pathway.IntercellularToAirCO2Ratio;
+            MesophyllCO2 = Canopy.AirCO2 * Pathway.IntercellularToAirCO2Ratio;
             ChloroplasticCO2 = MesophyllCO2 + 20;
             ChloroplasticO2 = 210000;
 

@@ -8,34 +8,41 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// <summary>
     /// Models daily biomass growth due to photosynthetic activity
     /// </summary>
+    [Serializable]
+    [ViewName("UserInterface.Views.GridView")]
+    [PresenterName("UserInterface.Presenters.PropertyPresenter")]
+    [ValidParent(ParentType = typeof(Model))]
     public class PhotosynthesisModel : Model, IPhotosynthesisModel
     {
         /// <summary>
         /// The solar geometry
         /// </summary>
         [Link]
-        private ISolarGeometry Solar { get; set; }
+        ISolarGeometry Solar = null;
 
         /// <summary>
         /// The solar radiation
         /// </summary>
         [Link]
-        private ISolarRadiation Radiation { get; set; }
+        ISolarRadiation Radiation = null;
 
         /// <summary>
         /// The environmental temperature
         /// </summary>
         [Link]
-        private ITemperature Temperature { get; set; }
+        ITemperature Temperature = null;
 
         /// <summary>
         /// The canopy undergoing photosynthesis
         /// </summary>
         [Link]
-        private ITotalCanopy Canopy { get; set; }
+        ITotalCanopy Canopy = null;
 
+        /// <summary>
+        /// The initial parameters of the pathway
+        /// </summary>
         [Link]
-        private IPathwayParameters pathway;
+        IPathwayParameters Pathway = null;
 
         /// <summary>
         /// Biochemical Conversion and Maintenance Respiration
@@ -140,10 +147,10 @@ namespace Models.Functions.SupplyFunctions.DCAPST
 
             bool[] tempConditions = new bool[4]
             {
-                temp > pathway.ElectronTransportRateParams.TMax,
-                temp < pathway.ElectronTransportRateParams.TMin,
-                temp > pathway.MesophyllCO2ConductanceParams.TMax,
-                temp < pathway.MesophyllCO2ConductanceParams.TMin
+                temp > Pathway.ElectronTransportRateParams.TMax,
+                temp < Pathway.ElectronTransportRateParams.TMin,
+                temp > Pathway.MesophyllCO2ConductanceParams.TMax,
+                temp < Pathway.MesophyllCO2ConductanceParams.TMin
             };
 
             bool invalidTemp = tempConditions.Any(b => b == true);

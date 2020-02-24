@@ -1,19 +1,20 @@
-﻿using Models.Core;
+﻿using System;
+using Models.Core;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Models a subsection of the canopy (used for distinguishing between sunlit and shaded)
     /// </summary>
+    [Serializable]
+    [ViewName("UserInterface.Views.GridView")]
+    [PresenterName("UserInterface.Presenters.PropertyPresenter")]
+    [ValidParent(ParentType = typeof(ITotalCanopy))]
     public class PartialCanopy : Model, IPartialCanopy
     {
         /// <inheritdoc/>
         [Link]
-        public ICanopyParameters Canopy { get; private set; }
-
-        /// <inheritdoc/>
-        [Link]
-        public IPathwayParameters Pathway { get; private set; }
+        ICanopyParameters Canopy = null;
 
         /// <inheritdoc/>
         public ParameterRates At25C { get; private set; } = new ParameterRates();

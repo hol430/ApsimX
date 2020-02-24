@@ -12,7 +12,7 @@
         /// <inheritdoc/>
         protected override void UpdateIntercellularCO2(AssimilationPathway pathway, double gt, double waterUseMolsSecond)
         {
-            pathway.IntercellularCO2 = ((gt - waterUseMolsSecond / 2.0) * canopy.AirCO2 - pathway.CO2Rate) / (gt + waterUseMolsSecond / 2.0);
+            pathway.IntercellularCO2 = ((gt - waterUseMolsSecond / 2.0) * Canopy.AirCO2 - pathway.CO2Rate) / (gt + waterUseMolsSecond / 2.0);
         }
 
         /// <inheritdoc/>
@@ -42,9 +42,9 @@
 
                 MesophyllRespiration = pathway.Leaf.GmRd,
                 HalfRubiscoSpecificityReciprocal = pathway.Leaf.Gamma,
-                FractionOfDiffusivitySolubilityRatio = 0.1 / canopy.DiffusivitySolubilityRatio,
+                FractionOfDiffusivitySolubilityRatio = 0.1 / Canopy.DiffusivitySolubilityRatio,
                 BundleSheathConductance = Gbs,
-                Oxygen = canopy.AirO2,
+                Oxygen = Canopy.AirO2,
                 Respiration = pathway.Leaf.RdT
             };
 
@@ -72,9 +72,9 @@
 
                 MesophyllRespiration = pathway.Leaf.GmRd,
                 HalfRubiscoSpecificityReciprocal = pathway.Leaf.Gamma,
-                FractionOfDiffusivitySolubilityRatio = 0.1 / canopy.DiffusivitySolubilityRatio,
+                FractionOfDiffusivitySolubilityRatio = 0.1 / Canopy.DiffusivitySolubilityRatio,
                 BundleSheathConductance = Gbs,
-                Oxygen = canopy.AirO2,
+                Oxygen = Canopy.AirO2,
                 Respiration = pathway.Leaf.RdT
             };
 
@@ -86,11 +86,11 @@
         {
             var x = new double[9];
 
-            x[0] = (1.0 - pway.MesophyllElectronTransportFraction) * pathway.Leaf.J / 3.0;
+            x[0] = (1.0 - Pathway.MesophyllElectronTransportFraction) * pathway.Leaf.J / 3.0;
             x[1] = 7.0 / 3.0 * pathway.Leaf.Gamma;
             x[2] = 0.0;
             x[3] = 0.0;
-            x[4] = pway.MesophyllElectronTransportFraction * pathway.Leaf.J / pway.ExtraATPCost;
+            x[4] = Pathway.MesophyllElectronTransportFraction * pathway.Leaf.J / Pathway.ExtraATPCost;
             x[5] = 1.0;
             x[6] = 0.0;
             x[7] = 1.0;
@@ -102,9 +102,9 @@
 
                 MesophyllRespiration = pathway.Leaf.GmRd,
                 HalfRubiscoSpecificityReciprocal = pathway.Leaf.Gamma,
-                FractionOfDiffusivitySolubilityRatio = 0.1 / canopy.DiffusivitySolubilityRatio,
+                FractionOfDiffusivitySolubilityRatio = 0.1 / Canopy.DiffusivitySolubilityRatio,
                 BundleSheathConductance = Gbs,
-                Oxygen = canopy.AirO2,
+                Oxygen = Canopy.AirO2,
                 Respiration = pathway.Leaf.RdT
             };
 

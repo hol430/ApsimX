@@ -1,4 +1,5 @@
 using System;
+using Models.Core;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
@@ -20,20 +21,20 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// The parameters describing the canopy
         /// </summary>
-        private ICanopyParameters canopy;
+        [Link]
+        ICanopyParameters Canopy = null;
 
         /// <summary>
-        /// The static parameters describing the assimilation pathway
+        /// The parameters describing the pathways
         /// </summary>
-        private IPathwayParameters pathway;
+        [Link]
+        IPathwayParameters Pathway = null;
 
         /// <summary></summary>
         public LeafTemperatureResponseModel(IPartialCanopy partial)
         {
             this.partial = partial;
             rateAt25 = partial.At25C;
-            canopy = partial.Canopy;
-            pathway = partial.Pathway;
         }
 
         /// <summary>
@@ -44,47 +45,47 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Maximum rate of rubisco carboxylation at the current leaf temperature (micro mol CO2 m^-2 ground s^-1)
         /// </summary>
-        public double VcMaxT => Value(Temperature, rateAt25.VcMax, pathway.RubiscoActivity.Factor);
+        public double VcMaxT => Value(Temperature, rateAt25.VcMax, Pathway.RubiscoActivity.Factor);
 
         /// <summary>
         /// Leaf respiration at the current leaf temperature (micro mol CO2 m^-2 ground s^-1)
         /// </summary>
-        public double RdT => Value(Temperature, rateAt25.Rd, pathway.Respiration.Factor);
+        public double RdT => Value(Temperature, rateAt25.Rd, Pathway.Respiration.Factor);
 
         /// <summary>
         /// Maximum rate of electron transport at the current leaf temperature (micro mol CO2 m^-2 ground s^-1)
         /// </summary>
-        public double JMaxT => ValueOptimum(Temperature, rateAt25.JMax, pathway.ElectronTransportRateParams);
+        public double JMaxT => ValueOptimum(Temperature, rateAt25.JMax, Pathway.ElectronTransportRateParams);
 
         /// <summary>
         /// Maximum PEP carboxylase activity at the current leaf temperature (micro mol CO2 m^-2 ground s^-1)
         /// </summary>
-        public double VpMaxT => Value(Temperature, rateAt25.VpMax, pathway.PEPcActivity.Factor);
+        public double VpMaxT => Value(Temperature, rateAt25.VpMax, Pathway.PEPcActivity.Factor);
 
         /// <summary>
         /// Mesophyll conductance at the current leaf temperature (mol CO2 m^-2 ground s^-1 bar^-1)
         /// </summary>
-        public double GmT => ValueOptimum(Temperature, rateAt25.Gm, pathway.MesophyllCO2ConductanceParams);
+        public double GmT => ValueOptimum(Temperature, rateAt25.Gm, Pathway.MesophyllCO2ConductanceParams);
 
         /// <summary>
         /// Michaelis-Menten constant of Rubsico for CO2 (microbar)
         /// </summary>
-        public double Kc => Value(Temperature, pathway.RubiscoCarboxylation.At25, pathway.RubiscoCarboxylation.Factor);
+        public double Kc => Value(Temperature, Pathway.RubiscoCarboxylation.At25, Pathway.RubiscoCarboxylation.Factor);
 
         /// <summary>
         /// Michaelis-Menten constant of Rubsico for O2 (microbar)
         /// </summary>
-        public double Ko => Value(Temperature, pathway.RubiscoOxygenation.At25, pathway.RubiscoOxygenation.Factor);
+        public double Ko => Value(Temperature, Pathway.RubiscoOxygenation.At25, Pathway.RubiscoOxygenation.Factor);
 
         /// <summary>
         /// Ratio of Rubisco carboxylation to Rubisco oxygenation
         /// </summary>
-        public double VcVo => Value(Temperature, pathway.RubiscoCarboxylationToOxygenation.At25, pathway.RubiscoCarboxylationToOxygenation.Factor);
+        public double VcVo => Value(Temperature, Pathway.RubiscoCarboxylationToOxygenation.At25, Pathway.RubiscoCarboxylationToOxygenation.Factor);
 
         /// <summary>
         /// Michaelis-Menten constant of PEP carboxylase for CO2 (micro bar)
         /// </summary>
-        public double Kp => Value(Temperature, pathway.PEPc.At25, pathway.PEPc.Factor);
+        public double Kp => Value(Temperature, Pathway.PEPc.At25, Pathway.PEPc.Factor);
 
         /// <summary>
         /// Electron transport rate
@@ -138,9 +139,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         private double CalcElectronTransportRate()
         {
-            var factor = partial.PhotonCount * (1.0 - pathway.SpectralCorrectionFactor) / 2.0;
-            return (factor + JMaxT - Math.Pow(Math.Pow(factor + JMaxT, 2) - 4 * canopy.CurvatureFactor * JMaxT * factor, 0.5))
-            / (2 * canopy.CurvatureFactor);
+            var factor = partial.PhotonCount * (1.0 - Pathway.SpectralCorrectionFactor) / 2.0;
+            return (factor + JMaxT - Math.Pow(Math.Pow(factor + JMaxT, 2) - 4 * Canopy.CurvatureFactor * JMaxT * factor, 0.5))
+            / (2 * Canopy.CurvatureFactor);
         }
     }
 

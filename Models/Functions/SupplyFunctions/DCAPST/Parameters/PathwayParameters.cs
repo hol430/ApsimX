@@ -1,10 +1,15 @@
+using System;
 using Models.Core;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
-{   
+{
     /// <summary>
     /// Implements the pathwayparameters interface
     /// </summary>
+    [Serializable]
+    [ViewName("UserInterface.Views.GridView")]
+    [PresenterName("UserInterface.Presenters.PropertyPresenter")]
+    [ValidParent(ParentType = typeof(IPhotosynthesisModel))]
     public class PathwayParameters : Model, IPathwayParameters
     {
         /// <inheritdoc/>

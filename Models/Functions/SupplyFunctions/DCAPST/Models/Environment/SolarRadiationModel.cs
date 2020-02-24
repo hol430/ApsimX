@@ -6,13 +6,17 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// <summary>
     /// Models the different forms of environmental radiation
     /// </summary>
+    [Serializable]
+    [ViewName("UserInterface.Views.GridView")]
+    [PresenterName("UserInterface.Presenters.PropertyPresenter")]
+    [ValidParent(ParentType = typeof(IPhotosynthesisModel))]
     public class SolarRadiationModel : Model, ISolarRadiation
     {
         /// <summary>
         /// Models the solar geometry
         /// </summary>
         [Link]
-        private ISolarGeometry solar;
+        ISolarGeometry Solar = null;
 
         /// <summary>
         /// Fraction of incoming radiation that is diffuse
@@ -77,16 +81,16 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         private double CurrentTotal(double time)
         {
-            double dawn = Math.Floor(solar.Sunrise);
-            double dusk = Math.Ceiling(solar.Sunset);
+            double dawn = Math.Floor(Solar.Sunrise);
+            double dusk = Math.Ceiling(Solar.Sunset);
 
             if (time < dawn || dusk < time) return 0;
 
-            var theta = Math.PI * (time - solar.Sunrise) / solar.DayLength;
+            var theta = Math.PI * (time - Solar.Sunrise) / Solar.DayLength;
             var factor = Math.Sin(theta) * Math.PI / 2;
 
             // TODO: Adapt this to use the timestep model
-            var radiation = Daily / (solar.DayLength * 3600);
+            var radiation = Daily / (Solar.DayLength * 3600);
             var incident = radiation * factor;
 
             if (incident < 0) return 0;
@@ -99,7 +103,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         private double CurrentDiffuse(double time)
         {
-            var diffuse = Math.Max(diffuseFraction * solar.SolarConstant * Math.Sin(solar.SunAngle(time)) / 1000000, 0);
+            var diffuse = Math.Max(diffuseFraction * Solar.SolarConstant * Math.Sin(Solar.SunAngle(time)) / 1000000, 0);
 
             if (diffuse > Total)
                 return Total;

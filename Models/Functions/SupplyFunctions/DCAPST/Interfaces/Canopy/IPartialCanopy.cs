@@ -8,18 +8,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     public interface IPartialCanopy
     {
         /// <summary>
-        /// A collection of predefined parameters used by the canopy
-        /// </summary>
-        [Link]
-        ICanopyParameters Canopy { get; }
-
-        /// <summary>
-        /// A collection of predefined parameters describing the assimilation pathway
-        /// </summary>
-        [Link]
-        IPathwayParameters Pathway { get; }
-
-        /// <summary>
         /// The rates of various parameters at 25 Celsius
         /// </summary>
         ParameterRates At25C { get; }

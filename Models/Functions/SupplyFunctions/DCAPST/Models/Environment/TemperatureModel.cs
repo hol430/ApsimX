@@ -6,13 +6,17 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// <summary>
     /// Models the environmental temperature
     /// </summary>
+    [Serializable]
+    [ViewName("UserInterface.Views.GridView")]
+    [PresenterName("UserInterface.Presenters.PropertyPresenter")]
+    [ValidParent(ParentType = typeof(IPhotosynthesisModel))]
     public class TemperatureModel : Model, ITemperature
     {
         /// <summary>
         /// The solar geometry
         /// </summary>
         [Link]
-        private ISolarGeometry solar;
+        ISolarGeometry Solar = null;
 
         /// <summary>
         /// The atmospheric pressure
@@ -61,21 +65,21 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         {
             if (time < 0 || 24 < time) throw new Exception("The time must be between 0 and 24");
 
-            double timeOfMinT = 12.0 - solar.DayLength / 2.0 + ZLag;
+            double timeOfMinT = 12.0 - Solar.DayLength / 2.0 + ZLag;
             double deltaT = MaxTemperature - MinTemperature;
 
-            if /*DAY*/ (timeOfMinT < time && time < solar.Sunset)
+            if /*DAY*/ (timeOfMinT < time && time < Solar.Sunset)
             {
                 double m = time - timeOfMinT;
-                AirTemperature = deltaT * Math.Sin((Math.PI * m) / (solar.DayLength + 2 * XLag)) + MinTemperature;
+                AirTemperature = deltaT * Math.Sin((Math.PI * m) / (Solar.DayLength + 2 * XLag)) + MinTemperature;
             }
             else /*NIGHT*/
             {
-                double n = time - solar.Sunset;
+                double n = time - Solar.Sunset;
                 if (n < 0) n += 24;
 
-                double tempChange = deltaT * Math.Sin(Math.PI * (solar.DayLength - ZLag) / (solar.DayLength + 2 * XLag));
-                AirTemperature = MinTemperature + tempChange * Math.Exp(-YLag * n / (24.0 - solar.DayLength));
+                double tempChange = deltaT * Math.Sin(Math.PI * (Solar.DayLength - ZLag) / (Solar.DayLength + 2 * XLag));
+                AirTemperature = MinTemperature + tempChange * Math.Exp(-YLag * n / (24.0 - Solar.DayLength));
             }
         }
     }
