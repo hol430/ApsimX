@@ -32,7 +32,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Models the leaf water interaction
         /// </summary>
-        public ILeafWaterInteraction LeafWater { get; }
+        [Link]
+        ILeafWaterInteraction LeafWater = null;
 
         /// <summary>
         /// The possible assimilation pathways
@@ -61,8 +62,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
                 /*Aj */ new AssimilationPathway(partial) { Type = PathwayType.Aj }
             };
             pathways.ForEach(p => p.Leaf.Temperature = temperature.AirTemperature);
-
-            LeafWater = new LeafWaterInteractionModel(temperature);
         }
         
         /// <summary>

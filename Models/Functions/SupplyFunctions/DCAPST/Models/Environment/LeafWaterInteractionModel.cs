@@ -1,11 +1,16 @@
 ﻿using System;
+using Models.Core;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Models how temperature impacts the water used by the leaf during photosynthesis
     /// </summary>
-    public class LeafWaterInteractionModel : ILeafWaterInteraction
+    [Serializable]
+    [ViewName("UserInterface.Views.GridView")]
+    [PresenterName("UserInterface.Presenters.PropertyPresenter")]
+    [ValidParent(ParentType = typeof(ITotalCanopy))]
+    public class LeafWaterInteractionModel : Model, ILeafWaterInteraction
     {
         #region Constants
         /// <summary>
@@ -23,11 +28,15 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         private double g = 0.066;
 
+        /// <summary>
+        /// Latent heat of vapourisation
+        /// </summary>
         private double latentHeatOfVapourisation = 2447000;
         #endregion
 
         /// <summary> Environment temperature model </summary>
-        private readonly ITemperature temp;
+        [Link]
+        ITemperature Temperature = null;
 
         /// <summary> Current leaf temperature </summary>
         private double leafTemp;
@@ -42,34 +51,28 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         private double Rbh => 1 / gbh;
 
         /// <summary> Boundary CO2 conductance </summary>
-        private double GbCO2 => temp.AtmosphericPressure * temp.AirMolarDensity * Gbw / 1.37;
+        private double GbCO2 => Temperature.AtmosphericPressure * Temperature.AirMolarDensity * Gbw / 1.37;
 
         /// <summary> Outgoing thermal radiation</summary>
-        private double ThermalRadiation => 8 * kb * Math.Pow(temp.AirTemperature + 273, 3) * (leafTemp - temp.AirTemperature);
+        private double ThermalRadiation => 8 * kb * Math.Pow(Temperature.AirTemperature + 273, 3) * (leafTemp - Temperature.AirTemperature);
                 
         /// <summary> Vapour pressure at the leaf temperature </summary>
         private double VpLeaf => 0.61365 * Math.Exp(17.502 * leafTemp / (240.97 + leafTemp));
 
         /// <summary> Vapour pressure at the air temperature</summary>
-        private double VpAir => 0.61365 * Math.Exp(17.502 * temp.AirTemperature / (240.97 + temp.AirTemperature));
+        private double VpAir => 0.61365 * Math.Exp(17.502 * Temperature.AirTemperature / (240.97 + Temperature.AirTemperature));
 
         /// <summary> Vapour pressure at one degree above air temperature</summary>
-        private double VpAir1 => 0.61365 * Math.Exp(17.502 * (temp.AirTemperature + 1) / (240.97 + (temp.AirTemperature + 1)));
+        private double VpAir1 => 0.61365 * Math.Exp(17.502 * (Temperature.AirTemperature + 1) / (240.97 + (Temperature.AirTemperature + 1)));
 
         /// <summary> Vapour pressure at the daily minimum temperature</summary>
-        private double VptMin => 0.61365 * Math.Exp(17.502 * temp.MinTemperature / (240.97 + temp.MinTemperature));
+        private double VptMin => 0.61365 * Math.Exp(17.502 * Temperature.MinTemperature / (240.97 + Temperature.MinTemperature));
 
         /// <summary> Difference in air vapour pressures </summary>
         private double DeltaAirVP => VpAir1 - VpAir;
 
         /// <summary> Leaf to air vapour pressure deficit </summary>
         private double vpd => VpLeaf - VptMin;
-
-        /// <summary></summary>
-        public LeafWaterInteractionModel(ITemperature temperature)
-        {
-            temp = temperature ?? throw new Exception("The temperature model cannot be null");
-        }
 
         /// <summary>
         /// Sets conditions for the water interaction
@@ -91,9 +94,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         public double UnlimitedWaterResistance(double A, double Ca, double Ci)
         {
             // Leaf water mol fraction
-            double Wl = VpLeaf / (temp.AtmosphericPressure * 100) * 1000;
+            double Wl = VpLeaf / (Temperature.AtmosphericPressure * 100) * 1000;
             // Air water mol fraction
-            double Wa = VptMin / (temp.AtmosphericPressure * 100) * 1000;
+            double Wa = VptMin / (Temperature.AtmosphericPressure * 100) * 1000;
 
             // Boundary CO2 Resistance
             double a = 1 / GbCO2;
@@ -118,7 +121,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             // Total leaf water conductance
             double Gtw = 1 / (1 / (m * GbCO2) + 1 / (n * gsCO2));
             
-            double rtw = temp.AirMolarDensity / Gtw * temp.AtmosphericPressure;
+            double rtw = Temperature.AirMolarDensity / Gtw * Temperature.AtmosphericPressure;
             return rtw;
         }
 
@@ -157,7 +160,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         public double TotalCO2Conductance(double rtw)
         {
             // Limited water gsCO2
-            var gsCO2 = temp.AirMolarDensity * (temp.AtmosphericPressure / (rtw - (1 / Gbw))) / 1.6;
+            var gsCO2 = Temperature.AirMolarDensity * (Temperature.AtmosphericPressure / (rtw - (1 / Gbw))) / 1.6;
             var boundaryCO2Resistance = 1 / GbCO2;
             var stomatalCO2Resistance = 1 / gsCO2;
             return 1 / (boundaryCO2Resistance + stomatalCO2Resistance);
@@ -174,7 +177,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
 
             double deltaT = a / d;
 
-            return temp.AirTemperature + deltaT;
+            return Temperature.AirTemperature + deltaT;
         }
     }
 }
