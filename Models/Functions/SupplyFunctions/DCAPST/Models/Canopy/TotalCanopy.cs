@@ -13,18 +13,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     public class TotalCanopy : Model, ITotalCanopy
     {
         /// <summary>
-        /// The initial parameters of the canopy
-        /// </summary>
-        [Link]
-        ICanopyParameters Canopy = null;
-
-        /// <summary>
-        /// The initial parameters of hte pathway
-        /// </summary>
-        [Link]
-        IPathwayParameters Pathway = null;
-
-        /// <summary>
         /// The part of the canopy in sunlight
         /// </summary>
         [Link(ByName = true)]
@@ -46,30 +34,133 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         private double LAI { get; set; }
 
-        /// <summary>
-        /// The leaf angle (radians)
-        /// </summary>
-        private double LeafAngle { get; set; }
+        #region Properties
 
         /// <summary>
-        /// The width of the leaf
+        /// Extinction coefficient for diffuse radiation
         /// </summary>
-        private double LeafWidth { get; set; }
+        [Description("Diffuse radiation extinction coefficient")]
+        [Units("")]
+        public double DiffuseExtCoeff { get; set; }
+
+        /// <summary>
+        /// Extinction coefficient for near-infrared diffuse radiation
+        /// </summary>
+        [Description("Diffuse NIR extinction coefficient")]
+        [Units("")]
+        public double DiffuseExtCoeffNIR { get; set; }
+
+        /// <summary>
+        /// Reflection coefficient for diffuse radiation
+        /// </summary>
+        [Description("Diffuse radiation reflection coefficient")]
+        [Units("")]
+        public double DiffuseReflectionCoeff { get; set; }
+
+        /// <summary>
+        /// Reflection coefficient for near-infrared diffuse radiation
+        /// </summary>
+        [Description("Diffuse NIR reflection coefficient")]
+        [Units("")]
+        public double DiffuseReflectionCoeffNIR { get; set; }
+
+        /// <summary>
+        /// Canopy average leaf inclination relative to the horizontal (degrees)
+        /// </summary>
+        [Description("Average leaf angle (relative to horizontal)")]
+        [Units("Degrees")]
+        public double LeafAngle { get; set; }
+
+        /// <summary>
+        /// The leaf width in the canopy
+        /// </summary>
+        [Description("Average leaf width")]
+        [Units("")]
+        public double LeafWidth { get; set; }
+
+        /// <summary>
+        /// Leaf-level coefficient of scattering radiation
+        /// </summary>
+        [Description("Leaf-level coefficient of scattering radiation")]
+        [Units("")]
+        public double LeafScatteringCoeff { get; set; }
+
+        /// <summary>
+        /// Leaf-level coefficient of near-infrared scattering radiation
+        /// </summary>
+        [Description("Leaf-level coefficient of scattering NIR")]
+        [Units("")]
+        public double LeafScatteringCoeffNIR { get; set; }
+
+        /// <summary>
+        /// Local wind speed
+        /// </summary>
+        [Description("Local wind speed")]
+        [Units("")]
+        public double WindSpeed { get; set; }
+
+        /// <summary>
+        /// Extinction coefficient for local wind speed
+        /// </summary>
+        [Description("Wind speed extinction coefficient")]
+        [Units("")]
+        public double WindSpeedExtinction { get; set; }
+
+        /// <summary>
+        /// The minimum nitrogen value at or below which CO2 assimilation rate is zero (mmol N m^-2)
+        /// </summary>
+        [Description("Minimum nitrogen for assimilation")]
+        [Units("")]
+        public double MinimumN { get; set; }
+
+        /// <summary>
+        /// Ratio of Rubisco activity to SLN
+        /// </summary>
+        [Description("Ratio of SLN to max Rubisco activity")]
+        [Units("")]
+        double MaxRubiscoActivitySLNRatio { get; set; }
+
+        /// <summary>
+        /// Ratio of respiration to SLN
+        /// </summary>
+        [Description("Ratio of SLN to respiration")]
+        [Units("")]
+        public double RespirationSLNRatio { get; set; }
+
+        /// <summary>
+        /// Ratio of electron transport to SLN
+        /// </summary>
+        [Description("Ratio of SLN to max electron transport")]
+        [Units("")]
+        double MaxElectronTransportSLNRatio { get; set; }
+
+        /// <summary>
+        /// Ratio of PEPc Activity to SLN
+        /// </summary>
+        [Description("Ratio of SLN to max PEPc activity")]
+        [Units("")]
+        double MaxPEPcActivitySLNRatio { get; set; }
+
+        /// <summary>
+        /// Ratio of Mesophyll CO2 conductance to SLN
+        /// </summary>
+        [Description("Ratio of SLN to Mesophyll CO2 conductance")]
+        [Units("")]
+        double MesophyllCO2ConductanceSLNRatio { get; set; }        
+
+        /// <summary>
+        /// Ratio of the average canopy specific leaf nitrogen (SLN) to the SLN at the top of canopy (g N m^-2 leaf)
+        /// </summary>
+        [Description("Ratio of average SLN to canopy top SLN")]
+        [Units("")]
+        public double SLNRatioTop { get; set; }
         
+        #endregion
+
         /// <summary>
         /// Nitrogen at the top of the canopy
         /// </summary>
         private double LeafNTopCanopy { get; set; }
-
-        /// <summary>
-        /// Wind speed
-        /// </summary>
-        private double WindSpeed { get; set; }
-        
-        /// <summary>
-        /// Wind speed extinction
-        /// </summary>
-        private double WindSpeedExtinction { get; set; }
 
         /// <summary>
         /// Coefficient of nitrogen allocation through the canopy
@@ -86,24 +177,19 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         public void InitialiseDay(double lai, double sln)
         {
-            WindSpeed = Canopy.Windspeed;
-            WindSpeedExtinction = Canopy.WindSpeedExtinction;
-            LeafAngle = Canopy.LeafAngle.ToRadians();
-            LeafWidth = Canopy.LeafWidth;
-
             LAI = lai;
 
-            var SLNTop = sln * Canopy.SLNRatioTop;
+            var SLNTop = sln * SLNRatioTop;
             LeafNTopCanopy = SLNTop * 1000 / 14;
 
             var NcAv = sln * 1000 / 14;
-            NAllocation = -1 * Math.Log((NcAv - Canopy.MinimumN) / (LeafNTopCanopy - Canopy.MinimumN)) * 2;           
+            NAllocation = -1 * Math.Log((NcAv - MinimumN) / (LeafNTopCanopy - MinimumN)) * 2;           
 
             Absorbed = new CanopyRadiation(Layers, LAI)
             {
-                DiffuseExtinction = Canopy.DiffuseExtCoeff,
-                LeafScattering = Canopy.LeafScatteringCoeff,
-                DiffuseReflection = Canopy.DiffuseReflectionCoeff
+                DiffuseExtinction = DiffuseExtCoeff,
+                LeafScattering = LeafScatteringCoeff,
+                DiffuseReflection = DiffuseReflectionCoeff
             };         
         }
 
@@ -132,9 +218,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         private void CalcAbsorbedRadiations(ISolarRadiation radiation)
         {
             // Set parameters
-            Absorbed.DiffuseExtinction = Canopy.DiffuseExtCoeff;
-            Absorbed.LeafScattering = Canopy.LeafScatteringCoeff;
-            Absorbed.DiffuseReflection = Canopy.DiffuseReflectionCoeff;
+            Absorbed.DiffuseExtinction = DiffuseExtCoeff;
+            Absorbed.LeafScattering = LeafScatteringCoeff;
+            Absorbed.DiffuseReflection = DiffuseReflectionCoeff;
 
             // Photon calculations (used by photosynthesis)
             var photons = Absorbed.CalcTotalRadiation(radiation.DirectPAR, radiation.DiffusePAR);
@@ -152,9 +238,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             var ShadedPARTotalIrradiance = PARTotalIrradiance - SunlitPARTotalIrradiance;
 
             // Adjust parameters for NIR calculations
-            Absorbed.DiffuseExtinction = Canopy.DiffuseExtCoeffNIR;
-            Absorbed.LeafScattering = Canopy.LeafScatteringCoeffNIR;
-            Absorbed.DiffuseReflection = Canopy.DiffuseReflectionCoeffNIR;
+            Absorbed.DiffuseExtinction = DiffuseExtCoeffNIR;
+            Absorbed.LeafScattering = LeafScatteringCoeffNIR;
+            Absorbed.DiffuseReflection = DiffuseReflectionCoeffNIR;
 
             var NIRTotalIrradiance = Absorbed.CalcTotalRadiation(NIRDirect, NIRDiffuse);
             var SunlitNIRTotalIrradiance = Absorbed.CalcSunlitRadiation(NIRDirect, NIRDiffuse);
@@ -172,24 +258,24 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             var coefficient = NAllocation;
             var sunlitCoefficient = NAllocation + (Absorbed.DirectExtinction * LAI);
 
-            var RubiscoActivity25 = CalcMaximumRate(Pathway.MaxRubiscoActivitySLNRatio, coefficient);
-            Sunlit.At25C.VcMax = CalcMaximumRate(Pathway.MaxRubiscoActivitySLNRatio, sunlitCoefficient);
+            var RubiscoActivity25 = CalcMaximumRate(MaxRubiscoActivitySLNRatio, coefficient);
+            Sunlit.At25C.VcMax = CalcMaximumRate(MaxRubiscoActivitySLNRatio, sunlitCoefficient);
             Shaded.At25C.VcMax = RubiscoActivity25 - Sunlit.At25C.VcMax;
 
-            var Rd25 = CalcMaximumRate(Pathway.RespirationSLNRatio, coefficient);
-            Sunlit.At25C.Rd = CalcMaximumRate(Pathway.RespirationSLNRatio, sunlitCoefficient);
+            var Rd25 = CalcMaximumRate(RespirationSLNRatio, coefficient);
+            Sunlit.At25C.Rd = CalcMaximumRate(RespirationSLNRatio, sunlitCoefficient);
             Shaded.At25C.Rd = Rd25 - Sunlit.At25C.Rd;
 
-            var JMax25 = CalcMaximumRate(Pathway.MaxElectronTransportSLNRatio, coefficient);
-            Sunlit.At25C.JMax = CalcMaximumRate(Pathway.MaxElectronTransportSLNRatio, sunlitCoefficient);
+            var JMax25 = CalcMaximumRate(MaxElectronTransportSLNRatio, coefficient);
+            Sunlit.At25C.JMax = CalcMaximumRate(MaxElectronTransportSLNRatio, sunlitCoefficient);
             Shaded.At25C.JMax = JMax25 - Sunlit.At25C.JMax;
 
-            var PEPcActivity25 = CalcMaximumRate(Pathway.MaxPEPcActivitySLNRatio, coefficient);
-            Sunlit.At25C.VpMax = CalcMaximumRate(Pathway.MaxPEPcActivitySLNRatio, sunlitCoefficient);
+            var PEPcActivity25 = CalcMaximumRate(MaxPEPcActivitySLNRatio, coefficient);
+            Sunlit.At25C.VpMax = CalcMaximumRate(MaxPEPcActivitySLNRatio, sunlitCoefficient);
             Shaded.At25C.VpMax = PEPcActivity25 - Sunlit.At25C.VpMax;
 
-            var MesophyllCO2Conductance25 = CalcMaximumRate(Pathway.MesophyllCO2ConductanceSLNRatio, coefficient);
-            Sunlit.At25C.Gm = CalcMaximumRate(Pathway.MesophyllCO2ConductanceSLNRatio, sunlitCoefficient);
+            var MesophyllCO2Conductance25 = CalcMaximumRate(MesophyllCO2ConductanceSLNRatio, coefficient);
+            Sunlit.At25C.Gm = CalcMaximumRate(MesophyllCO2ConductanceSLNRatio, sunlitCoefficient);
             Shaded.At25C.Gm = MesophyllCO2Conductance25 - Sunlit.At25C.Gm;
         }
 
@@ -198,7 +284,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         private double CalcMaximumRate(double psi, double coefficient)
         {
-            var factor = LAI * (LeafNTopCanopy - Canopy.MinimumN) * psi;
+            var factor = LAI * (LeafNTopCanopy - MinimumN) * psi;
             var exp = Absorbed.CalcExp(coefficient / LAI);
 
             return factor * exp / coefficient;
@@ -258,16 +344,18 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         private double CalcShadowProjection(double sunAngle)
         {
-            if (LeafAngle <= sunAngle)
+            var leafAngle = LeafAngle.ToRadians();
+
+            if (leafAngle <= sunAngle)
             {
-                return Math.Cos(LeafAngle) * Math.Sin(sunAngle);
+                return Math.Cos(leafAngle) * Math.Sin(sunAngle);
             }
             else
             {
-                double theta = Math.Acos(1 / Math.Tan(LeafAngle) * Math.Tan(sunAngle));
+                double theta = Math.Acos(1 / Math.Tan(leafAngle) * Math.Tan(sunAngle));
 
-                var a = 2 / Math.PI * Math.Sin(LeafAngle) * Math.Cos(sunAngle) * Math.Sin(theta);
-                var b = (1 - theta * 2 / Math.PI) * Math.Cos(LeafAngle) * Math.Sin(sunAngle);
+                var a = 2 / Math.PI * Math.Sin(leafAngle) * Math.Cos(sunAngle) * Math.Sin(theta);
+                var b = (1 - theta * 2 / Math.PI) * Math.Cos(leafAngle) * Math.Sin(sunAngle);
                 return a + b;
             }
         }

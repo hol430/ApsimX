@@ -8,32 +8,7 @@
         /// <summary>
         /// Ratio of intercellular CO2 to air CO2
         /// </summary>
-        double IntercellularToAirCO2Ratio { get; set; }
-
-        /// <summary>
-        /// Ratio of respiration to SLN
-        /// </summary>
-        double RespirationSLNRatio { get; set; }
-
-        /// <summary>
-        /// Ratio of Rubisco activity to SLN
-        /// </summary>
-        double MaxRubiscoActivitySLNRatio { get; set; }
-
-        /// <summary>
-        /// Ratio of electron transport to SLN
-        /// </summary>
-        double MaxElectronTransportSLNRatio { get; set; }
-
-        /// <summary>
-        /// Ratio of PEPc Activity to SLN
-        /// </summary>
-        double MaxPEPcActivitySLNRatio { get; set; }
-
-        /// <summary>
-        /// Ratio of Mesophyll CO2 conductance to SLN
-        /// </summary>
-        double MesophyllCO2ConductanceSLNRatio { get; set; }
+        double IntercellularToAirCO2Ratio { get; set; }        
         
         /// <summary>
         /// Mesophyll electron transport fraction

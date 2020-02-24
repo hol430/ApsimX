@@ -15,32 +15,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <inheritdoc/>
         [Description("Ratio of intercellular CO2 to air CO2")]
         [Units("")]
-        public double IntercellularToAirCO2Ratio { get; set; }
-
-        /// <inheritdoc/>
-        [Description("Ratio of SLN to respiration")]
-        [Units("")]
-        public double RespirationSLNRatio { get; set; }
-
-        /// <inheritdoc/>
-        [Description("Ratio of SLN to max Rubisco activity")]
-        [Units("")]
-        public double MaxRubiscoActivitySLNRatio { get; set; }
-
-        /// <inheritdoc/>
-        [Description("Ratio of SLN to max electron transport")]
-        [Units("")]
-        public double MaxElectronTransportSLNRatio { get; set; }
-
-        /// <inheritdoc/>
-        [Description("Ratio of SLN to max PEPc activity")]
-        [Units("")]
-        public double MaxPEPcActivitySLNRatio { get; set; }
-
-        /// <inheritdoc/>
-        [Description("Ratio of SLN to Mesophyll CO2 conductance")]
-        [Units("")]
-        public double MesophyllCO2ConductanceSLNRatio { get; set; }
+        public double IntercellularToAirCO2Ratio { get; set; }        
 
         /// <inheritdoc/>
         [Description("Mesophyll electron transport fraction")]
