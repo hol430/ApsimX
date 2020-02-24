@@ -21,8 +21,31 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// The atmospheric pressure
         /// </summary>
+        [Description("Atmospheric pressure")]
+        [Units("")]
         public double AtmosphericPressure { get; set; } = 1.01325;
-        
+
+        /// <summary>
+        /// Accounts for the delay in temperature response to the sun
+        /// </summary>
+        [Description("X lag")]
+        [Units("")]
+        public double XLag { get; set; } = 1.8;
+
+        /// <summary>
+        /// Accounts for the delay in temperature response to the sun
+        /// </summary>
+        [Description("Y lag")]
+        [Units("")]
+        public double YLag { get; set; } = 2.2;
+
+        /// <summary>
+        /// Accounts for the delay in temperature response to the sun
+        /// </summary>
+        [Description("Z lag")]
+        [Units("")]
+        public double ZLag { get; set; } = 1;
+
         /// <summary>
         /// The daily maximum temperature
         /// </summary>
@@ -31,22 +54,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// The daily minimum temperature
         /// </summary>
-        public double MinTemperature { get; set; }
-
-        /// <summary>
-        /// Accounts for the delay in temperature response to the sun
-        /// </summary>
-        public double XLag { get; set; } = 1.8;
-
-        /// <summary>
-        /// Accounts for the delay in temperature response to the sun
-        /// </summary>
-        public double YLag { get; set; } = 2.2;
-
-        /// <summary>
-        /// Accounts for the delay in temperature response to the sun
-        /// </summary>
-        public double ZLag { get; set; } = 1;
+        public double MinTemperature { get; set; }        
 
         /// <summary>
         /// The current air temperature

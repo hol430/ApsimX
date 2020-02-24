@@ -13,33 +13,48 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     public class PathwayParameters : Model, IPathwayParameters
     {
         /// <inheritdoc/>
+        [Description("Ratio of intercellular CO2 to air CO2")]
+        [Units("")]
         public double IntercellularToAirCO2Ratio { get; set; }
 
         /// <inheritdoc/>
-        public double FractionOfCyclicElectronFlow { get; set; }
-
-        /// <inheritdoc/>
+        [Description("Ratio of SLN to respiration")]
+        [Units("")]
         public double RespirationSLNRatio { get; set; }
 
         /// <inheritdoc/>
+        [Description("Ratio of SLN to max Rubisco activity")]
+        [Units("")]
         public double MaxRubiscoActivitySLNRatio { get; set; }
 
         /// <inheritdoc/>
+        [Description("Ratio of SLN to max electron transport")]
+        [Units("")]
         public double MaxElectronTransportSLNRatio { get; set; }
 
         /// <inheritdoc/>
+        [Description("Ratio of SLN to max PEPc activity")]
+        [Units("")]
         public double MaxPEPcActivitySLNRatio { get; set; }
 
         /// <inheritdoc/>
+        [Description("Ratio of SLN to Mesophyll CO2 conductance")]
+        [Units("")]
         public double MesophyllCO2ConductanceSLNRatio { get; set; }
 
         /// <inheritdoc/>
+        [Description("Mesophyll electron transport fraction")]
+        [Units("")]
         public double MesophyllElectronTransportFraction { get; set; }
 
         /// <inheritdoc/>
+        [Description("ATP production electron transport factor")]
+        [Units("")]
         public double ATPProductionElectronTransportFactor { get; set; }
 
         /// <inheritdoc/>
+        [Description("Extra ATP cost")]
+        [Units("")]
         public double ExtraATPCost { get; set; }
 
         /// <inheritdoc/>
@@ -70,16 +85,23 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         public LeafTemperatureParameters MesophyllCO2ConductanceParams { get; set; }
 
         /// <inheritdoc/>
-
+        [Description("Spectral correction factor")]
+        [Units("")]
         public double SpectralCorrectionFactor { get; set; }
 
         /// <inheritdoc/>
+        [Description("Photosystem II activity fraction")]
+        [Units("")]
         public double PS2ActivityFraction { get; set; }
 
         /// <inheritdoc/>
+        [Description("PEP regeneration")]
+        [Units("")]
         public double PEPRegeneration { get; set; }
 
         /// <inheritdoc/>
+        [Description("Bundle sheath conductance")]
+        [Units("")]
         public double BundleSheathConductance { get; set; }       
     }
 

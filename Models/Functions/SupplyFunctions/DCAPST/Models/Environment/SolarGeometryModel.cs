@@ -13,6 +13,13 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     public class SolarGeometryModel : Model, ISolarGeometry
     {
         /// <summary>
+        /// The rate at which the suns energy reaches the earth
+        /// </summary>
+        [Description("Solar constant")]
+        [Units("")]
+        public double SolarConstant { get; } = 1360;
+
+        /// <summary>
         /// Geographic latitude (radians)
         /// </summary>
         public double Latitude { get; set; }
@@ -25,12 +32,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Angle of the sun at sunset (radians)
         /// </summary>
-        public double SunsetAngle { get; private set; }
-
-        /// <summary>
-        /// The rate at which the suns energy reaches the earth
-        /// </summary>
-        public double SolarConstant { get; } = 1360;
+        public double SunsetAngle { get; private set; }        
 
         /// <summary>
         /// Day of the year

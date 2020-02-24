@@ -21,17 +21,21 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Fraction of incoming radiation that is diffuse
         /// </summary>
-        private readonly double diffuseFraction = 0.1725;       
-
-        /// <summary>
-        /// The radiation measured across a day
-        /// </summary>
-        public double Daily { get; set; }
+        [Description("Fraction of incoming diffuse radiation")]
+        [Units("")]
+        public double DiffuseFraction { get; set; } = 0.1725;
 
         /// <summary>
         /// PAR energy fraction
         /// </summary>
-        public double RPAR { get; set; }
+        [Description("Fraction of PAR energy")]
+        [Units("")]
+        public double RPAR { get; set; } = 0.5;
+
+        /// <summary>
+        /// The radiation measured across a day
+        /// </summary>
+        public double Daily { get; set; }        
 
         /// <summary>
         /// The total incoming solar radiation over a time period
@@ -103,7 +107,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         private double CurrentDiffuse(double time)
         {
-            var diffuse = Math.Max(diffuseFraction * Solar.SolarConstant * Math.Sin(Solar.SunAngle(time)) / 1000000, 0);
+            var diffuse = Math.Max(DiffuseFraction * Solar.SolarConstant * Math.Sin(Solar.SunAngle(time)) / 1000000, 0);
 
             if (diffuse > Total)
                 return Total;

@@ -47,6 +47,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Biochemical Conversion and Maintenance Respiration
         /// </summary>
+        [Description("Biochemical conversion and maintenance respiration")]
+        [Units("")]
         public double B { get; set; } = 0.409;
 
         /// <summary>

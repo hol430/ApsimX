@@ -11,11 +11,6 @@
         double IntercellularToAirCO2Ratio { get; set; }
 
         /// <summary>
-        /// Fraction of cyclic electron floww
-        /// </summary>
-        double FractionOfCyclicElectronFlow { get; set; }
-
-        /// <summary>
         /// Ratio of respiration to SLN
         /// </summary>
         double RespirationSLNRatio { get; set; }
