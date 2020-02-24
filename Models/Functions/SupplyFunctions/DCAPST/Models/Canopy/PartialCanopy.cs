@@ -12,9 +12,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [ValidParent(ParentType = typeof(ITotalCanopy))]
     public class PartialCanopy : Model, IPartialCanopy
     {
-        /// <inheritdoc/>
         [Link]
-        ICanopyParameters Canopy = null;
+        IAssimilation assimilation = null;
 
         /// <inheritdoc/>
         public ParameterRates At25C { get; private set; } = new ParameterRates();
@@ -40,7 +39,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         public void DoPhotosynthesis(ITemperature temperature, WaterParameters Params)
         {
-            var assimilation = CreateAssimilation(temperature);
+            assimilation.Initialise(temperature.AirTemperature);
 
             // Determine initial results
             assimilation.UpdateAssimilation(Params);
@@ -66,16 +65,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             // If three iterations pass without failing, update the values to the final result
             CO2AssimilationRate = assimilation.GetCO2Rate();
             WaterUse = assimilation.GetWaterUse();
-        }
-
-        /// <summary>
-        /// Factory method for creating an assimilation based on the canopy type
-        /// </summary>
-        private IAssimilation CreateAssimilation(ITemperature temperature)
-        {
-            if (Canopy.Type == CanopyType.C3) return new AssimilationC3(this, temperature);
-            else if (Canopy.Type == CanopyType.C4) return new AssimilationC4(this, temperature);
-            else return new AssimilationCCM(this, temperature);
         }
     }
 }

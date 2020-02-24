@@ -9,7 +9,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// <summary>
     /// Tracks the state of an assimilation type
     /// </summary>
-    public abstract class Assimilation : IAssimilation
+    public abstract class Assimilation : Model, IAssimilation
     {
         /// <summary>
         /// The part of the canopy undergoing CO2 assimilation
@@ -38,7 +38,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// The possible assimilation pathways
         /// </summary>
-        protected List<AssimilationPathway> pathways;        
+        protected List<AssimilationPathway> Pathways => Children.OfType<AssimilationPathway>().ToList();
 
         /// <summary>
         /// Bundle sheath conductance
@@ -50,34 +50,34 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         public double Vpr => Pathway.PEPRegeneration * Partial.LAI;
 
-        /// <summary> </summary>
-        public Assimilation(IPartialCanopy partial, ITemperature temperature)
+        /// <summary>
+        /// Initialises the assimilation pathways
+        /// </summary>
+        public void Initialise(double temperature)
         {
-            this.Partial = partial;
-
-            pathways = new List<AssimilationPathway>()
+            Pathways.ForEach(p =>
             {
-                /*Ac1*/ new AssimilationPathway(partial) { Type = PathwayType.Ac1 },
-                /*Ac2*/ this is AssimilationC3 ? null : new AssimilationPathway(partial) { Type = PathwayType.Ac2 },
-                /*Aj */ new AssimilationPathway(partial) { Type = PathwayType.Aj }
-            };
-            pathways.ForEach(p => p.Leaf.Temperature = temperature.AirTemperature);
+                p.Leaf.Temperature = temperature;
+                p.MesophyllCO2 = Canopy.AirCO2 * Pathway.IntercellularToAirCO2Ratio;
+                p.ChloroplasticCO2 = p.MesophyllCO2 + 20;
+                p.ChloroplasticO2 = 210000;
+            });
         }
-        
+
         /// <summary>
         /// Recalculates the assimilation values for each pathway
         /// </summary>
-        public void UpdateAssimilation(WaterParameters water) => pathways.ForEach(p => UpdatePathway(water, p));        
+        public void UpdateAssimilation(WaterParameters water) => Pathways.ForEach(p => UpdatePathway(water, p));
 
         /// <summary>
         /// Finds the CO2 assimilation rate
         /// </summary>
-        public double GetCO2Rate() => pathways.Min(p => p.CO2Rate);
+        public double GetCO2Rate() => Pathways.Min(p => p.CO2Rate);
 
         /// <summary>
         /// Finds the water used during CO2 assimilation
         /// </summary>
-        public double GetWaterUse() => pathways.Min(p => p.WaterUse);
+        public double GetWaterUse() => Pathways.Min(p => p.WaterUse);
 
         /// <summary>
         /// Updates the state of an assimilation pathway

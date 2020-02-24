@@ -6,17 +6,17 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// <summary>
     /// Models the parameters of the leaf necessary to calculate photosynthesis
     /// </summary>
-    public class LeafTemperatureResponseModel
+    [Serializable]
+    [ViewName("UserInterface.Views.GridView")]
+    [PresenterName("UserInterface.Presenters.PropertyPresenter")]
+    [ValidParent(ParentType = typeof(AssimilationPathway))]
+    public class LeafTemperatureResponseModel : Model
     {
         /// <summary>
         /// The canopy which is calculating leaf temperature properties
         /// </summary>
-        private IPartialCanopy partial;
-
-        /// <summary>
-        /// A collection of parameters as valued at 25 degrees Celsius
-        /// </summary>
-        private ParameterRates rateAt25;
+        [Link(Type = LinkType.Ancestor)]
+        IPartialCanopy Partial = null;
 
         /// <summary>
         /// The parameters describing the canopy
@@ -30,13 +30,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         [Link]
         IPathwayParameters Pathway = null;
 
-        /// <summary></summary>
-        public LeafTemperatureResponseModel(IPartialCanopy partial)
-        {
-            this.partial = partial;
-            rateAt25 = partial.At25C;
-        }
-
         /// <summary>
         /// The current leaf temperature
         /// </summary>
@@ -45,27 +38,27 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Maximum rate of rubisco carboxylation at the current leaf temperature (micro mol CO2 m^-2 ground s^-1)
         /// </summary>
-        public double VcMaxT => Value(Temperature, rateAt25.VcMax, Pathway.RubiscoActivity.Factor);
+        public double VcMaxT => Value(Temperature, Partial.At25C.VcMax, Pathway.RubiscoActivity.Factor);
 
         /// <summary>
         /// Leaf respiration at the current leaf temperature (micro mol CO2 m^-2 ground s^-1)
         /// </summary>
-        public double RdT => Value(Temperature, rateAt25.Rd, Pathway.Respiration.Factor);
+        public double RdT => Value(Temperature, Partial.At25C.Rd, Pathway.Respiration.Factor);
 
         /// <summary>
         /// Maximum rate of electron transport at the current leaf temperature (micro mol CO2 m^-2 ground s^-1)
         /// </summary>
-        public double JMaxT => ValueOptimum(Temperature, rateAt25.JMax, Pathway.ElectronTransportRateParams);
+        public double JMaxT => ValueOptimum(Temperature, Partial.At25C.JMax, Pathway.ElectronTransportRateParams);
 
         /// <summary>
         /// Maximum PEP carboxylase activity at the current leaf temperature (micro mol CO2 m^-2 ground s^-1)
         /// </summary>
-        public double VpMaxT => Value(Temperature, rateAt25.VpMax, Pathway.PEPcActivity.Factor);
+        public double VpMaxT => Value(Temperature, Partial.At25C.VpMax, Pathway.PEPcActivity.Factor);
 
         /// <summary>
         /// Mesophyll conductance at the current leaf temperature (mol CO2 m^-2 ground s^-1 bar^-1)
         /// </summary>
-        public double GmT => ValueOptimum(Temperature, rateAt25.Gm, Pathway.MesophyllCO2ConductanceParams);
+        public double GmT => ValueOptimum(Temperature, Partial.At25C.Gm, Pathway.MesophyllCO2ConductanceParams);
 
         /// <summary>
         /// Michaelis-Menten constant of Rubsico for CO2 (microbar)
@@ -139,7 +132,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         private double CalcElectronTransportRate()
         {
-            var factor = partial.PhotonCount * (1.0 - Pathway.SpectralCorrectionFactor) / 2.0;
+            var factor = Partial.PhotonCount * (1.0 - Pathway.SpectralCorrectionFactor) / 2.0;
             return (factor + JMaxT - Math.Pow(Math.Pow(factor + JMaxT, 2) - 4 * Canopy.CurvatureFactor * JMaxT * factor, 0.5))
             / (2 * Canopy.CurvatureFactor);
         }

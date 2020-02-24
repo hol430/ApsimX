@@ -9,14 +9,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [Serializable]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(IPhotosynthesisModel))]
+    [ValidParent(ParentType = typeof(ITotalCanopy))]
     public class CanopyParameters : Model, ICanopyParameters
     {
-        /// <inheritdoc/>
-        [Description("Canopy type")]
-        [Units("")]
-        public CanopyType Type { get; set; }
-
         /// <inheritdoc/>
         [Description("Partial pressure of O2 in air")]
         [Units("μbar")]
@@ -35,7 +30,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <inheritdoc/>
         [Description("Diffusivity solubility ratio")]
         [Units("")]
-        public double DiffusivitySolubilityRatio { get; set; }
-        
+        public double DiffusivitySolubilityRatio { get; set; }        
     }
 }

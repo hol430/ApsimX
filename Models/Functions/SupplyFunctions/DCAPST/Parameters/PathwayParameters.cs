@@ -9,7 +9,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [Serializable]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(IPhotosynthesisModel))]
+    [ValidParent(ParentType = typeof(ITotalCanopy))]
     public class PathwayParameters : Model, IPathwayParameters
     {
         /// <inheritdoc/>

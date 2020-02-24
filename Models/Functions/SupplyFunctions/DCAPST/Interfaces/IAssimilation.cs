@@ -6,6 +6,11 @@
     public interface IAssimilation
     {
         /// <summary>
+        /// Initialises the assimilation pathways
+        /// </summary>
+        void Initialise(double temperature);
+
+        /// <summary>
         /// Attempts to calculate possible changes to the assimilation value under current conditions.
         /// </summary>
         void UpdateAssimilation(WaterParameters Params);        

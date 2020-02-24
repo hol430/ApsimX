@@ -1,16 +1,17 @@
 ﻿using System;
+using Models.Core;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Defines the pathway functions for a C3 canopy
     /// </summary>
+    [Serializable]
+    [ViewName("UserInterface.Views.GridView")]
+    [PresenterName("UserInterface.Presenters.PropertyPresenter")]
+    [ValidParent(ParentType = typeof(IPartialCanopy))]
     public class AssimilationC3 : Assimilation
     {
-        /// <inheritdoc/>
-        public AssimilationC3(IPartialCanopy partial, ITemperature temperature) : base(partial, temperature)
-        { }
-
         /// <inheritdoc/>
         protected override AssimilationFunction GetAc1Function(AssimilationPathway pathway)
         {

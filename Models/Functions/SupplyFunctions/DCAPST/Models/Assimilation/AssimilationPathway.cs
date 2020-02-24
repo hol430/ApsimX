@@ -27,7 +27,11 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// <summary>
     /// Models an assimilation pathway
     /// </summary>
-    public class AssimilationPathway
+    [Serializable]
+    [ViewName("UserInterface.Views.GridView")]
+    [PresenterName("UserInterface.Presenters.PropertyPresenter")]
+    [ValidParent(ParentType = typeof(IAssimilation))]
+    public class AssimilationPathway : Model
     {
         /// <summary>
         /// The parameters describing the canopy
@@ -44,11 +48,13 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// The current pathway type
         /// </summary>
+        [Description("Pathway type")]
         public PathwayType Type { get; set; }
 
         /// <summary>
         /// Models how the leaf responds to different temperatures
         /// </summary>
+        [Link(Type = LinkType.Child)]
         public LeafTemperatureResponseModel Leaf { get; set; }
 
         /// <summary>
@@ -80,15 +86,5 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// Chloroplastic O2 partial pressure at the site of Rubisco carboxylation (microbar)
         /// </summary>
         public double ChloroplasticO2 { get; set; }
-
-        /// <summary></summary>
-        public AssimilationPathway(IPartialCanopy partial)
-        {
-            MesophyllCO2 = Canopy.AirCO2 * Pathway.IntercellularToAirCO2Ratio;
-            ChloroplasticCO2 = MesophyllCO2 + 20;
-            ChloroplasticO2 = 210000;
-
-            Leaf = new LeafTemperatureResponseModel(partial);
-        }
     }
 }

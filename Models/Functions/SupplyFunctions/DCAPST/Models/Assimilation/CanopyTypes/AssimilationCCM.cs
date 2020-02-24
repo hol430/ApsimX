@@ -1,14 +1,17 @@
-﻿namespace Models.Functions.SupplyFunctions.DCAPST
+﻿using System;
+using Models.Core;
+
+namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
     /// Defines the pathway functions for a CCM canopy
     /// </summary>
+    [Serializable]
+    [ViewName("UserInterface.Views.GridView")]
+    [PresenterName("UserInterface.Presenters.PropertyPresenter")]
+    [ValidParent(ParentType = typeof(IPartialCanopy))]
     public class AssimilationCCM : Assimilation
     {
-        /// <inheritdoc/>
-        public AssimilationCCM(IPartialCanopy partial, ITemperature temperature) : base(partial, temperature)
-        { }
-
         /// <inheritdoc/>
         protected override void UpdateIntercellularCO2(AssimilationPathway pathway, double gt, double waterUseMolsSecond)
         {
