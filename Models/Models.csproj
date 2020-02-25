@@ -271,7 +271,6 @@
     <Compile Include="Functions\SupplyFunctions\DCAPST\Interfaces\Models\ISolarGeometry.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Interfaces\Models\ISolarRadiation.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Interfaces\Models\ITemperature.cs" />
-    <Compile Include="Functions\SupplyFunctions\DCAPST\Interfaces\Parameters\ICanopyParameters.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Interfaces\Parameters\IPathwayParameters.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Models\Assimilation\Assimilation.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Models\Assimilation\AssimilationFunction.cs" />
@@ -287,7 +286,6 @@
     <Compile Include="Functions\SupplyFunctions\DCAPST\Models\Environment\SolarRadiationModel.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Models\Environment\TemperatureModel.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Models\PhotosynthesisModel.cs" />
-    <Compile Include="Functions\SupplyFunctions\DCAPST\Parameters\CanopyParameters.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Parameters\PathwayParameters.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Utilities\Extensions.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Utilities\LeafTemperatureResponseModel.cs" />

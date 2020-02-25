@@ -12,12 +12,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     public abstract class Assimilation : Model, IAssimilation
     {
         /// <summary>
-        /// The parameters describing the canopy
-        /// </summary>
-        [Link]
-        protected ICanopyParameters Canopy;
-
-        /// <summary>
         /// The parameters describing the pathways
         /// </summary>
         [Link]
