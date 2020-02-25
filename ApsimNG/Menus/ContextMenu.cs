@@ -27,6 +27,7 @@ namespace UserInterface.Presenters
     using Models.Functions;
     using Models.Soils.Standardiser;
     using Models.Graph;
+    using Models.Sensitivity;
 
     /// <summary>
     /// This class contains methods for all context menu items that the ExplorerView exposes to the user.
@@ -212,6 +213,26 @@ namespace UserInterface.Presenters
                 {
                     explorerPresenter.MainPresenter.ShowError("Microsoft Azure functionality is currently only available under Windows.");
                 }
+            }
+            catch (Exception err)
+            {
+                explorerPresenter.MainPresenter.ShowError(err);
+            }
+        }
+
+        /// <summary>
+        /// Run Stics CroptimizR
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        [ContextMenu(MenuName = "Run Stics CroptimizR", AppliesTo = new[] { typeof(Stics) })]
+        public void RunStics(object sender, EventArgs e)
+        {
+            try
+            {
+                Stics model = Apsim.Get(explorerPresenter.ApsimXFile, explorerPresenter.CurrentNodePath) as Stics;
+                if (model != null)
+                    model.Run();
             }
             catch (Exception err)
             {

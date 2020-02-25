@@ -287,6 +287,7 @@
     <EmbeddedResource Include="Resources\Scripts\CSharpExpressionTemplate.cs" />
     <Compile Include="Plant\Phenology\Scales\ZadokPMFWheat.cs" />
     <Compile Include="PostSimulationTools\ExcelMultiInput.cs" />
+    <Compile Include="Sensitivity\Stics.cs" />
     <Compile Include="Soils\Nutrients\INutrientPool.cs" />
     <Compile Include="Soils\SoilTemp\SoilTemperature.cs" />
     <Compile Include="Soils\Standardiser\Layers.cs" />
@@ -776,6 +777,7 @@
     <EmbeddedResource Include="Resources\AGPRhodes.json" />
     <EmbeddedResource Include="Resources\AGPTallFescue.json" />
     <EmbeddedResource Include="Resources\AGPLucerne.json" />
+    <EmbeddedResource Include="Resources\RScripts\OptimizR.r" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0,Profile=Client">
