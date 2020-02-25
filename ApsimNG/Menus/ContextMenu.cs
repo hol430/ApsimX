@@ -232,7 +232,11 @@ namespace UserInterface.Presenters
             {
                 Stics model = Apsim.Get(explorerPresenter.ApsimXFile, explorerPresenter.CurrentNodePath) as Stics;
                 if (model != null)
+                {
+                    explorerPresenter.MainPresenter.ShowMessage("Running Stics optimisation. Please be patient...", Simulation.MessageType.Information);
                     model.Run();
+                    explorerPresenter.MainPresenter.ShowMessage($"Successfully finished running stics optimiser. Please see {model.Name} section of summary file for details", Simulation.MessageType.Information);
+                }
             }
             catch (Exception err)
             {
