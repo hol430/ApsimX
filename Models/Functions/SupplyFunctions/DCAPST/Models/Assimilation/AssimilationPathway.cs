@@ -52,10 +52,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         public PathwayType Type { get; set; }
 
         /// <summary>
-        /// Models how the leaf responds to different temperatures
+        /// 
         /// </summary>
-        [Link(Type = LinkType.Child)]
-        public LeafTemperatureResponseModel Leaf { get; set; }
+        public double Temperature { get; set; } = 0;
 
         /// <summary>
         /// Bundle sheath conductance

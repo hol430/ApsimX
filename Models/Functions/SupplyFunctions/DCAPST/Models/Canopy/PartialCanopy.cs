@@ -23,7 +23,12 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         [Link]
         ILeafWaterInteraction LeafWater = null;
-        
+
+        /// <summary>
+        /// Models how the leaf responds to different temperatures
+        /// </summary>
+        public LeafTemperatureResponseModel Leaf { get; set; }
+
         /// <inheritdoc/>
         public ParameterRates At25C { get; private set; } = new ParameterRates();        
 
@@ -64,7 +69,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         {
             Pathways.ForEach(p =>
             {
-                p.Leaf.Temperature = temperature;
+                p.Temperature = temperature;
                 p.MesophyllCO2 = assimilation.AirCO2 * assimilation.IntercellularToAirCO2Ratio;
                 p.ChloroplasticCO2 = p.MesophyllCO2 + 20;
                 p.ChloroplasticO2 = 210000;
@@ -117,17 +122,18 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         {
             if (pathway == null) return;
 
-            LeafWater.SetConditions(pathway.Leaf.Temperature, water.BoundaryHeatConductance);
+            Leaf.SetConditions(At25C, pathway.Temperature, PhotonCount);
+            LeafWater.SetConditions(pathway.Temperature, water.BoundaryHeatConductance);
 
             double resistance;
 
-            var func = assimilation.GetFunction(pathway);
+            var func = assimilation.GetFunction(pathway, Leaf);
             if (!water.limited) /* Unlimited water calculation */
             {
                 pathway.IntercellularCO2 = assimilation.IntercellularToAirCO2Ratio * assimilation.AirCO2;
 
                 func.Ci = pathway.IntercellularCO2;
-                func.Rm = 1 / pathway.Leaf.GmT;
+                func.Rm = 1 / Leaf.GmT;
 
                 pathway.CO2Rate = func.Value();
 
@@ -143,16 +149,16 @@ namespace Models.Functions.SupplyFunctions.DCAPST
                 var Gt = LeafWater.TotalCO2Conductance(resistance);
 
                 func.Ci = assimilation.AirCO2 - WaterUseMolsSecond * assimilation.AirCO2 / (Gt + WaterUseMolsSecond / 2.0);
-                func.Rm = 1 / (Gt + WaterUseMolsSecond / 2) + 1.0 / pathway.Leaf.GmT;
+                func.Rm = 1 / (Gt + WaterUseMolsSecond / 2) + 1.0 / Leaf.GmT;
 
                 pathway.CO2Rate = func.Value();
 
                 assimilation.UpdateIntercellularCO2(pathway, Gt, WaterUseMolsSecond);
             }
-            assimilation.UpdatePartialPressures(pathway, func);
+            assimilation.UpdatePartialPressures(pathway, Leaf, func);
 
             // New leaf temperature
-            pathway.Leaf.Temperature = (LeafWater.LeafTemperature(resistance, AbsorbedRadiation) + pathway.Leaf.Temperature) / 2.0;
+            pathway.Temperature = (LeafWater.LeafTemperature(resistance, AbsorbedRadiation) + pathway.Temperature) / 2.0;
 
             // If the assimilation is not sensible zero the values
             if (double.IsNaN(pathway.CO2Rate) || pathway.CO2Rate <= 0.0 || double.IsNaN(pathway.WaterUse) || pathway.WaterUse <= 0.0)

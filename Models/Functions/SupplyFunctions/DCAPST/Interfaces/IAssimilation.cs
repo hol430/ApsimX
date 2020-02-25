@@ -28,12 +28,12 @@
         /// <summary>
         /// 
         /// </summary>
-        AssimilationFunction GetFunction(AssimilationPathway pathway);
+        AssimilationFunction GetFunction(AssimilationPathway pathway, LeafTemperatureResponseModel leaf);
 
         /// <summary>
         /// Attempts to calculate possible changes to the assimilation value under current conditions.
         /// </summary>
-        void UpdatePartialPressures(AssimilationPathway pathway, AssimilationFunction function);
+        void UpdatePartialPressures(AssimilationPathway pathway, LeafTemperatureResponseModel leaf, AssimilationFunction function);
 
         /// <summary>
         /// 
