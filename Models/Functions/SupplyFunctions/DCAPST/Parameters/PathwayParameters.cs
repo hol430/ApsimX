@@ -11,27 +11,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(ITotalCanopy))]
     public class PathwayParameters : Model, IPathwayParameters
-    {
-        /// <inheritdoc/>
-        [Description("Ratio of intercellular CO2 to air CO2")]
-        [Units("")]
-        public double IntercellularToAirCO2Ratio { get; set; }        
-
-        /// <inheritdoc/>
-        [Description("Mesophyll electron transport fraction")]
-        [Units("")]
-        public double MesophyllElectronTransportFraction { get; set; }
-
-        /// <inheritdoc/>
-        [Description("ATP production electron transport factor")]
-        [Units("")]
-        public double ATPProductionElectronTransportFactor { get; set; }
-
-        /// <inheritdoc/>
-        [Description("Extra ATP cost")]
-        [Units("")]
-        public double ExtraATPCost { get; set; }
-
+    {       
         /// <inheritdoc/>
         public TemperatureResponseValues RubiscoCarboxylation { get; set; }
 
@@ -60,14 +40,14 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         public LeafTemperatureParameters MesophyllCO2ConductanceParams { get; set; }
 
         /// <inheritdoc/>
-        [Description("Spectral correction factor")]
+        [Description("Empirical curvature factor")]
         [Units("")]
-        public double SpectralCorrectionFactor { get; set; }
+        public double CurvatureFactor { get; set; }
 
         /// <inheritdoc/>
-        [Description("Photosystem II activity fraction")]
+        [Description("Spectral correction factor")]
         [Units("")]
-        public double PS2ActivityFraction { get; set; }
+        public double SpectralCorrectionFactor { get; set; }        
 
         /// <inheritdoc/>
         [Description("PEP regeneration")]

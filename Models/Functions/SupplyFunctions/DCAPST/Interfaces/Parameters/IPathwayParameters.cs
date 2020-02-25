@@ -4,27 +4,7 @@
     /// Describes the pathway parameters
     /// </summary>
     public interface IPathwayParameters
-    {       
-        /// <summary>
-        /// Ratio of intercellular CO2 to air CO2
-        /// </summary>
-        double IntercellularToAirCO2Ratio { get; set; }        
-        
-        /// <summary>
-        /// Mesophyll electron transport fraction
-        /// </summary>
-        double MesophyllElectronTransportFraction { get; set; }
-        
-        /// <summary>
-        /// ATP production electron transport factor
-        /// </summary>
-        double ATPProductionElectronTransportFactor { get; set; }
- 
-        /// <summary>
-        /// Extra ATP cost
-        /// </summary>
-        double ExtraATPCost { get; set; }
-
+    {
         /// <summary>
         /// Describes how Rubisco carboxylation changes with temperature
         /// </summary>
@@ -71,14 +51,14 @@
         LeafTemperatureParameters MesophyllCO2ConductanceParams { get; set; }
 
         /// <summary>
-        /// Spectral correction factor
+        /// Empirical curvature factor
         /// </summary>
-        double SpectralCorrectionFactor { get; set; }
+        double CurvatureFactor { get; set; }
 
         /// <summary>
-        /// Fraction of photosystem II activity in the bundle sheath
+        /// Spectral correction factor
         /// </summary>
-        double PS2ActivityFraction { get; set; }
+        double SpectralCorrectionFactor { get; set; }        
         
         /// <summary>
         /// PEP regeneration rate per leaf area

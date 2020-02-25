@@ -6,23 +6,38 @@
     public interface IAssimilation
     {
         /// <summary>
-        /// Initialises the assimilation pathways
+        /// Partial pressure of O2 in air (microbar)
         /// </summary>
-        void Initialise(double temperature);
+        double AirO2 { get; set; }
+
+        /// <summary>
+        /// Partial pressure of CO2 in air (microbar)
+        /// </summary>
+        double AirCO2 { get; set; }
+
+        /// <summary>
+        /// Ratio of intercellular CO2 to air CO2
+        /// </summary>
+        double IntercellularToAirCO2Ratio { get; set; }
+
+        /// <summary>
+        /// The ratio of diffusivity to solubility
+        /// </summary>
+        double DiffusivitySolubilityRatio { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        AssimilationFunction GetFunction(AssimilationPathway pathway);
 
         /// <summary>
         /// Attempts to calculate possible changes to the assimilation value under current conditions.
         /// </summary>
-        void UpdateAssimilation(WaterParameters Params);        
+        void UpdatePartialPressures(AssimilationPathway pathway, AssimilationFunction function);
 
         /// <summary>
-        /// Gets the rate of CO2 assimilation
+        /// 
         /// </summary>
-        double GetCO2Rate();
-
-        /// <summary>
-        /// Gets the water used by the CO2 assimilation
-        /// </summary>
-        double GetWaterUse();
+        void UpdateIntercellularCO2(AssimilationPathway pathway, double gt, double waterUseMolsSecond);
     }
 }

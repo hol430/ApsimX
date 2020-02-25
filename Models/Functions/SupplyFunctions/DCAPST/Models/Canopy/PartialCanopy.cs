@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+
 using Models.Core;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
@@ -15,8 +18,19 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         [Link]
         IAssimilation assimilation = null;
 
+        /// <summary>
+        /// Models the leaf water interaction
+        /// </summary>
+        [Link]
+        ILeafWaterInteraction LeafWater = null;
+        
         /// <inheritdoc/>
-        public ParameterRates At25C { get; private set; } = new ParameterRates();
+        public ParameterRates At25C { get; private set; } = new ParameterRates();        
+
+        /// <summary>
+        /// The possible assimilation pathways
+        /// </summary>
+        protected List<AssimilationPathway> Pathways => Children.OfType<AssimilationPathway>().ToList();        
 
         /// <inheritdoc/>
         public double LAI { get; set; }
@@ -34,19 +48,43 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         public double WaterUse { get; set; }
 
         /// <summary>
+        /// Finds the CO2 assimilation rate
+        /// </summary>
+        public double GetCO2Rate() => Pathways.Min(p => p.CO2Rate);
+
+        /// <summary>
+        /// Finds the water used during CO2 assimilation
+        /// </summary>
+        public double GetWaterUse() => Pathways.Min(p => p.WaterUse);
+
+        /// <summary>
+        /// Initialises the assimilation pathways
+        /// </summary>
+        public void Initialise(double temperature)
+        {
+            Pathways.ForEach(p =>
+            {
+                p.Leaf.Temperature = temperature;
+                p.MesophyllCO2 = assimilation.AirCO2 * assimilation.IntercellularToAirCO2Ratio;
+                p.ChloroplasticCO2 = p.MesophyllCO2 + 20;
+                p.ChloroplasticO2 = 210000;
+            });
+        }
+
+        /// <summary>
         /// Calculates the CO2 assimilated by the partial canopy during photosynthesis,
         /// and the water used by the process
         /// </summary>
         public void DoPhotosynthesis(ITemperature temperature, WaterParameters Params)
         {
-            assimilation.Initialise(temperature.AirTemperature);
+            Initialise(temperature.AirTemperature);
 
             // Determine initial results
-            assimilation.UpdateAssimilation(Params);
+            UpdateAssimilation(Params);
 
             // Store the initial results in case the subsequent updates fail
-            CO2AssimilationRate = assimilation.GetCO2Rate();
-            WaterUse = assimilation.GetWaterUse();
+            CO2AssimilationRate = GetCO2Rate();
+            WaterUse = GetWaterUse();
             
             if (CO2AssimilationRate == 0 || WaterUse == 0) return;
 
@@ -55,16 +93,73 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             {
                 for (int n = 0; n < 3; n++)
                 {
-                    assimilation.UpdateAssimilation(Params);
+                    UpdateAssimilation(Params);
 
                     // If the additional updates fail, the minimum amongst the initial values is taken
-                    if (assimilation.GetCO2Rate() == 0 || assimilation.GetWaterUse() == 0) return;                    
+                    if (GetCO2Rate() == 0 || GetWaterUse() == 0) return;                    
                 }
             }
 
             // If three iterations pass without failing, update the values to the final result
-            CO2AssimilationRate = assimilation.GetCO2Rate();
-            WaterUse = assimilation.GetWaterUse();
+            CO2AssimilationRate = GetCO2Rate();
+            WaterUse = GetWaterUse();
+        }
+
+        /// <summary>
+        /// Recalculates the assimilation values for each pathway
+        /// </summary>
+        public void UpdateAssimilation(WaterParameters water) => Pathways.ForEach(p => UpdatePathway(water, p));       
+
+        /// <summary>
+        /// Updates the state of an assimilation pathway
+        /// </summary>
+        private void UpdatePathway(WaterParameters water, AssimilationPathway pathway)
+        {
+            if (pathway == null) return;
+
+            LeafWater.SetConditions(pathway.Leaf.Temperature, water.BoundaryHeatConductance);
+
+            double resistance;
+
+            var func = assimilation.GetFunction(pathway);
+            if (!water.limited) /* Unlimited water calculation */
+            {
+                pathway.IntercellularCO2 = assimilation.IntercellularToAirCO2Ratio * assimilation.AirCO2;
+
+                func.Ci = pathway.IntercellularCO2;
+                func.Rm = 1 / pathway.Leaf.GmT;
+
+                pathway.CO2Rate = func.Value();
+
+                resistance = LeafWater.UnlimitedWaterResistance(pathway.CO2Rate, assimilation.AirCO2, pathway.IntercellularCO2);
+                pathway.WaterUse = LeafWater.HourlyWaterUse(resistance, AbsorbedRadiation);
+            }
+            else /* Limited water calculation */
+            {
+                pathway.WaterUse = water.maxHourlyT * water.fraction;
+                var WaterUseMolsSecond = pathway.WaterUse / 18 * 1000 / 3600;
+
+                resistance = LeafWater.LimitedWaterResistance(pathway.WaterUse, AbsorbedRadiation);
+                var Gt = LeafWater.TotalCO2Conductance(resistance);
+
+                func.Ci = assimilation.AirCO2 - WaterUseMolsSecond * assimilation.AirCO2 / (Gt + WaterUseMolsSecond / 2.0);
+                func.Rm = 1 / (Gt + WaterUseMolsSecond / 2) + 1.0 / pathway.Leaf.GmT;
+
+                pathway.CO2Rate = func.Value();
+
+                assimilation.UpdateIntercellularCO2(pathway, Gt, WaterUseMolsSecond);
+            }
+            assimilation.UpdatePartialPressures(pathway, func);
+
+            // New leaf temperature
+            pathway.Leaf.Temperature = (LeafWater.LeafTemperature(resistance, AbsorbedRadiation) + pathway.Leaf.Temperature) / 2.0;
+
+            // If the assimilation is not sensible zero the values
+            if (double.IsNaN(pathway.CO2Rate) || pathway.CO2Rate <= 0.0 || double.IsNaN(pathway.WaterUse) || pathway.WaterUse <= 0.0)
+            {
+                pathway.CO2Rate = 0;
+                pathway.WaterUse = 0;
+            }
         }
     }
 }

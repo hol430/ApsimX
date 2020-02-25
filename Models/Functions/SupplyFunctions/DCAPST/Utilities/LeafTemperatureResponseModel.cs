@@ -19,12 +19,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         IPartialCanopy Partial = null;
 
         /// <summary>
-        /// The parameters describing the canopy
-        /// </summary>
-        [Link]
-        ICanopyParameters Canopy = null;
-
-        /// <summary>
         /// The parameters describing the pathways
         /// </summary>
         [Link]
@@ -133,8 +127,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         private double CalcElectronTransportRate()
         {
             var factor = Partial.PhotonCount * (1.0 - Pathway.SpectralCorrectionFactor) / 2.0;
-            return (factor + JMaxT - Math.Pow(Math.Pow(factor + JMaxT, 2) - 4 * Canopy.CurvatureFactor * JMaxT * factor, 0.5))
-            / (2 * Canopy.CurvatureFactor);
+            return (factor + JMaxT - Math.Pow(Math.Pow(factor + JMaxT, 2) - 4 * Pathway.CurvatureFactor * JMaxT * factor, 0.5))
+            / (2 * Pathway.CurvatureFactor);
         }
     }
 

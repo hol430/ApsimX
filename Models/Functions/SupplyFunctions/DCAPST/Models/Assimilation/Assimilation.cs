@@ -12,12 +12,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     public abstract class Assimilation : Model, IAssimilation
     {
         /// <summary>
-        /// The part of the canopy undergoing CO2 assimilation
-        /// </summary>
-        [Link]
-        protected IPartialCanopy Partial;
-
-        /// <summary>
         /// The parameters describing the canopy
         /// </summary>
         [Link]
@@ -29,126 +23,51 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         [Link]
         protected IPathwayParameters Pathway;
 
-        /// <summary>
-        /// Models the leaf water interaction
-        /// </summary>
-        [Link]
-        ILeafWaterInteraction LeafWater = null;
+        /// <inheritdoc/>
+        [Description("Partial pressure of O2 in air")]
+        [Units("μbar")]
+        public double AirO2 { get; set; }
 
-        /// <summary>
-        /// The possible assimilation pathways
-        /// </summary>
-        protected List<AssimilationPathway> Pathways => Children.OfType<AssimilationPathway>().ToList();
+        /// <inheritdoc/>
+        [Description("Partial pressure of CO2 in air")]
+        [Units("μbar")]
+        public double AirCO2 { get; set; }
 
-        /// <summary>
-        /// Bundle sheath conductance
-        /// </summary>
-        public double Gbs => Pathway.BundleSheathConductance * Partial.LAI;
-        
-        /// <summary>
-        /// PEP regeneration
-        /// </summary>
-        public double Vpr => Pathway.PEPRegeneration * Partial.LAI;
+        /// <inheritdoc/>
+        [Description("Ratio of intercellular CO2 to air CO2")]
+        [Units("")]
+        public double IntercellularToAirCO2Ratio { get; set; }
 
-        /// <summary>
-        /// Initialises the assimilation pathways
-        /// </summary>
-        public void Initialise(double temperature)
-        {
-            Pathways.ForEach(p =>
-            {
-                p.Leaf.Temperature = temperature;
-                p.MesophyllCO2 = Canopy.AirCO2 * Pathway.IntercellularToAirCO2Ratio;
-                p.ChloroplasticCO2 = p.MesophyllCO2 + 20;
-                p.ChloroplasticO2 = 210000;
-            });
-        }
+        /// <inheritdoc/>
+        [Description("Diffusivity solubility ratio")]
+        [Units("")]
+        public double DiffusivitySolubilityRatio { get; set; }
 
-        /// <summary>
-        /// Recalculates the assimilation values for each pathway
-        /// </summary>
-        public void UpdateAssimilation(WaterParameters water) => Pathways.ForEach(p => UpdatePathway(water, p));
-
-        /// <summary>
-        /// Finds the CO2 assimilation rate
-        /// </summary>
-        public double GetCO2Rate() => Pathways.Min(p => p.CO2Rate);
-
-        /// <summary>
-        /// Finds the water used during CO2 assimilation
-        /// </summary>
-        public double GetWaterUse() => Pathways.Min(p => p.WaterUse);
-
-        /// <summary>
-        /// Updates the state of an assimilation pathway
-        /// </summary>
-        private void UpdatePathway(WaterParameters water, AssimilationPathway pathway)
-        {
-            if (pathway == null) return;
-
-            LeafWater.SetConditions(pathway.Leaf.Temperature, water.BoundaryHeatConductance);
-
-            double resistance;
-
-            var func = GetFunction(pathway);
-            if (!water.limited) /* Unlimited water calculation */
-            {
-                pathway.IntercellularCO2 = Pathway.IntercellularToAirCO2Ratio * Canopy.AirCO2;
-
-                func.Ci = pathway.IntercellularCO2;
-                func.Rm = 1 / pathway.Leaf.GmT;
-
-                pathway.CO2Rate = func.Value();
-
-                resistance = LeafWater.UnlimitedWaterResistance(pathway.CO2Rate, Canopy.AirCO2, pathway.IntercellularCO2);
-                pathway.WaterUse = LeafWater.HourlyWaterUse(resistance, Partial.AbsorbedRadiation);
-            }
-            else /* Limited water calculation */
-            {
-                pathway.WaterUse = water.maxHourlyT * water.fraction;
-                var WaterUseMolsSecond = pathway.WaterUse / 18 * 1000 / 3600;
-
-                resistance = LeafWater.LimitedWaterResistance(pathway.WaterUse, Partial.AbsorbedRadiation);
-                var Gt = LeafWater.TotalCO2Conductance(resistance);
-
-                func.Ci = Canopy.AirCO2 - WaterUseMolsSecond * Canopy.AirCO2 / (Gt + WaterUseMolsSecond / 2.0);
-                func.Rm = 1 / (Gt + WaterUseMolsSecond / 2) + 1.0 / pathway.Leaf.GmT;
-
-                pathway.CO2Rate = func.Value();
-
-                UpdateIntercellularCO2(pathway, Gt, WaterUseMolsSecond);
-            }
-
-            UpdateMesophyllCO2(pathway);
-            UpdateChloroplasticO2(pathway);
-            UpdateChloroplasticCO2(pathway, func);
-
-            // New leaf temperature
-            pathway.Leaf.Temperature = (LeafWater.LeafTemperature(resistance, Partial.AbsorbedRadiation) + pathway.Leaf.Temperature) / 2.0;
-
-            // If the assimilation is not sensible zero the values
-            if (double.IsNaN(pathway.CO2Rate) || pathway.CO2Rate <= 0.0 || double.IsNaN(pathway.WaterUse) || pathway.WaterUse <= 0.0)
-            {
-                pathway.CO2Rate = 0;
-                pathway.WaterUse = 0;
-            }
-        }
-        
         /// <summary>
         /// Factory method for accessing the different possible terms for assimilation
         /// </summary>
-        private AssimilationFunction GetFunction(AssimilationPathway pathway)
+        public AssimilationFunction GetFunction(AssimilationPathway pathway)
         {
             if (pathway.Type == PathwayType.Ac1) return GetAc1Function(pathway);
             else if (pathway.Type == PathwayType.Ac2) return GetAc2Function(pathway);
             else return GetAjFunction(pathway);
-        }
+        }        
 
         /// <summary>
         /// Updates the intercellular CO2 parameter
         /// </summary>
-        protected virtual void UpdateIntercellularCO2(AssimilationPathway pathway, double gt, double waterUseMolsSecond) 
+        public virtual void UpdateIntercellularCO2(AssimilationPathway pathway, double gt, double waterUseMolsSecond) 
         { /*C4 & CCM overwrite this.*/ }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void UpdatePartialPressures(AssimilationPathway pathway, AssimilationFunction function)
+        {
+            UpdateMesophyllCO2(pathway);
+            UpdateChloroplasticO2(pathway);
+            UpdateChloroplasticCO2(pathway, function);
+        }
 
         /// <summary>
         /// Updates the mesophyll CO2 parameter

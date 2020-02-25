@@ -12,24 +12,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [ValidParent(ParentType = typeof(ITotalCanopy))]
     public class CanopyParameters : Model, ICanopyParameters
     {
-        /// <inheritdoc/>
-        [Description("Partial pressure of O2 in air")]
-        [Units("μbar")]
-        public double AirO2 { get; set; }
-
-        /// <inheritdoc/>
-        [Description("Partial pressure of CO2 in air")]
-        [Units("")]
-        public double AirCO2 { get; set; }
-
-        /// <inheritdoc/>
-        [Description("Empirical curvature factor")]
-        [Units("")]
-        public double CurvatureFactor { get; set; }
-
-        /// <inheritdoc/>
-        [Description("Diffusivity solubility ratio")]
-        [Units("")]
-        public double DiffusivitySolubilityRatio { get; set; }        
+        
+              
     }
 }

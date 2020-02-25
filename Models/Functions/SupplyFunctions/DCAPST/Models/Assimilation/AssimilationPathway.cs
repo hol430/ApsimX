@@ -34,10 +34,10 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     public class AssimilationPathway : Model
     {
         /// <summary>
-        /// The parameters describing the canopy
+        /// The part of the canopy this pathway belongs to
         /// </summary>
-        [Link]
-        protected ICanopyParameters Canopy;
+        [Link(Type = LinkType.Ancestor)]
+        protected IPartialCanopy Partial;
 
         /// <summary>
         /// The parameters describing the pathways
@@ -56,6 +56,16 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         [Link(Type = LinkType.Child)]
         public LeafTemperatureResponseModel Leaf { get; set; }
+
+        /// <summary>
+        /// Bundle sheath conductance
+        /// </summary>
+        public double Gbs => Pathway.BundleSheathConductance * Partial.LAI;
+
+        /// <summary>
+        /// PEP regeneration
+        /// </summary>
+        public double Vpr => Pathway.PEPRegeneration * Partial.LAI;
 
         /// <summary>
         /// The rate at which CO2 is assimilated

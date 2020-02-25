@@ -9,7 +9,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [Serializable]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(IPartialCanopy))]
+    [ValidParent(ParentType = typeof(ITotalCanopy))]
     public class AssimilationC3 : Assimilation
     {
         /// <inheritdoc/>
@@ -35,7 +35,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
                 HalfRubiscoSpecificityReciprocal = pathway.Leaf.Gamma,
                 FractionOfDiffusivitySolubilityRatio = 0.0,
                 BundleSheathConductance = 1.0,
-                Oxygen = Canopy.AirO2,
+                Oxygen = AirO2,
                 Respiration = pathway.Leaf.RdT
             };
 
@@ -69,7 +69,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
                 HalfRubiscoSpecificityReciprocal = pathway.Leaf.Gamma,
                 FractionOfDiffusivitySolubilityRatio = 0.0,
                 BundleSheathConductance = 1.0,
-                Oxygen = Canopy.AirO2,
+                Oxygen = AirO2,
                 Respiration = pathway.Leaf.RdT
             };
 
