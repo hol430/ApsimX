@@ -26,14 +26,24 @@
         double DiffusivitySolubilityRatio { get; set; }
 
         /// <summary>
+        /// PEP regeneration rate per leaf area
+        /// </summary>
+        double PEPRegeneration { get; set; }
+
+        /// <summary>
+        /// Bundle sheath CO2 conductance per leaf
+        /// </summary>
+        double BundleSheathConductance { get; set; }
+
+        /// <summary>
         /// 
         /// </summary>
-        AssimilationFunction GetFunction(AssimilationPathway pathway, LeafTemperatureResponseModel leaf);
+        AssimilationFunction GetFunction(AssimilationPathway pathway, TemperatureResponse leaf);
 
         /// <summary>
         /// Attempts to calculate possible changes to the assimilation value under current conditions.
         /// </summary>
-        void UpdatePartialPressures(AssimilationPathway pathway, LeafTemperatureResponseModel leaf, AssimilationFunction function);
+        void UpdatePartialPressures(AssimilationPathway pathway, TemperatureResponse leaf, AssimilationFunction function);
 
         /// <summary>
         /// 

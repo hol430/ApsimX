@@ -34,16 +34,16 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     public class AssimilationPathway : Model
     {
         /// <summary>
+        /// The assimilation
+        /// </summary>
+        [Link]
+        IAssimilation Assimilation = null;
+
+        /// <summary>
         /// The part of the canopy this pathway belongs to
         /// </summary>
         [Link(Type = LinkType.Ancestor)]
-        protected IPartialCanopy Partial;
-
-        /// <summary>
-        /// The parameters describing the pathways
-        /// </summary>
-        [Link]
-        protected IPathwayParameters Pathway;
+        IPartialCanopy Partial = null;
 
         /// <summary>
         /// The current pathway type
@@ -59,12 +59,12 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Bundle sheath conductance
         /// </summary>
-        public double Gbs => Pathway.BundleSheathConductance * Partial.LAI;
+        public double Gbs => Assimilation.BundleSheathConductance * Partial.LAI;
 
         /// <summary>
         /// PEP regeneration
         /// </summary>
-        public double Vpr => Pathway.PEPRegeneration * Partial.LAI;
+        public double Vpr => Assimilation.PEPRegeneration * Partial.LAI;
 
         /// <summary>
         /// The rate at which CO2 is assimilated

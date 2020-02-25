@@ -39,10 +39,16 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         ITotalCanopy Canopy = null;
 
         /// <summary>
-        /// The initial parameters of the pathway
+        /// Describes how electron transport rate changes with temperature
         /// </summary>
-        [Link]
-        IPathwayParameters Pathway = null;
+        [Link(ByName = true)]
+        TemperatureResponseParameters ElectronTransportRate = null;
+
+        /// <summary>
+        /// Describes how Mesophyll conductance changes with temperature
+        /// </summary>
+        [Link(ByName = true)]
+        TemperatureResponseParameters MesophyllCO2Conductance = null;
 
         /// <summary>
         /// Biochemical Conversion and Maintenance Respiration
@@ -149,10 +155,10 @@ namespace Models.Functions.SupplyFunctions.DCAPST
 
             bool[] tempConditions = new bool[4]
             {
-                temp > Pathway.ElectronTransportRateParams.TMax,
-                temp < Pathway.ElectronTransportRateParams.TMin,
-                temp > Pathway.MesophyllCO2ConductanceParams.TMax,
-                temp < Pathway.MesophyllCO2ConductanceParams.TMin
+                temp > ElectronTransportRate.TMax,
+                temp < ElectronTransportRate.TMin,
+                temp > MesophyllCO2Conductance.TMax,
+                temp < MesophyllCO2Conductance.TMin
             };
 
             bool invalidTemp = tempConditions.Any(b => b == true);

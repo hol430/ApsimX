@@ -271,7 +271,6 @@
     <Compile Include="Functions\SupplyFunctions\DCAPST\Interfaces\Models\ISolarGeometry.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Interfaces\Models\ISolarRadiation.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Interfaces\Models\ITemperature.cs" />
-    <Compile Include="Functions\SupplyFunctions\DCAPST\Interfaces\Parameters\IPathwayParameters.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Models\Assimilation\Assimilation.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Models\Assimilation\AssimilationFunction.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Models\Assimilation\AssimilationPathway.cs" />
@@ -286,9 +285,8 @@
     <Compile Include="Functions\SupplyFunctions\DCAPST\Models\Environment\SolarRadiationModel.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Models\Environment\TemperatureModel.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Models\PhotosynthesisModel.cs" />
-    <Compile Include="Functions\SupplyFunctions\DCAPST\Parameters\PathwayParameters.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Utilities\Extensions.cs" />
-    <Compile Include="Functions\SupplyFunctions\DCAPST\Utilities\LeafTemperatureResponseModel.cs" />
+    <Compile Include="Functions\SupplyFunctions\DCAPST\Utilities\TemperatureResponse.cs" />
     <Compile Include="Graph\DefaultPainter.cs" />
     <Compile Include="Graph\ShadedBarsOnGraph.cs" />
     <Compile Include="Graph\GraphPanel.cs" />
@@ -856,6 +854,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\GRangeLandUnits.txt" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

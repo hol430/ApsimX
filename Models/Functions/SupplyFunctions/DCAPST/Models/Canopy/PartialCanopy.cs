@@ -27,7 +27,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Models how the leaf responds to different temperatures
         /// </summary>
-        public LeafTemperatureResponseModel Leaf { get; set; }
+        public TemperatureResponse Leaf { get; set; }
 
         /// <inheritdoc/>
         public ParameterRates At25C { get; private set; } = new ParameterRates();        

@@ -47,7 +47,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         }
 
         /// <inheritdoc/>
-        protected override void UpdateMesophyllCO2(AssimilationPathway pathway, LeafTemperatureResponseModel leaf)
+        protected override void UpdateMesophyllCO2(AssimilationPathway pathway, TemperatureResponse leaf)
         {
             pathway.MesophyllCO2 = pathway.IntercellularCO2 - pathway.CO2Rate / leaf.GmT;
         }
@@ -66,7 +66,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         }
 
         /// <inheritdoc/>
-        protected override AssimilationFunction GetAc1Function(AssimilationPathway pathway, LeafTemperatureResponseModel leaf)
+        protected override AssimilationFunction GetAc1Function(AssimilationPathway pathway, TemperatureResponse leaf)
         {
             var x = new double[9];
 
@@ -96,7 +96,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         }
 
         /// <inheritdoc/>
-        protected override AssimilationFunction GetAc2Function(AssimilationPathway pathway, LeafTemperatureResponseModel leaf)
+        protected override AssimilationFunction GetAc2Function(AssimilationPathway pathway, TemperatureResponse leaf)
         {
             var x = new double[9];
 
@@ -126,7 +126,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         }
 
         /// <inheritdoc/>
-        protected override AssimilationFunction GetAjFunction(AssimilationPathway pathway, LeafTemperatureResponseModel leaf)
+        protected override AssimilationFunction GetAjFunction(AssimilationPathway pathway, TemperatureResponse leaf)
         {
             var x = new double[9];
 
