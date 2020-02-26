@@ -13,16 +13,22 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     public class CanopyStructure : Model, ICanopyStructure
     {
         /// <summary>
+        /// The incoming solar radiation
+        /// </summary>
+        [Link]
+        ISolarRadiation Radiation = null;
+
+        /// <summary>
         /// The part of the canopy in sunlight
         /// </summary>
         [Link(ByName = true)]
-        public IAssimilationArea Sunlit { get; private set; }
+        IAssimilationArea Sunlit = null;
 
         /// <summary>
         /// The part of the canopy in shade
         /// </summary>
         [Link(ByName = true)]
-        public IAssimilationArea Shaded { get; private set; }
+        IAssimilationArea Shaded = null;
 
         /// <summary>
         /// Models radiation absorbed by the canopy
@@ -33,6 +39,16 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// Leaf area index of the canopy
         /// </summary>
         private double LAI { get; set; }
+
+        /// <summary>
+        /// Nitrogen at the top of the canopy
+        /// </summary>
+        private double LeafNTopCanopy { get; set; }
+
+        /// <summary>
+        /// Coefficient of nitrogen allocation through the canopy
+        /// </summary>
+        private double NAllocation { get; set; }
 
         #region Properties
 
@@ -158,16 +174,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         #endregion
 
         /// <summary>
-        /// Nitrogen at the top of the canopy
-        /// </summary>
-        private double LeafNTopCanopy { get; set; }
-
-        /// <summary>
-        /// Coefficient of nitrogen allocation through the canopy
-        /// </summary>
-        private double NAllocation { get; set; }
-
-        /// <summary>
         /// The number of layers in the canopy
         /// </summary>
         public int Layers { get; set; } = 1;
@@ -196,11 +202,29 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Recalculates canopy parameters for a new time step
         /// </summary>
-        public void DoTimestepAdjustment(ISolarRadiation radiation)
+        public void DoTimestepUpdate(double transpiration = -1, double sunFraction = 0, double shadeFraction = 0)
         {
             CalcLAI();
-            CalcAbsorbedRadiations(radiation);
+            CalcAbsorbedRadiations();
             CalcMaximumRates();
+
+            var Params = new WaterParameters
+            {
+                maxHourlyT = transpiration,
+                limited = false
+            };
+            if (transpiration != -1) Params.limited = true;
+
+            var heat = CalcBoundaryHeatConductance();
+            var sunlitHeat = CalcSunlitBoundaryHeatConductance();
+
+            Params.BoundaryHeatConductance = sunlitHeat;
+            Params.fraction = sunFraction;
+            Sunlit.DoPhotosynthesis(Params);
+
+            Params.BoundaryHeatConductance = heat - sunlitHeat;
+            Params.fraction = shadeFraction;
+            Shaded.DoPhotosynthesis(Params);
         }
 
         /// <summary>
@@ -215,7 +239,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Calculates the radiation absorbed by the canopy, based on the position of the sun
         /// </summary>
-        private void CalcAbsorbedRadiations(ISolarRadiation radiation)
+        private void CalcAbsorbedRadiations()
         {
             // Set parameters
             Absorbed.DiffuseExtinction = DiffuseExtCoeff;
@@ -223,15 +247,15 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             Absorbed.DiffuseReflection = DiffuseReflectionCoeff;
 
             // Photon calculations (used by photosynthesis)
-            var photons = Absorbed.CalcTotalRadiation(radiation.DirectPAR, radiation.DiffusePAR);
-            Sunlit.PhotonCount = Absorbed.CalcSunlitRadiation(radiation.DirectPAR, radiation.DiffusePAR);
+            var photons = Absorbed.CalcTotalRadiation(Radiation.DirectPAR, Radiation.DiffusePAR);
+            Sunlit.PhotonCount = Absorbed.CalcSunlitRadiation(Radiation.DirectPAR, Radiation.DiffusePAR);
             Shaded.PhotonCount = photons - Sunlit.PhotonCount;
 
             // Energy calculations (used by water interaction)
-            var PARDirect = radiation.Direct * 0.5 * 1000000;
-            var PARDiffuse = radiation.Diffuse * 0.5 * 1000000;
-            var NIRDirect = radiation.Direct * 0.5 * 1000000;
-            var NIRDiffuse = radiation.Diffuse * 0.5 * 1000000;
+            var PARDirect = Radiation.Direct * 0.5 * 1000000;
+            var PARDiffuse = Radiation.Diffuse * 0.5 * 1000000;
+            var NIRDirect = Radiation.Direct * 0.5 * 1000000;
+            var NIRDiffuse = Radiation.Diffuse * 0.5 * 1000000;
 
             var PARTotalIrradiance = Absorbed.CalcTotalRadiation(PARDirect, PARDiffuse);
             var SunlitPARTotalIrradiance = Absorbed.CalcSunlitRadiation(PARDirect, PARDiffuse);
@@ -359,5 +383,31 @@ namespace Models.Functions.SupplyFunctions.DCAPST
                 return a + b;
             }
         }
+    }
+
+    /// <summary>
+    /// Describes the water situation of the canopy
+    /// </summary>
+    public struct WaterParameters
+    {
+        /// <summary>
+        /// If the canopy is water limited or not
+        /// </summary>
+        public bool limited;
+
+        /// <summary>
+        /// Boundary heat conductance of the canopy
+        /// </summary>
+        public double BoundaryHeatConductance;
+
+        /// <summary>
+        /// Maximum hourly transpiration
+        /// </summary>
+        public double maxHourlyT;
+
+        /// <summary>
+        /// Fraction of total water allocated to part of the canopy
+        /// </summary>
+        public double fraction;
     }
 }
