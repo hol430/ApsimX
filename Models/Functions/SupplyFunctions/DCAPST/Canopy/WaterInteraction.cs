@@ -12,7 +12,11 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [ValidParent(ParentType = typeof(ICanopyStructure))]
     public class WaterInteraction : Model, IWaterInteraction
     {
-        #region Constants
+        /// <summary> Environment temperature model </summary>
+        [Link]
+        ITemperature Temperature = null;
+
+        #region Fields
         /// <summary>
         /// Boltzmann's constant
         /// </summary>
@@ -32,17 +36,20 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// Latent heat of vapourisation
         /// </summary>
         private double latentHeatOfVapourisation = 2447000;
-        #endregion
 
-        /// <summary> Environment temperature model </summary>
-        [Link]
-        ITemperature Temperature = null;
-
-        /// <summary> Current leaf temperature </summary>
+        /// <summary> 
+        /// Current leaf temperature 
+        /// </summary>
         private double leafTemp;
 
-        /// <summary> Canopy boundary heat conductance</summary>
+        /// <summary> 
+        /// Canopy boundary heat conductance
+        /// </summary>
         private double gbh;
+
+        #endregion
+
+        #region Parameters
 
         /// <summary> Boundary H20 conductance </summary>
         private double Gbw => gbh / 0.92;
@@ -72,7 +79,11 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         private double DeltaAirVP => VpAir1 - VpAir;
 
         /// <summary> Leaf to air vapour pressure deficit </summary>
-        private double vpd => VpLeaf - VptMin;
+        private double Vpd => VpLeaf - VptMin;
+
+        #endregion
+
+        #region Methods
 
         /// <summary>
         /// Sets conditions for the water interaction
@@ -132,7 +143,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         {
             // Transpiration in kilos of water per second
             double ekg = latentHeatOfVapourisation * availableWater / 3600;
-            double rtw = (DeltaAirVP * Rbh * (Rn - ThermalRadiation - ekg) + vpd * sAir) / (ekg * g);
+            double rtw = (DeltaAirVP * Rbh * (Rn - ThermalRadiation - ekg) + Vpd * sAir) / (ekg * g);
             return rtw;
         }
 
@@ -146,7 +157,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             // TODO: Make this work with the timestep model
 
             // dummy variables
-            double a_lump = DeltaAirVP * (rn - ThermalRadiation) + vpd * sAir / Rbh;
+            double a_lump = DeltaAirVP * (rn - ThermalRadiation) + Vpd * sAir / Rbh;
             double b_lump = DeltaAirVP + g * rtw / Rbh;
             double latentHeatLoss = a_lump / b_lump;
 
@@ -172,12 +183,14 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         public double LeafTemperature(double rtw, double rn)
         {
             // dummy variables
-            double a = g * (rn - ThermalRadiation) * rtw / sAir - vpd;
+            double a = g * (rn - ThermalRadiation) * rtw / sAir - Vpd;
             double d = DeltaAirVP + g * rtw / Rbh;
 
             double deltaT = a / d;
 
             return Temperature.AirTemperature + deltaT;
         }
+
+        #endregion
     }
 }

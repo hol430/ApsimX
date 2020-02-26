@@ -12,6 +12,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [ValidParent(ParentType = typeof(IDCAPSTModel))]
     public class CanopyStructure : Model, ICanopyStructure
     {
+        #region Links
+
         /// <summary>
         /// The incoming solar radiation
         /// </summary>
@@ -30,25 +32,31 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         [Link(ByName = true)]
         IAssimilationArea Shaded = null;
 
+        #endregion
+
+        #region Fields
+
         /// <summary>
         /// Models radiation absorbed by the canopy
         /// </summary>
-        private AbsorbedRadiation Absorbed { get; set; }
+        private AbsorbedRadiation absorbed { get; set; }
 
         /// <summary>
         /// Leaf area index of the canopy
         /// </summary>
-        private double LAI { get; set; }
+        private double LAI;
 
         /// <summary>
         /// Nitrogen at the top of the canopy
         /// </summary>
-        private double LeafNTopCanopy { get; set; }
+        private double NTopCanopy;
 
         /// <summary>
         /// Coefficient of nitrogen allocation through the canopy
         /// </summary>
-        private double NAllocation { get; set; }
+        private double NAllocation;
+
+        #endregion
 
         #region Properties
 
@@ -170,13 +178,15 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         [Description("Ratio of average SLN to canopy top SLN")]
         [Units("")]
         public double SLNRatioTop { get; set; }
-        
-        #endregion
 
         /// <summary>
         /// The number of layers in the canopy
         /// </summary>
         public int Layers { get; set; } = 1;
+
+        #endregion        
+
+        #region Methods
 
         /// <summary>
         /// Establishes the initial conditions for the daily photosynthesis calculation
@@ -186,12 +196,12 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             LAI = lai;
 
             var SLNTop = sln * SLNRatioTop;
-            LeafNTopCanopy = SLNTop * 1000 / 14;
+            NTopCanopy = SLNTop * 1000 / 14;
 
             var NcAv = sln * 1000 / 14;
-            NAllocation = -1 * Math.Log((NcAv - MinimumN) / (LeafNTopCanopy - MinimumN)) * 2;           
+            NAllocation = -1 * Math.Log((NcAv - MinimumN) / (NTopCanopy - MinimumN)) * 2;           
 
-            Absorbed = new AbsorbedRadiation(Layers, LAI)
+            absorbed = new AbsorbedRadiation(Layers, LAI)
             {
                 DiffuseExtinction = DiffuseExtCoeff,
                 LeafScattering = LeafScatteringCoeff,
@@ -232,7 +242,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         private void CalcLAI()
         {
-            Sunlit.LAI = Absorbed.CalculateSunlitLAI();
+            Sunlit.LAI = absorbed.CalculateSunlitLAI();
             Shaded.LAI = LAI - Sunlit.LAI;
         }
 
@@ -242,13 +252,13 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         private void CalcAbsorbedRadiations()
         {
             // Set parameters
-            Absorbed.DiffuseExtinction = DiffuseExtCoeff;
-            Absorbed.LeafScattering = LeafScatteringCoeff;
-            Absorbed.DiffuseReflection = DiffuseReflectionCoeff;
+            absorbed.DiffuseExtinction = DiffuseExtCoeff;
+            absorbed.LeafScattering = LeafScatteringCoeff;
+            absorbed.DiffuseReflection = DiffuseReflectionCoeff;
 
             // Photon calculations (used by photosynthesis)
-            var photons = Absorbed.CalcTotalRadiation(Radiation.DirectPAR, Radiation.DiffusePAR);
-            Sunlit.PhotonCount = Absorbed.CalcSunlitRadiation(Radiation.DirectPAR, Radiation.DiffusePAR);
+            var photons = absorbed.CalcTotalRadiation(Radiation.DirectPAR, Radiation.DiffusePAR);
+            Sunlit.PhotonCount = absorbed.CalcSunlitRadiation(Radiation.DirectPAR, Radiation.DiffusePAR);
             Shaded.PhotonCount = photons - Sunlit.PhotonCount;
 
             // Energy calculations (used by water interaction)
@@ -257,17 +267,17 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             var NIRDirect = Radiation.Direct * 0.5 * 1000000;
             var NIRDiffuse = Radiation.Diffuse * 0.5 * 1000000;
 
-            var PARTotalIrradiance = Absorbed.CalcTotalRadiation(PARDirect, PARDiffuse);
-            var SunlitPARTotalIrradiance = Absorbed.CalcSunlitRadiation(PARDirect, PARDiffuse);
+            var PARTotalIrradiance = absorbed.CalcTotalRadiation(PARDirect, PARDiffuse);
+            var SunlitPARTotalIrradiance = absorbed.CalcSunlitRadiation(PARDirect, PARDiffuse);
             var ShadedPARTotalIrradiance = PARTotalIrradiance - SunlitPARTotalIrradiance;
 
             // Adjust parameters for NIR calculations
-            Absorbed.DiffuseExtinction = DiffuseExtCoeffNIR;
-            Absorbed.LeafScattering = LeafScatteringCoeffNIR;
-            Absorbed.DiffuseReflection = DiffuseReflectionCoeffNIR;
+            absorbed.DiffuseExtinction = DiffuseExtCoeffNIR;
+            absorbed.LeafScattering = LeafScatteringCoeffNIR;
+            absorbed.DiffuseReflection = DiffuseReflectionCoeffNIR;
 
-            var NIRTotalIrradiance = Absorbed.CalcTotalRadiation(NIRDirect, NIRDiffuse);
-            var SunlitNIRTotalIrradiance = Absorbed.CalcSunlitRadiation(NIRDirect, NIRDiffuse);
+            var NIRTotalIrradiance = absorbed.CalcTotalRadiation(NIRDirect, NIRDiffuse);
+            var SunlitNIRTotalIrradiance = absorbed.CalcSunlitRadiation(NIRDirect, NIRDiffuse);
             var ShadedNIRTotalIrradiance = NIRTotalIrradiance - SunlitNIRTotalIrradiance;
 
             Sunlit.AbsorbedRadiation = SunlitPARTotalIrradiance + SunlitNIRTotalIrradiance;
@@ -280,7 +290,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         private void CalcMaximumRates()
         {
             var coefficient = NAllocation;
-            var sunlitCoefficient = NAllocation + (Absorbed.DirectExtinction * LAI);
+            var sunlitCoefficient = NAllocation + (absorbed.DirectExtinction * LAI);
 
             var RubiscoActivity25 = CalcMaximumRate(MaxRubiscoActivitySLNRatio, coefficient);
             Sunlit.At25C.VcMax = CalcMaximumRate(MaxRubiscoActivitySLNRatio, sunlitCoefficient);
@@ -308,8 +318,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         private double CalcMaximumRate(double psi, double coefficient)
         {
-            var factor = LAI * (LeafNTopCanopy - MinimumN) * psi;
-            var exp = Absorbed.CalcExp(coefficient / LAI);
+            var factor = LAI * (NTopCanopy - MinimumN) * psi;
+            var exp = absorbed.CalcExp(coefficient / LAI);
 
             return factor * exp / coefficient;
         }
@@ -331,7 +341,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         public double CalcSunlitBoundaryHeatConductance()
         {
-            var a = 0.5 * WindSpeedExtinction + Absorbed.DirectExtinction;
+            var a = 0.5 * WindSpeedExtinction + absorbed.DirectExtinction;
             var b = 0.01 * Math.Pow(WindSpeed / LeafWidth, 0.5);
             var c = 1 - Math.Exp(-a * LAI);            
 
@@ -345,9 +355,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         {        
             // Beam Extinction Coefficient
             if (sunAngle > 0)
-                Absorbed.DirectExtinction = CalcShadowProjection(sunAngle) / Math.Sin(sunAngle);
+                absorbed.DirectExtinction = CalcShadowProjection(sunAngle) / Math.Sin(sunAngle);
             else
-                Absorbed.DirectExtinction = 0;            
+                absorbed.DirectExtinction = 0;            
         }
 
         /// <summary>
@@ -356,7 +366,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         public double GetInterceptedRadiation()
         {
             // Intercepted radiation
-            return Absorbed.CalcInterceptedRadiation();
+            return absorbed.CalcInterceptedRadiation();
 
             // TODO: Make this work with multiple layers 
             // (by subtracting the accumulated intercepted radiation of the previous layers) e.g:
@@ -383,6 +393,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
                 return a + b;
             }
         }
+
+        #endregion
     }
 
     /// <summary>

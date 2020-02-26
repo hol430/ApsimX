@@ -115,6 +115,5 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             else
                 return diffuse;
         }
-
     }
 }

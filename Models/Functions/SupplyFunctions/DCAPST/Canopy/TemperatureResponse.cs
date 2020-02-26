@@ -12,6 +12,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [ValidParent(ParentType = typeof(ICanopyStructure))]
     public class TemperatureResponse : Model
     {
+        #region Links
         /// <summary>
         /// Describes how electron transport rate changes with temperature
         /// </summary>
@@ -23,6 +24,29 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         [Link(Type = LinkType.Child, ByName = true)]
         TemperatureResponseParameters MesophyllCO2Conductance { get; set; }
+
+        #endregion
+
+        #region Fields
+
+        /// <summary>
+        /// Values of parameters at 25 Celsius
+        /// </summary>
+        private ParameterRates At25C;
+        
+        /// <summary>
+        /// Current temperature
+        /// </summary>
+        private double Temperature;
+        
+        /// <summary>
+        /// Number of photons reaching the canopy
+        /// </summary>
+        private double photoncount;
+
+        #endregion
+
+        #region Properties
 
         /// <summary>
         /// Describes how Rubisco activity changes with temperature
@@ -113,21 +137,11 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         [Description("Spectral correction factor")]
         [Units("")]
-        double SpectralCorrectionFactor { get; set; }        
+        double SpectralCorrectionFactor { get; set; }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public void SetConditions(ParameterRates rates, double temperature, double photons)
-        {
-            At25C = rates;
-            Temperature = temperature;
-            photoncount = photons;
-        }
+        #endregion
 
-        private ParameterRates At25C;
-        private double Temperature;
-        private double photoncount;
+        #region Parameters
 
         /// <summary>
         /// Maximum rate of rubisco carboxylation at the current leaf temperature (micro mol CO2 m^-2 ground s^-1)
@@ -192,7 +206,21 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Mesophyll respiration
         /// </summary>
-        public double GmRd => RdT * 0.5;        
+        public double GmRd => RdT * 0.5;
+
+        #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// Provide the conditions which dictate the temperature response
+        /// </summary>
+        public void SetConditions(ParameterRates rates, double temperature, double photons)
+        {
+            At25C = rates;
+            Temperature = temperature;
+            photoncount = photons;
+        }
 
         /// <summary>
         /// Uses an exponential function to model temperature response parameters
@@ -230,6 +258,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             return (factor + JMaxT - Math.Pow(Math.Pow(factor + JMaxT, 2) - 4 * CurvatureFactor * JMaxT * factor, 0.5))
             / (2 * CurvatureFactor);
         }
+
+        #endregion
     }
 
     /// <summary>

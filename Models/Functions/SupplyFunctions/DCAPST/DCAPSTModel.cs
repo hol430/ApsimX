@@ -15,6 +15,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [ValidParent(ParentType = typeof(Model))]
     public class DCAPSTModel : Model, IDCAPSTModel
     {
+        #region Links
+
         /// <summary>
         /// The solar geometry
         /// </summary>
@@ -63,6 +65,39 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         [Link(ByName = true)]
         TemperatureResponseParameters MesophyllCO2Conductance = null;
 
+        #endregion
+
+        #region Fields
+
+        /* Do not change these variables or make them public until the code has been 
+         * fully adjusted to use the timestep model, i.e. all calculations which are 
+         * assumed to operate over 1 hour (3600 seconds)
+         */
+
+        /// <summary>
+        /// Daily photosynthesis start time (hours)
+        /// </summary>
+        private readonly double start = 6.0;
+
+        /// <summary>
+        /// Daily photosynthesis end time (hours)
+        /// </summary>
+        private readonly double end = 18.0;
+
+        /// <summary>
+        /// Frequency with which to calculate biomass accumulation (hours)
+        /// </summary>
+        private readonly double timestep = 1.0;
+        
+        /// <summary>
+        /// Total number of timesteps
+        /// </summary>
+        private int iterations;
+
+        #endregion
+
+        #region Properties
+
         /// <summary>
         /// Biochemical Conversion and Maintenance Respiration
         /// </summary>
@@ -95,14 +130,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         public double InterceptedRadiation { get; private set; }
 
-        /* Do not change these variables or make them public until the code has been 
-         * fully adjusted to use the timestep model, i.e. all calculations which are 
-         * assumed to operate over 1 hour (3600 seconds)
-         */
-        private readonly double start = 6.0;
-        private readonly double end = 18.0;
-        private readonly double timestep = 1.0;
-        private int iterations;
+        #endregion
+
+        #region Methods
 
         /// <summary>
         /// Calculates the potential and actual biomass growth of a canopy across the span of a day,
@@ -267,5 +297,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             }
             return demand.Select(d => d > averageDemandRate ? averageDemandRate : d).ToArray();
         }
-    }    
+        
+        #endregion
+    }
 }

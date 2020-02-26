@@ -14,31 +14,26 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     public class SolarGeometry : Model, ISolarGeometry
     {
         /// <summary>
+        /// The angle between the solar disk and the equatorial plane
+        /// </summary>
+        private double solarDeclination;
+
+        /// <summary>
         /// The rate at which the suns energy reaches the earth
         /// </summary>
         [Description("Solar constant")]
         [Units("")]
-        public double SolarConstant { get; } = 1360;
-
-        /// <summary>
-        /// Geographic latitude (radians)
-        /// </summary>
-        public double Latitude { get; set; }
-
-        /// <summary>
-        /// The angle between the solar disk and the equatorial plane
-        /// </summary>
-        public double SolarDeclination { get; private set; }
-
-        /// <summary>
-        /// Angle of the sun at sunset (radians)
-        /// </summary>
-        public double SunsetAngle { get; private set; }        
+        public double SolarConstant { get; set; } = 1360;
 
         /// <summary>
         /// Day of the year
         /// </summary>
-        public double DayOfYear { get; set; }        
+        public double DayOfYear { get; set; }
+
+        /// <summary>
+        /// Geographic latitude (radians)
+        /// </summary>
+        public double Latitude { get; set; }        
         
         /// <summary>
         /// Time the sun is in the sky (hours)
@@ -60,9 +55,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         public void InitialiseDay()
         {
-            SolarDeclination = CalcSolarDeclination();
-            SunsetAngle = CalcSunsetAngle();
-            DayLength = 2 * SunsetAngle.ToDegrees() / 15;
+            solarDeclination = CalcSolarDeclination();
+            DayLength = 2 * CalcSunsetAngle().ToDegrees() / 15;
             Sunrise = 12.0 - DayLength / 2.0;
             Sunset = 12.0 + DayLength / 2.0;
         }     
@@ -75,7 +69,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Calculates the angle of the sun at sunset
         /// </summary>
-        private double CalcSunsetAngle() => Math.Acos(-1 * Math.Tan(Latitude) * Math.Tan(SolarDeclination));
+        private double CalcSunsetAngle() => Math.Acos(-1 * Math.Tan(Latitude) * Math.Tan(solarDeclination));
         
         /// <summary>
         /// Calculates the angle of the sun in the sky (radians)
@@ -83,9 +77,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <param name="hour">The time in hours</param>        
         public double SunAngle(double hour)
         {
-            var angle = Math.Asin(Math.Sin(Latitude) * Math.Sin(SolarDeclination)
+            var angle = Math.Asin(Math.Sin(Latitude) * Math.Sin(solarDeclination)
                 + Math.Cos(Latitude)
-                * Math.Cos(SolarDeclination)
+                * Math.Cos(solarDeclination)
                 * Math.Cos(Math.PI / 12.0 * DayLength * (((hour - Sunrise) / DayLength) - 0.5)));
             return angle;
         }
