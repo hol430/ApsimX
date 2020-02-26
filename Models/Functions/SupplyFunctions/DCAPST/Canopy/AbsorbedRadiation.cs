@@ -3,9 +3,9 @@
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
-    /// Models solar radiation on the canopy
+    /// Models solar radiation absorbed the canopy
     /// </summary>
-    public class CanopyRadiation
+    public class AbsorbedRadiation
     {
         /// <summary>
         /// Leaf level scattering coefficient for radiation
@@ -61,7 +61,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         private readonly double AccumLAI_0;
 
         /// <summary></summary>
-        public CanopyRadiation(int layers, double lai)
+        public AbsorbedRadiation(int layers, double lai)
         {
             var layerLAI = lai / layers;
 

@@ -5,7 +5,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// <summary>
     /// An interface for a partial canopy
     /// </summary>
-    public interface IPartialCanopy
+    public interface IAssimilationArea
     {
         /// <summary>
         /// The rates of various parameters at 25 Celsius

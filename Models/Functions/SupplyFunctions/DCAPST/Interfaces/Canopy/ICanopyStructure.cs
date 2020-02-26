@@ -1,19 +1,19 @@
 ﻿namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
-    /// An interface describing a total canopy
+    /// Models the structure of the canopy
     /// </summary>
-    public interface ITotalCanopy
+    public interface ICanopyStructure
     {       
         /// <summary>
         /// The section of canopy currently in sunlight
         /// </summary>
-        IPartialCanopy Sunlit { get; }
+        IAssimilationArea Sunlit { get; }
 
         /// <summary>
         /// The section of canopy currently in shade
         /// </summary>
-        IPartialCanopy Shaded { get; }        
+        IAssimilationArea Shaded { get; }        
 
         /// <summary>
         /// Performs initial calculations for the canopy provided daily conditions 

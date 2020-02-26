@@ -7,10 +7,11 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// Models the position of the sun
     /// </summary>
     [Serializable]
+    [Description("Models the position of the sun relative to the crop")]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(IPhotosynthesisModel))]
-    public class SolarGeometryModel : Model, ISolarGeometry
+    [ValidParent(ParentType = typeof(IDCAPSTModel))]
+    public class SolarGeometry : Model, ISolarGeometry
     {
         /// <summary>
         /// The rate at which the suns energy reaches the earth

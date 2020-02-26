@@ -9,8 +9,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [Serializable]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(ITotalCanopy))]
-    public class LeafWaterInteractionModel : Model, ILeafWaterInteraction
+    [ValidParent(ParentType = typeof(ICanopyStructure))]
+    public class WaterInteraction : Model, IWaterInteraction
     {
         #region Constants
         /// <summary>

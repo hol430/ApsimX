@@ -9,10 +9,11 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// Models daily biomass growth due to photosynthetic activity
     /// </summary>
     [Serializable]
+    [Description("Calculates daily biomass growth due to photosynthetic activity, using the DCAPST model")]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(Model))]
-    public class PhotosynthesisModel : Model, IPhotosynthesisModel
+    public class DCAPSTModel : Model, IDCAPSTModel
     {
         /// <summary>
         /// The solar geometry
@@ -36,7 +37,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// The canopy undergoing photosynthesis
         /// </summary>
         [Link]
-        ITotalCanopy Canopy = null;
+        ICanopyStructure Canopy = null;
 
         /// <summary>
         /// Describes how electron transport rate changes with temperature
@@ -82,6 +83,10 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         public double InterceptedRadiation { get; private set; }
 
+        /* Do not change these variables or make them public until the code has been 
+         * fully adjusted to use the timestep model, i.e. all calculations which are 
+         * assumed to operate over 1 hour (3600 seconds)
+         */
         private readonly double start = 6.0;
         private readonly double end = 18.0;
         private readonly double timestep = 1.0;

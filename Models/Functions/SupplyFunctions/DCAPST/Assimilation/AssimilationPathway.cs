@@ -30,7 +30,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [Serializable]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(IAssimilation))]
+    [ValidParent(ParentType = typeof(IAssimilationArea))]
     public class AssimilationPathway : Model
     {
         /// <summary>
@@ -43,7 +43,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// The part of the canopy this pathway belongs to
         /// </summary>
         [Link(Type = LinkType.Ancestor)]
-        IPartialCanopy Partial = null;
+        IAssimilationArea Area = null;
 
         /// <summary>
         /// The current pathway type
@@ -59,12 +59,12 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Bundle sheath conductance
         /// </summary>
-        public double Gbs => Assimilation.BundleSheathConductance * Partial.LAI;
+        public double Gbs => Assimilation.BundleSheathConductance * Area.LAI;
 
         /// <summary>
         /// PEP regeneration
         /// </summary>
-        public double Vpr => Assimilation.PEPRegeneration * Partial.LAI;
+        public double Vpr => Assimilation.PEPRegeneration * Area.LAI;
 
         /// <summary>
         /// The rate at which CO2 is assimilated

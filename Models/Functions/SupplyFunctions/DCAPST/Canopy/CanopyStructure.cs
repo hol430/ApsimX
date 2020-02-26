@@ -4,30 +4,30 @@ using Models.Core;
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
-    /// Models a complete canopy
+    /// Models the structure of the canopy
     /// </summary>
     [Serializable]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(IPhotosynthesisModel))]
-    public class TotalCanopy : Model, ITotalCanopy
+    [ValidParent(ParentType = typeof(IDCAPSTModel))]
+    public class CanopyStructure : Model, ICanopyStructure
     {
         /// <summary>
         /// The part of the canopy in sunlight
         /// </summary>
         [Link(ByName = true)]
-        public IPartialCanopy Sunlit { get; private set; }
+        public IAssimilationArea Sunlit { get; private set; }
 
         /// <summary>
         /// The part of the canopy in shade
         /// </summary>
         [Link(ByName = true)]
-        public IPartialCanopy Shaded { get; private set; }
+        public IAssimilationArea Shaded { get; private set; }
 
         /// <summary>
         /// Models radiation absorbed by the canopy
         /// </summary>
-        private CanopyRadiation Absorbed { get; set; }
+        private AbsorbedRadiation Absorbed { get; set; }
 
         /// <summary>
         /// Leaf area index of the canopy
@@ -185,7 +185,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             var NcAv = sln * 1000 / 14;
             NAllocation = -1 * Math.Log((NcAv - MinimumN) / (LeafNTopCanopy - MinimumN)) * 2;           
 
-            Absorbed = new CanopyRadiation(Layers, LAI)
+            Absorbed = new AbsorbedRadiation(Layers, LAI)
             {
                 DiffuseExtinction = DiffuseExtCoeff,
                 LeafScattering = LeafScatteringCoeff,

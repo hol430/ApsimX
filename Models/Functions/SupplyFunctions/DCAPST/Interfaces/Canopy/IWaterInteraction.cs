@@ -3,7 +3,7 @@
     /// <summary>
     /// Describes a leaf water interaction
     /// </summary>
-    public interface ILeafWaterInteraction
+    public interface IWaterInteraction
     {
         /// <summary>
         /// Sets the current conditions of the leaf water model

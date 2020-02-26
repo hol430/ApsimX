@@ -9,8 +9,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [Serializable]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(IPhotosynthesisModel))]
-    public class TemperatureModel : Model, ITemperature
+    [ValidParent(ParentType = typeof(IDCAPSTModel))]
+    public class Temperature : Model, ITemperature
     {
         /// <summary>
         /// The solar geometry

@@ -7,9 +7,10 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// Defines the pathway functions for a C3 canopy
     /// </summary>
     [Serializable]
+    [Description("Models how a C3 crop assimilates biomass")]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(ITotalCanopy))]
+    [ValidParent(ParentType = typeof(ICanopyStructure))]
     public class AssimilationC3 : Assimilation
     {
         /// <inheritdoc/>

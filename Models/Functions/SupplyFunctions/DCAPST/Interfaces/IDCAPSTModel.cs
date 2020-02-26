@@ -9,7 +9,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// <summary>
     /// Describes a photosynthesis model
     /// </summary>
-    public interface IPhotosynthesisModel
+    public interface IDCAPSTModel
     {
         /// <summary>
         /// Calculates the daily photosynthesis

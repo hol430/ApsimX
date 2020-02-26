@@ -4,13 +4,14 @@ using Models.Core;
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
     /// <summary>
-    /// Models the different forms of environmental radiation
+    /// Models the types of incoming solar radiation
     /// </summary>
     [Serializable]
+    [Description("Models the types of incoming solar radiation")]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(IPhotosynthesisModel))]
-    public class SolarRadiationModel : Model, ISolarRadiation
+    [ValidParent(ParentType = typeof(IDCAPSTModel))]
+    public class SolarRadiation : Model, ISolarRadiation
     {
         /// <summary>
         /// Models the solar geometry

@@ -9,7 +9,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [Serializable]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(ITotalCanopy))]
+    [ValidParent(ParentType = typeof(ICanopyStructure))]
     public class TemperatureResponse : Model
     {
         /// <summary>

@@ -12,8 +12,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [Serializable]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(ITotalCanopy))]
-    public class PartialCanopy : Model, IPartialCanopy
+    [ValidParent(ParentType = typeof(ICanopyStructure))]
+    public class AssimilationArea : Model, IAssimilationArea
     {
         [Link]
         IAssimilation assimilation = null;
@@ -22,7 +22,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// Models the leaf water interaction
         /// </summary>
         [Link]
-        ILeafWaterInteraction LeafWater = null;
+        IWaterInteraction LeafWater = null;
 
         /// <summary>
         /// Models how the leaf responds to different temperatures
