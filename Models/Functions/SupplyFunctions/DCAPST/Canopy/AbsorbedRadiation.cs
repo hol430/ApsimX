@@ -8,6 +8,16 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     public class AbsorbedRadiation
     {
         /// <summary>
+        /// The accumulated LAI of all layers up to the Nth layer
+        /// </summary>
+        private readonly double AccumLAI_1;
+
+        /// <summary>
+        /// The accumulated LAI of all layers up to the (N - 1)th layer
+        /// </summary>
+        private readonly double AccumLAI_0;
+
+        /// <summary>
         /// Leaf level scattering coefficient for radiation
         /// </summary>
         /// <remarks>Different values for PAR/NIR</remarks>
@@ -49,16 +59,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// Horizontal reflection coefficient for radiation
         /// </summary>
         public double HorizontalReflection => (1 - Math.Pow(1 - LeafScattering, 0.5)) / (1 + Math.Pow(1 - LeafScattering, 0.5));
-
-        /// <summary>
-        /// The accumulated LAI of all layers up to the Nth layer
-        /// </summary>
-        private readonly double AccumLAI_1;
-
-        /// <summary>
-        /// The accumulated LAI of all layers up to the (N - 1)th layer
-        /// </summary>
-        private readonly double AccumLAI_0;
 
         /// <summary></summary>
         public AbsorbedRadiation(int layers, double lai)

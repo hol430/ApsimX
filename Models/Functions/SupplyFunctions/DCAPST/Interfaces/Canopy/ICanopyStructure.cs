@@ -6,16 +6,6 @@
     public interface ICanopyStructure
     {       
         /// <summary>
-        /// The section of canopy currently in sunlight
-        /// </summary>
-        IAssimilationArea Sunlit { get; }
-
-        /// <summary>
-        /// The section of canopy currently in shade
-        /// </summary>
-        IAssimilationArea Shaded { get; }        
-
-        /// <summary>
         /// Performs initial calculations for the canopy provided daily conditions 
         /// </summary>
         void InitialiseDay(double lai, double sln);
@@ -23,7 +13,7 @@
         /// <summary>
         /// Updates the total canopy on a new timestep
         /// </summary>
-        void DoTimestepAdjustment(ISolarRadiation radiation);
+        void DoTimestepUpdate(double transpiration = -1, double sunFraction = 0, double shadeFraction = 0);
 
         /// <summary>
         /// Adjusts the properties of the canopy to account for the suns movement across the sky

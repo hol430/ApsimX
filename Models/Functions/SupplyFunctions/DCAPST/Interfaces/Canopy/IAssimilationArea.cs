@@ -40,7 +40,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Runs the photosynthesis calculations for the canopy
         /// </summary>
-        void DoPhotosynthesis(ITemperature temperature, WaterParameters Params);
+        void DoPhotosynthesis(WaterParameters Params);
     }
 
     /// <summary>

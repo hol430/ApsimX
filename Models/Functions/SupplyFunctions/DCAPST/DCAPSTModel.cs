@@ -40,6 +40,18 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         ICanopyStructure Canopy = null;
 
         /// <summary>
+        /// The part of the canopy in sunlight
+        /// </summary>
+        [Link(ByName = true)]
+        IAssimilationArea Sunlit = null;
+
+        /// <summary>
+        /// The part of the canopy in shade
+        /// </summary>
+        [Link(ByName = true)]
+        IAssimilationArea Shaded = null;
+
+        /// <summary>
         /// Describes how electron transport rate changes with temperature
         /// </summary>
         [Link(ByName = true)]
@@ -93,27 +105,20 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         private int iterations;
 
         /// <summary>
-        /// Initialises parameters
-        /// </summary>
-        public void InitialiseDay()
-        {
-            Solar.InitialiseDay();
-
-            iterations = (int)Math.Floor(1.0 + ((end - start) / timestep));
-        }
-
-        /// <summary>
         /// Calculates the potential and actual biomass growth of a canopy across the span of a day,
         /// as well as the water requirements for both cases.
         /// </summary>
         public void DailyRun(
-            double lai,
+            double LAI,
             double SLN, 
             double soilWater, 
-            double RootShootRatio, 
-            double MaxHourlyTRate = 100)
-        {            
-            Canopy.InitialiseDay(lai, SLN);
+            double rootShootRatio, 
+            double maxTranspiration = 100)
+        {
+            iterations = (int)Math.Floor(1.0 + ((end - start) / timestep));
+
+            Solar.InitialiseDay();
+            Canopy.InitialiseDay(LAI, SLN);
 
             // POTENTIAL CALCULATIONS
             // Note: In the potential case, we assume unlimited water and therefore supply = demand
@@ -124,15 +129,15 @@ namespace Models.Functions.SupplyFunctions.DCAPST
 
             // ACTUAL CALCULATIONS
             // Limit water to supply available from Apsim
-            double maxHourlyT = Math.Min(waterDemands.Max(), MaxHourlyTRate);
+            double maxHourlyT = Math.Min(waterDemands.Max(), maxTranspiration);
             waterDemands = waterDemands.Select(w => w > maxHourlyT ? maxHourlyT : w).ToArray();
 
             var limitedSupply = CalculateWaterSupplyLimits(soilWater, maxHourlyT, waterDemands);
 
             var actual = (soilWater > totalDemand) ? potential : CalculateActual(limitedSupply, sunlitDemand, shadedDemand);
 
-            ActualBiomass = actual * 3600 / 1000000 * 44 * B / (1 + RootShootRatio);
-            PotentialBiomass = potential * 3600 / 1000000 * 44 * B / (1 + RootShootRatio);
+            ActualBiomass = actual * 3600 / 1000000 * 44 * B / (1 + rootShootRatio);
+            PotentialBiomass = potential * 3600 / 1000000 * 44 * B / (1 + rootShootRatio);
             WaterDemanded = totalDemand;
             WaterSupplied = (soilWater < totalDemand) ? limitedSupply.Sum() : waterDemands.Sum();
             InterceptedRadiation = intercepted;            
@@ -195,11 +200,11 @@ namespace Models.Functions.SupplyFunctions.DCAPST
 
                 intercepted += Radiation.Total * Canopy.GetInterceptedRadiation() * 3600;
 
-                DoTimestepUpdate();
+                Canopy.DoTimestepUpdate();
 
-                sunlitDemand[i] = Canopy.Sunlit.WaterUse;
-                shadedDemand[i] = Canopy.Shaded.WaterUse;
-                assimilations[i] = Canopy.Sunlit.CO2AssimilationRate + Canopy.Shaded.CO2AssimilationRate;
+                sunlitDemand[i] = Sunlit.WaterUse;
+                shadedDemand[i] = Shaded.WaterUse;
+                assimilations[i] = Sunlit.CO2AssimilationRate + Shaded.CO2AssimilationRate;
             }
         }
 
@@ -217,37 +222,11 @@ namespace Models.Functions.SupplyFunctions.DCAPST
                 if (!TryInitiliase(time)) continue;
 
                 double total = sunlitDemand[i] + shadedDemand[i];
-                DoTimestepUpdate(waterSupply[i], sunlitDemand[i] / total, shadedDemand[i] / total);
+                Canopy.DoTimestepUpdate(waterSupply[i], sunlitDemand[i] / total, shadedDemand[i] / total);
 
-                assimilation += Canopy.Sunlit.CO2AssimilationRate + Canopy.Shaded.CO2AssimilationRate;
+                assimilation += Sunlit.CO2AssimilationRate + Shaded.CO2AssimilationRate;
             }
             return assimilation;
-        }
-
-        /// <summary>
-        /// Updates the model to a new timestep
-        /// </summary>
-        public void DoTimestepUpdate(double maxHourlyT = -1, double sunFraction = 0, double shadeFraction = 0)
-        {
-            var Params = new WaterParameters
-            {
-                maxHourlyT = maxHourlyT,
-                limited = false
-            };
-            if (maxHourlyT != -1) Params.limited = true;
-
-            Canopy.DoTimestepAdjustment(Radiation);
-
-            var heat = Canopy.CalcBoundaryHeatConductance();
-            var sunlitHeat = Canopy.CalcSunlitBoundaryHeatConductance();
-
-            Params.BoundaryHeatConductance = sunlitHeat;
-            Params.fraction = sunFraction;
-            Canopy.Sunlit.DoPhotosynthesis(Temperature, Params);
-
-            Params.BoundaryHeatConductance = heat - sunlitHeat;
-            Params.fraction = shadeFraction;
-            Canopy.Shaded.DoPhotosynthesis(Temperature, Params);
         }
 
         /// <summary>
@@ -288,31 +267,5 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             }
             return demand.Select(d => d > averageDemandRate ? averageDemandRate : d).ToArray();
         }
-    }
-
-    /// <summary>
-    /// Describes the water situation of the canopy
-    /// </summary>
-    public struct WaterParameters
-    {
-        /// <summary>
-        /// If the canopy is water limited or not
-        /// </summary>
-        public bool limited;
-
-        /// <summary>
-        /// Boundary heat conductance of the canopy
-        /// </summary>
-        public double BoundaryHeatConductance;
-
-        /// <summary>
-        /// Maximum hourly transpiration
-        /// </summary>
-        public double maxHourlyT;
-
-        /// <summary>
-        /// Fraction of total water allocated to part of the canopy
-        /// </summary>
-        public double fraction;
-    }
+    }    
 }
