@@ -1,5 +1,6 @@
 ﻿using System;
 using Models.Core;
+using Models.Interfaces;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
@@ -13,6 +14,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [ValidParent(ParentType = typeof(IDCAPSTModel))]
     public class SolarGeometry : Model, ISolarGeometry
     {
+        [Link]
+        IWeather Weather = null;
+
         /// <summary>
         /// The angle between the solar disk and the equatorial plane
         /// </summary>
@@ -28,12 +32,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Day of the year
         /// </summary>
-        public double DayOfYear { get; set; }
-
-        /// <summary>
-        /// Geographic latitude (radians)
-        /// </summary>
-        public double Latitude { get; set; }        
+        public double DayOfYear { get; set; }       
         
         /// <summary>
         /// Time the sun is in the sky (hours)
@@ -69,7 +68,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Calculates the angle of the sun at sunset
         /// </summary>
-        private double CalcSunsetAngle() => Math.Acos(-1 * Math.Tan(Latitude) * Math.Tan(solarDeclination));
+        private double CalcSunsetAngle() => Math.Acos(-1 * Math.Tan(Weather.Latitude.ToRadians()) * Math.Tan(solarDeclination));
         
         /// <summary>
         /// Calculates the angle of the sun in the sky (radians)
@@ -77,8 +76,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <param name="hour">The time in hours</param>        
         public double SunAngle(double hour)
         {
-            var angle = Math.Asin(Math.Sin(Latitude) * Math.Sin(solarDeclination)
-                + Math.Cos(Latitude)
+            var angle = Math.Asin(Math.Sin(Weather.Latitude.ToRadians()) * Math.Sin(solarDeclination)
+                + Math.Cos(Weather.Latitude.ToRadians())
                 * Math.Cos(solarDeclination)
                 * Math.Cos(Math.PI / 12.0 * DayLength * (((hour - Sunrise) / DayLength) - 0.5)));
             return angle;

@@ -1,5 +1,6 @@
 ﻿using System;
 using Models.Core;
+using Models.Interfaces;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
@@ -13,6 +14,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [ValidParent(ParentType = typeof(IDCAPSTModel))]
     public class SolarRadiation : Model, ISolarRadiation
     {
+        [Link]
+        IWeather Weather = null;
+
         /// <summary>
         /// Models the solar geometry
         /// </summary>
@@ -32,11 +36,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         [Description("Fraction of PAR energy")]
         [Units("")]
         public double RPAR { get; set; } = 0.5;
-
-        /// <summary>
-        /// The radiation measured across a day
-        /// </summary>
-        public double Daily { get; set; }        
 
         /// <summary>
         /// The total incoming solar radiation over a time period
@@ -95,7 +94,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             var factor = Math.Sin(theta) * Math.PI / 2;
 
             // TODO: Adapt this to use the timestep model
-            var radiation = Daily / (Solar.DayLength * 3600);
+            var radiation = Weather.Radn / (Solar.DayLength * 3600);
             var incident = radiation * factor;
 
             if (incident < 0) return 0;

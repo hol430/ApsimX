@@ -191,14 +191,12 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         private bool IsSensible()
         {
-            var temp = Temperature.AirTemperature;
-
             bool[] tempConditions = new bool[4]
             {
-                temp > ElectronTransportRate.TMax,
-                temp < ElectronTransportRate.TMin,
-                temp > MesophyllCO2Conductance.TMax,
-                temp < MesophyllCO2Conductance.TMin
+                Temperature.AirTemperature > ElectronTransportRate.TMax,
+                Temperature.AirTemperature < ElectronTransportRate.TMin,
+                Temperature.AirTemperature > MesophyllCO2Conductance.TMax,
+                Temperature.AirTemperature < MesophyllCO2Conductance.TMin
             };
 
             bool invalidTemp = tempConditions.Any(b => b == true);

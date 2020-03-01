@@ -74,11 +74,11 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Initialises the assimilation pathways
         /// </summary>
-        public void Initialise(double temperature)
+        private void Initialise()
         {
             Pathways.ForEach(p =>
             {
-                p.Temperature = temperature;
+                p.Temperature = Temperature.AirTemperature;
                 p.MesophyllCO2 = Assimilation.AirCO2 * Assimilation.IntercellularToAirCO2Ratio;
                 p.ChloroplasticCO2 = p.MesophyllCO2 + 20;
                 p.ChloroplasticO2 = 210000;
@@ -91,7 +91,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         public void DoPhotosynthesis(WaterParameters Params)
         {
-            Initialise(Temperature.AirTemperature);
+            Initialise();
 
             // Determine initial results
             UpdateAssimilation(Params);
@@ -122,7 +122,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Recalculates the assimilation values for each pathway
         /// </summary>
-        public void UpdateAssimilation(WaterParameters water) => Pathways.ForEach(p => UpdatePathway(water, p));       
+        private void UpdateAssimilation(WaterParameters water) => Pathways.ForEach(p => UpdatePathway(water, p));       
 
         /// <summary>
         /// Updates the state of an assimilation pathway
