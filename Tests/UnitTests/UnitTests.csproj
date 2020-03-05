@@ -148,12 +148,14 @@
     <Compile Include="Core\Run\RunnerTests.cs" />
     <Compile Include="Core\Run\SimulationTests.cs" />
     <Compile Include="DCAPST\Environment\Data\SolarGeometryTestData.cs" />
+    <Compile Include="DCAPST\Environment\Data\TemperatureTestData.cs" />
     <Compile Include="DCAPST\Environment\Fakes\FakeDCAPST.cs" />
     <Compile Include="DCAPST\Environment\Fakes\FakeSolarGeometry.cs" />
     <Compile Include="DCAPST\Environment\Fakes\FakeWeather.cs" />
     <Compile Include="DCAPST\Environment\RadiationTests.cs" />
     <Compile Include="DCAPST\Environment\Data\RadiationTestData.cs" />
     <Compile Include="DCAPST\Environment\SolarGeometryTests.cs" />
+    <Compile Include="DCAPST\Environment\TemperatureTests.cs" />
     <Compile Include="Functions\HoldFunctionTests.cs" />
     <Compile Include="Graph\MockSimulationDescriptionGenerator.cs" />
     <Compile Include="Graph\SeriesTests.cs" />

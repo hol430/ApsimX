@@ -16,9 +16,9 @@ namespace UnitTests.DCAPST.Environment.Fakes
 
         public DateTime EndDate => throw new NotImplementedException();
 
-        public double MaxT => throw new NotImplementedException();
+        public double MaxT  { get; set; }
 
-        public double MinT => throw new NotImplementedException();
+        public double MinT { get; set; }
 
         public double MeanT => throw new NotImplementedException();
 
@@ -34,7 +34,7 @@ namespace UnitTests.DCAPST.Environment.Fakes
 
         public double CO2 => throw new NotImplementedException();
 
-        public double AirPressure => throw new NotImplementedException();
+        public double AirPressure { get; set; }
 
         public double Latitude { get; set; }
 
