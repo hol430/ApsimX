@@ -142,7 +142,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         [Description("Ratio of SLN to max Rubisco activity")]
         [Units("")]
-        double MaxRubiscoActivitySLNRatio { get; set; }
+        public double MaxRubiscoActivitySLNRatio { get; set; }
 
         /// <summary>
         /// Ratio of respiration to SLN
@@ -156,21 +156,21 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         [Description("Ratio of SLN to max electron transport")]
         [Units("")]
-        double MaxElectronTransportSLNRatio { get; set; }
+        public double MaxElectronTransportSLNRatio { get; set; }
 
         /// <summary>
         /// Ratio of PEPc Activity to SLN
         /// </summary>
         [Description("Ratio of SLN to max PEPc activity")]
         [Units("")]
-        double MaxPEPcActivitySLNRatio { get; set; }
+        public double MaxPEPcActivitySLNRatio { get; set; }
 
         /// <summary>
         /// Ratio of Mesophyll CO2 conductance to SLN
         /// </summary>
         [Description("Ratio of SLN to Mesophyll CO2 conductance")]
         [Units("")]
-        double MesophyllCO2ConductanceSLNRatio { get; set; }        
+        public double MesophyllCO2ConductanceSLNRatio { get; set; }        
 
         /// <summary>
         /// Ratio of the average canopy specific leaf nitrogen (SLN) to the SLN at the top of canopy (g N m^-2 leaf)

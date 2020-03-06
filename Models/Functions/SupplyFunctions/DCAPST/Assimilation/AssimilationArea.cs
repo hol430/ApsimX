@@ -34,14 +34,15 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         IWaterInteraction LeafWater = null;
 
         /// <summary>
-        /// The possible assimilation pathways
-        /// </summary>
-        private List<AssimilationPathway> Pathways => Children.OfType<AssimilationPathway>().ToList();
-
-        /// <summary>
         /// Models how the leaf responds to different temperatures
         /// </summary>
-        public TemperatureResponse Leaf { get; set; }
+        [Link]
+        TemperatureResponse Leaf = null;
+
+        /// <summary>
+        /// The possible assimilation pathways
+        /// </summary>
+        private List<AssimilationPathway> Pathways => Children.OfType<AssimilationPathway>().ToList();        
 
         /// <inheritdoc/>
         public ParameterRates At25C { get; private set; } = new ParameterRates();

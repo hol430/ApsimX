@@ -137,7 +137,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         [Description("Spectral correction factor")]
         [Units("")]
-        double SpectralCorrectionFactor { get; set; }
+        public double SpectralCorrectionFactor { get; set; }
 
         #endregion
 
