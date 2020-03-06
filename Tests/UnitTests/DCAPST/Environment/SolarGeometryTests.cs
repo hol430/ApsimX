@@ -17,18 +17,21 @@ namespace UnitTests.DCAPST.Environment
         [SetUp]
         public void SetUp()
         {
-            solar = new SolarGeometry()
-            {
-                DayOfYear = 144
-            };
+            solar = new SolarGeometry();
 
             var weather = new FakeWeather()
             {
                 Latitude = 18.3
             };
 
+            var clock = new FakeClock()
+            {
+                Today = new DateTime() + new TimeSpan(143, 0, 0, 0)
+            };
+
             var dcapst = new FakeDCAPST();
             dcapst.Children.Add(weather);
+            dcapst.Children.Add(clock);
             dcapst.Children.Add(solar);
 
             Apsim.ParentAllChildren(dcapst);

@@ -17,6 +17,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         [Link]
         IWeather Weather = null;
 
+        [Link]
+        IClock Clock = null;
+
         /// <summary>
         /// The angle between the solar disk and the equatorial plane
         /// </summary>
@@ -28,11 +31,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         [Description("Solar constant")]
         [Units("")]
         public double SolarConstant { get; set; } = 1360;
-
-        /// <summary>
-        /// Day of the year
-        /// </summary>
-        public double DayOfYear { get; set; }       
         
         /// <summary>
         /// Time the sun is in the sky (hours)
@@ -63,7 +61,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Calculates the solar declination angle (radians)
         /// </summary>
-        private double CalcSolarDeclination() => 23.45.ToRadians() * Math.Sin(2 * Math.PI * (284 + DayOfYear) / 365);
+        private double CalcSolarDeclination() => 23.45.ToRadians() * Math.Sin(2 * Math.PI * (284 + Clock.Today.DayOfYear) / 365);
 
         /// <summary>
         /// Calculates the angle of the sun at sunset
