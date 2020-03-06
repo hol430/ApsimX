@@ -115,7 +115,11 @@ namespace UnitTests.DCAPST.Pathways
             structure.Children.Add(sunlit);
             structure.Children.Add(shaded);
 
-            weather = new FakeWeather();
+            weather = new FakeWeather()
+            {
+                AirPressure = 1.01325
+            };
+
             clock = new FakeClock();
             
             var geometry = new SolarGeometry() 
@@ -188,7 +192,7 @@ namespace UnitTests.DCAPST.Pathways
             double expectedBIOshootDAYPot
         )
         {
-            clock.Today = new DateTime() + new TimeSpan(DOY, 0, 0, 0);
+            clock.Today = new DateTime() + new TimeSpan(DOY - 1, 0, 0, 0);
             weather.Latitude = latitude;
             weather.MaxT = maxT;
             weather.MinT = minT;
