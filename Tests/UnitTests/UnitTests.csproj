@@ -160,6 +160,8 @@
     <Compile Include="DCAPST\Environment\TemperatureTests.cs" />
     <Compile Include="DCAPST\Environment\WaterInteractionTests.cs" />
     <Compile Include="DCAPST\Pathways\C4\BW5_GxE.cs" />
+    <Compile Include="DCAPST\Pathways\CCM\CunderdinDry.cs" />
+    <Compile Include="DCAPST\Pathways\PathwayTestData.cs" />
     <Compile Include="Functions\HoldFunctionTests.cs" />
     <Compile Include="Graph\MockSimulationDescriptionGenerator.cs" />
     <Compile Include="Graph\SeriesTests.cs" />
