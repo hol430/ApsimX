@@ -1,5 +1,6 @@
 ﻿using System;
 using Models.Core;
+using Models.PMF.Organs;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
@@ -31,6 +32,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         [Link(ByName = true)]
         IAssimilationArea Shaded = null;
+
+        [Link]
+        SorghumLeaf Sorghum = null;
 
         #endregion
 
@@ -191,14 +195,14 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Establishes the initial conditions for the daily photosynthesis calculation
         /// </summary>
-        public void InitialiseDay(double lai, double sln)
+        public void InitialiseDay()
         {
-            LAI = lai;
+            LAI = Sorghum.LAI;
 
-            var SLNTop = sln * SLNRatioTop;
+            var SLNTop = Sorghum.SLN * SLNRatioTop;
             NTopCanopy = SLNTop * 1000 / 14;
 
-            var NcAv = sln * 1000 / 14;
+            var NcAv = Sorghum.SLN * 1000 / 14;
             NAllocation = -1 * Math.Log((NcAv - MinimumN) / (NTopCanopy - MinimumN)) * 2;           
 
             absorbed = new AbsorbedRadiation(Layers, LAI)

@@ -8,7 +8,7 @@
         /// <summary>
         /// Performs initial calculations for the canopy provided daily conditions 
         /// </summary>
-        void InitialiseDay(double lai, double sln);
+        void InitialiseDay();
 
         /// <summary>
         /// Updates the total canopy on a new timestep

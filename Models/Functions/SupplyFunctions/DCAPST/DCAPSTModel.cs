@@ -2,6 +2,7 @@
 using System.Linq;
 
 using Models.Core;
+using Models.PMF;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
@@ -52,6 +53,12 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         [Link(ByName = true)]
         IAssimilationArea Shaded = null;
+
+        [Link]
+        Plant Plant = null;
+
+        [Link]
+        SorghumArbitrator arbitrator = null;
 
         /// <summary>
         /// Describes how electron transport rate changes with temperature
@@ -138,17 +145,12 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// Calculates the potential and actual biomass growth of a canopy across the span of a day,
         /// as well as the water requirements for both cases.
         /// </summary>
-        public void DailyRun(
-            double LAI,
-            double SLN, 
-            double soilWater, 
-            double rootShootRatio, 
-            double maxTranspiration = 100)
+        public void DailyRun(double maxTranspiration = 100)
         {
             iterations = (int)Math.Floor(1.0 + ((end - start) / timestep));
 
             Solar.InitialiseDay();
-            Canopy.InitialiseDay(LAI, SLN);
+            Canopy.InitialiseDay();
 
             // POTENTIAL CALCULATIONS
             // Note: In the potential case, we assume unlimited water and therefore supply = demand
@@ -162,14 +164,16 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             double maxHourlyT = Math.Min(waterDemands.Max(), maxTranspiration);
             waterDemands = waterDemands.Select(w => w > maxHourlyT ? maxHourlyT : w).ToArray();
 
-            var limitedSupply = CalculateWaterSupplyLimits(soilWater, maxHourlyT, waterDemands);
+            var limitedSupply = CalculateWaterSupplyLimits(arbitrator.WatSupply, maxHourlyT, waterDemands);
 
-            var actual = (soilWater > totalDemand) ? potential : CalculateActual(limitedSupply, sunlitDemand, shadedDemand);
+            var actual = (arbitrator.WatSupply > totalDemand) ? potential : CalculateActual(limitedSupply, sunlitDemand, shadedDemand);
 
-            ActualBiomass = actual * 3600 / 1000000 * 44 * B / (1 + rootShootRatio);
-            PotentialBiomass = potential * 3600 / 1000000 * 44 * B / (1 + rootShootRatio);
+            var rsr = Plant.AboveGround.Wt / (Plant.AboveGround.Wt + Plant.Root.Wt);
+
+            ActualBiomass = actual * 3600 / 1000000 * 44 * B / (1 + rsr);
+            PotentialBiomass = potential * 3600 / 1000000 * 44 * B / (1 + rsr);
             WaterDemanded = totalDemand;
-            WaterSupplied = (soilWater < totalDemand) ? limitedSupply.Sum() : waterDemands.Sum();
+            WaterSupplied = (arbitrator.WatSupply < totalDemand) ? limitedSupply.Sum() : waterDemands.Sum();
             InterceptedRadiation = intercepted;            
         }
 

@@ -3,6 +3,8 @@ using NUnit.Framework;
 
 using Models.Core;
 using Models.Functions.SupplyFunctions.DCAPST;
+using Models.PMF;
+using Models.PMF.Organs;
 
 using UnitTests.DCAPST.Environment.Fakes;
 
@@ -14,6 +16,9 @@ namespace UnitTests.DCAPST.Pathways
         private double delta = 0.0000000000001;
 
         private DCAPSTModel dcapst;
+        private Plant plant;
+        private SorghumArbitrator arbitrator;
+        private SorghumLeaf sorghum;
         private FakeWeather weather;
         private FakeClock clock;
 
@@ -146,7 +151,20 @@ namespace UnitTests.DCAPST.Pathways
             dcapst.Children.Add(temperature);
             dcapst.Children.Add(structure);
 
-            Apsim.ParentAllChildren(dcapst);
+            arbitrator = new SorghumArbitrator();
+
+            sorghum = new SorghumLeaf();
+            sorghum.Children.Add(dcapst);
+
+            plant = new Plant();
+
+            plant.AboveGround = new Biomass();
+            plant.Root = new Root();
+
+            plant.Children.Add(arbitrator);
+            plant.Children.Add(sorghum);
+
+            Apsim.ParentAllChildren(plant);
 
             var links = new Links();
             links.Resolve(dcapst, true);
@@ -177,7 +195,22 @@ namespace UnitTests.DCAPST.Pathways
             weather.MinT = minT;
             weather.Radn = radn;
 
-            dcapst.DailyRun(lai, SLN, SWAvailable, RootShootRatio);
+            sorghum.SLN = SLN;
+            sorghum.LAI = lai;
+
+            /* NOTE: The root-shoot ratio is calculated as AboveGround.Wt / (AboveGround.Wt + Root.Wt).
+             * Since this test uses a predetermined value for the root-shoot ratio, we have to initialise
+             * the weights in such a way that after the calculation is performed, we return the desired 
+             * ratio. This is achieved by setting the numerator to the value we want, and ensuring the 
+             * denominator is always 1.
+             */
+
+            plant.AboveGround.StructuralWt = RootShootRatio;
+            plant.Root.Live.StructuralWt = (1.0 - RootShootRatio);
+
+            arbitrator.WatSupply = SWAvailable;
+
+            dcapst.DailyRun(SWAvailable);
 
             Assert.AreEqual(expectedBIOshootDAY, dcapst.ActualBiomass, delta);
             Assert.AreEqual(expectedEcanDemand, dcapst.WaterDemanded, delta);
