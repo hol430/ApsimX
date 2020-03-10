@@ -14,7 +14,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(Model))]
-    public class DCAPSTModel : Model, IDCAPSTModel
+    public class DCAPSTModel : Model, IDCAPSTModel, IFunction
     {
         #region Links
 
@@ -141,12 +141,24 @@ namespace Models.Functions.SupplyFunctions.DCAPST
 
         #region Methods
 
+        [EventSubscribe("DoDCAPST")] // Needs to run after the phenology but before potential plant growth
+        private void OnDoDCAPST(object sender, EventArgs e)
+        {
+            // Needs to be leaf for photosynthesis to occur
+            if (Plant.Leaf.LAI == 0) return;
+
+            DailyRun();
+        }
+
         /// <summary>
         /// Calculates the potential and actual biomass growth of a canopy across the span of a day,
         /// as well as the water requirements for both cases.
-        /// </summary>
-        public void DailyRun(double maxTranspiration = 100)
+        /// </summary>        
+        public void DailyRun()
         {
+            // TODO: Check where this value comes from
+            double maxTranspiration = 100;
+
             iterations = (int)Math.Floor(1.0 + ((end - start) / timestep));
 
             Solar.InitialiseDay();
@@ -174,7 +186,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             PotentialBiomass = potential * 3600 / 1000000 * 44 * B / (1 + rsr);
             WaterDemanded = totalDemand;
             WaterSupplied = (arbitrator.WatSupply < totalDemand) ? limitedSupply.Sum() : waterDemands.Sum();
-            InterceptedRadiation = intercepted;            
+            InterceptedRadiation = intercepted;
         }
 
         /// <summary>
@@ -299,7 +311,17 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             }
             return demand.Select(d => d > averageDemandRate ? averageDemandRate : d).ToArray();
         }
-        
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="arrayIndex"></param>
+        /// <returns></returns>
+        public double Value(int arrayIndex = -1)
+        {
+            return PotentialBiomass;
+        }
+
         #endregion
     }
 }

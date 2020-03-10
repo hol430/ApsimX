@@ -88,7 +88,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             double dawn = Math.Floor(Solar.Sunrise);
             double dusk = Math.Ceiling(Solar.Sunset);
 
-            if (time < dawn || dusk < time) return 0;
+            if (time <= dawn || dusk <= time) return 0;
 
             var theta = Math.PI * (time - Solar.Sunrise) / Solar.DayLength;
             var factor = Math.Sin(theta) * Math.PI / 2;

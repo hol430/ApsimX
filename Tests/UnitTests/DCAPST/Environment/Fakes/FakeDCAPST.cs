@@ -11,7 +11,7 @@ namespace UnitTests.DCAPST.Environment.Fakes
 {
     class FakeDCAPST : Model, IDCAPSTModel
     {
-        public void DailyRun(double MaxHourlyTRate = 100)
+        public void DailyRun()
         {
             throw new NotImplementedException();
         }

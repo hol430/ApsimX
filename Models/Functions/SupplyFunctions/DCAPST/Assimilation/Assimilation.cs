@@ -9,6 +9,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// <summary>
     /// Tracks the state of an assimilation type
     /// </summary>
+    [Serializable]
     public abstract class Assimilation : Model, IAssimilation
     {
         /// <inheritdoc/>

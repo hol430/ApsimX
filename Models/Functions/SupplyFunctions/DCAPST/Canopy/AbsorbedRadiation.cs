@@ -5,6 +5,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// <summary>
     /// Models solar radiation absorbed the canopy
     /// </summary>
+    [Serializable]
     public class AbsorbedRadiation
     {
         /// <summary>

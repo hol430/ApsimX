@@ -210,7 +210,7 @@ namespace UnitTests.DCAPST.Pathways
 
             arbitrator.WatSupply = SWAvailable;
 
-            dcapst.DailyRun(SWAvailable);
+            dcapst.DailyRun();
 
             Assert.AreEqual(expectedBIOshootDAY, dcapst.ActualBiomass, delta);
             Assert.AreEqual(expectedEcanDemand, dcapst.WaterDemanded, delta);

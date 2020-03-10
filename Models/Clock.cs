@@ -150,6 +150,8 @@
         public event EventHandler PrePhenology;
         /// <summary>Occurs when [do phenology].</summary>                             
         public event EventHandler DoPhenology;                                         // Plant 
+        /// <summary>Occurs when [do dcapst]</summary>
+        public event EventHandler DoDCAPST;
         /// <summary>Occurs when [do potential plant growth].</summary>
         public event EventHandler DoPotentialPlantGrowth;                              //Refactor to DoWaterLimitedGrowth  Plant        
         /// <summary>Occurs when [do potential plant partioning].</summary>
@@ -338,6 +340,8 @@
 
                 if (DoPhenology != null)
                     DoPhenology.Invoke(this, args);
+
+                DoDCAPST?.Invoke(this, args);
 
                 if (DoPotentialPlantGrowth != null)
                     DoPotentialPlantGrowth.Invoke(this, args);

@@ -14,6 +14,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Calculates the daily photosynthesis
         /// </summary>
-        void DailyRun(double MaxHourlyTRate = 100);
+        void DailyRun();
     }
 }

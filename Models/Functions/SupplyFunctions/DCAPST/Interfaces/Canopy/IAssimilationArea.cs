@@ -1,4 +1,4 @@
-﻿using Models.Core;
+﻿using System;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
@@ -46,6 +46,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// <summary>
     /// A collection of rate parameters whose value varies with temperature
     /// </summary>
+    [Serializable]
     public class ParameterRates
     {
         /// <summary>
