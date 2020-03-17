@@ -27,22 +27,31 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Boltzmann's constant
         /// </summary>
-        private double kb = 0.0000000567;
+        private readonly double kb = 0.0000000567;
 
         /// <summary>
         /// Volumetric heat capacity of air
         /// </summary>
-        private double sAir = 1200;
+        private readonly double sAir = 1200;
 
         /// <summary>
         /// Psychrometric constant
         /// </summary>
-        private double g = 0.066;
+        private readonly double g = 0.066;
 
         /// <summary>
         /// Latent heat of vapourisation
         /// </summary>
-        private double latentHeatOfVapourisation = 2447000;
+        private readonly double latentHeatOfVapourisation = 2447000;
+
+        /// <summary>Heat to water vapour conductance factor</summary>
+        private readonly double k = 0.92;
+
+        /// <summary>Boundary water to CO2 diffusion factor</summary>
+        private readonly double m = 1.37;
+
+        /// <summary>Stomata water diffusion factor</summary> 
+        private readonly double n = 1.6;
 
         /// <summary> 
         /// Current leaf temperature 
@@ -59,17 +68,17 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         #region Parameters
 
         /// <summary> Boundary H20 conductance </summary>
-        private double Gbw => gbh / 0.92;
+        private double Gbw => gbh / k;
 
         /// <summary> Boundary heat resistance </summary>
         private double Rbh => 1 / gbh;
 
         /// <summary> Boundary CO2 conductance </summary>
-        private double GbCO2 => Weather.AirPressure * Temperature.AirMolarDensity * Gbw / 1.37;
+        private double GbCO2 => Weather.AirPressure * Temperature.AirMolarDensity * Gbw / m;
 
         /// <summary> Outgoing thermal radiation</summary>
         private double ThermalRadiation => 8 * kb * Math.Pow(Temperature.AirTemperature + 273, 3) * (leafTemp - Temperature.AirTemperature);
-                
+
         /// <summary> Vapour pressure at the leaf temperature </summary>
         private double VpLeaf => 0.61365 * Math.Exp(17.502 * leafTemp / (240.97 + leafTemp));
 
@@ -111,35 +120,34 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <param name="Ci">Intercellular CO2 partial pressure</param>
         public double UnlimitedWaterResistance(double A, double Ca, double Ci)
         {
+            // Unit conversion
+            var atm_to_kPa = 100;
+
             // Leaf water mol fraction
-            double Wl = VpLeaf / (Weather.AirPressure * 100) * 1000;
+            double Wl = VpLeaf / (Weather.AirPressure * atm_to_kPa);
+
             // Air water mol fraction
-            double Wa = VptMin / (Weather.AirPressure * 100) * 1000;
+            double Wa = VptMin / (Weather.AirPressure * atm_to_kPa);
 
-            // Boundary CO2 Resistance
-            double a = 1 / GbCO2;
+            // temporary variables
+            double b = (Wl - Wa) * (Ca + Ci) / (2 - (Wl + Wa));
+            double c = Ca - Ci;
+            double d = A / GbCO2;
+            double e = d * (m + n) + m * (b * n - c);
+            double f = d * m * n * (d + b * m - c);
 
-            // dummy variables
-            double b = (Wl - Wa) / (1000 - (Wl + Wa) / 2) * (Ca + Ci) / 2;
-            double c = A;
-            double d = Ca - Ci;
-
-            // Boundary water diffusion factor
-            double m = 1.37;
-            // Stomata water diffusion factor
-            double n = 1.6;
-
-            // dummy variables
-            double e = c * a * m + c * a * n + b * m * n - d * m;
-            double g = c * m * (c * Math.Pow(a, 2) * n + a * b * m * n - a * d * n);
-            double h = m * A;
-            
             // Stomatal CO2 conductance
-            double gsCO2 = 2 * h / (Math.Pow((Math.Pow(e, 2) - 4 * g), 0.5) - e);
+            double gsCO2 = 2 * A * m / (Math.Sqrt(e * e - 4 * f) - e);
+
+            // Resistances
+            double rsCO2 = 1 / (n * gsCO2); // Stomatal
+            double rbCO2 = 1 / (m * GbCO2); // Boundary
+            double total = rsCO2 + rbCO2;
+
             // Total leaf water conductance
-            double Gtw = 1 / (1 / (m * GbCO2) + 1 / (n * gsCO2));
-            
-            double rtw = Temperature.AirMolarDensity / Gtw * Weather.AirPressure;
+            double gtw = 1 / total;
+
+            double rtw = Temperature.AirMolarDensity / gtw * Weather.AirPressure;
             return rtw;
         }
 
@@ -178,7 +186,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         public double TotalCO2Conductance(double rtw)
         {
             // Limited water gsCO2
-            var gsCO2 = Temperature.AirMolarDensity * (Weather.AirPressure / (rtw - (1 / Gbw))) / 1.6;
+            var gsCO2 = Temperature.AirMolarDensity * (Weather.AirPressure / (rtw - (1 / Gbw))) / n;
             var boundaryCO2Resistance = 1 / GbCO2;
             var stomatalCO2Resistance = 1 / gsCO2;
             return 1 / (boundaryCO2Resistance + stomatalCO2Resistance);

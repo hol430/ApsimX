@@ -100,22 +100,20 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             // Store the initial results in case the subsequent updates fail
             CO2AssimilationRate = GetCO2Rate();
             WaterUse = GetWaterUse();
-            
-            if (CO2AssimilationRate == 0 || WaterUse == 0) return;
 
-            // Only update assimilation if the initial value is large enough
-            if (CO2AssimilationRate >= 0.5)
+            // Only attempt to converge result if there is sufficient assimilation
+            if (CO2AssimilationRate < 0.5 || WaterUse == 0) return;
+
+            // Repeat calculation 3 times to let solution converge
+            for (int n = 0; n < 3; n++)
             {
-                for (int n = 0; n < 3; n++)
-                {
-                    UpdateAssimilation(Params);
+                UpdateAssimilation(Params);
 
-                    // If the additional updates fail, the minimum amongst the initial values is taken
-                    if (GetCO2Rate() == 0 || GetWaterUse() == 0) return;                    
-                }
+                // If the additional updates fail,stop the process (meaning the initial results used)
+                if (GetCO2Rate() == 0 || GetWaterUse() == 0) return;
             }
 
-            // If three iterations pass without failing, update the values to the final result
+            // Update results only if convergence succeeds
             CO2AssimilationRate = GetCO2Rate();
             WaterUse = GetWaterUse();
         }
@@ -152,8 +150,12 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             }
             else /* Limited water calculation */
             {
+                var molecularWeightWater = 18;
+                var kg_to_g = 1000;
+                var hrs_to_seconds = 3600;
+
                 pathway.WaterUse = water.maxHourlyT * water.fraction;
-                var WaterUseMolsSecond = pathway.WaterUse / 18 * 1000 / 3600;
+                var WaterUseMolsSecond = pathway.WaterUse / molecularWeightWater * kg_to_g / hrs_to_seconds;
 
                 resistance = LeafWater.LimitedWaterResistance(pathway.WaterUse, AbsorbedRadiation);
                 var Gt = LeafWater.TotalCO2Conductance(resistance);

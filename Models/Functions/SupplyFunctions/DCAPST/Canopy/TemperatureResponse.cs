@@ -230,7 +230,14 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </remarks>
         private double Value(double temp, double P25, double tMin)
         {
-            return P25 * Math.Exp(tMin * (temp + 273 - 298.15) / (298.15 * 8.314 * (temp + 273)));
+            var absolute0C = 273;
+            var absolute25C = 298.15;
+            var universalGasConstant = 8.314;
+
+            var numerator = tMin * (temp + absolute0C - absolute25C);
+            var denominator = (absolute25C * universalGasConstant * (temp + absolute0C));
+
+            return P25 * Math.Exp(numerator / denominator);
         }
 
         /// <summary>

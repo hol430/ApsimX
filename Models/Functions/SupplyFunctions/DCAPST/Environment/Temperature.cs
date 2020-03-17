@@ -28,23 +28,23 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// <summary>
         /// Accounts for the delay in temperature response to the sun
         /// </summary>
-        [Description("X lag")]
-        [Units("")]
+        [Description("Maximum temperature lag coefficient")]
+        [Units("hours")]
         public double XLag { get; set; } = 1.8;
 
         /// <summary>
         /// Accounts for the delay in temperature response to the sun
         /// </summary>
-        [Description("Y lag")]
-        [Units("")]
+        [Description("Night time temperature lag coefficient")]
+        [Units("hours")]
         public double YLag { get; set; } = 2.2;
 
         /// <summary>
         /// Accounts for the delay in temperature response to the sun
         /// </summary>
-        [Description("Z lag")]
-        [Units("")]
-        public double ZLag { get; set; } = 1;       
+        [Description("Minimum temperature lag coefficient")]
+        [Units("hours")]
+        public double ZLag { get; set; } = 1;
 
         /// <summary>
         /// The current air temperature
@@ -52,9 +52,29 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         public double AirTemperature { get; set; }
 
         /// <summary>
-        /// Air density in mols
+        /// Air density in mols / m^3
         /// </summary>
-        public double AirMolarDensity => ((Weather.AirPressure * 100000) / (287 * (AirTemperature + 273))) * (1000 / 28.966);
+        public double AirMolarDensity
+        {
+            get
+            {
+                var atm_to_Pa = 100000;
+                var pressure = Weather.AirPressure * atm_to_Pa;
+
+                var molarMassAir = 28.966;
+
+                var kg_to_g = 1000;
+
+                var specificHeat = 287;
+                var absolute0C = 273;
+
+                var numerator = pressure * kg_to_g / molarMassAir;
+                var denominator = specificHeat * (AirTemperature + absolute0C);
+
+                return numerator / denominator;
+            }
+        }
+
 
         /// <summary>
         /// Calculates the air temperature based on the current time
@@ -63,7 +83,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         {
             if (time < 0 || 24 < time) throw new Exception("The time must be between 0 and 24");
 
-            double timeOfMinT = 12.0 - Solar.DayLength / 2.0 + ZLag;
+            double timeOfMinT = ZLag + 12.0 - Solar.DayLength / 2.0;
             double deltaT = Weather.MaxT - Weather.MinT;
 
             if /*DAY*/ (timeOfMinT < time && time < Solar.Sunset)

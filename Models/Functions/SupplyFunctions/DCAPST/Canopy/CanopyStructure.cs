@@ -199,10 +199,13 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         {
             LAI = Sorghum.LAI;
 
-            var SLNTop = Sorghum.SLN * SLNRatioTop;
-            NTopCanopy = SLNTop * 1000 / 14;
+            var kg_to_g = 1000;
+            var molecularWeightNitrogen = 14;
 
-            var NcAv = Sorghum.SLN * 1000 / 14;
+            var SLNTop = Sorghum.SLN * SLNRatioTop;
+            NTopCanopy = SLNTop * kg_to_g / molecularWeightNitrogen;
+
+            var NcAv = Sorghum.SLN * kg_to_g / molecularWeightNitrogen;
             NAllocation = -1 * Math.Log((NcAv - MinimumN) / (NTopCanopy - MinimumN)) * 2;           
 
             absorbed = new AbsorbedRadiation(Layers, LAI)
@@ -266,10 +269,14 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             Shaded.PhotonCount = photons - Sunlit.PhotonCount;
 
             // Energy calculations (used by water interaction)
-            var PARDirect = Radiation.Direct * 0.5 * 1000000;
-            var PARDiffuse = Radiation.Diffuse * 0.5 * 1000000;
-            var NIRDirect = Radiation.Direct * 0.5 * 1000000;
-            var NIRDiffuse = Radiation.Diffuse * 0.5 * 1000000;
+            var energyFractionPAR = 0.5; // Technically not the same as RPAR?
+            var energyFractionNIR = 1 - energyFractionPAR;
+            var MJ_to_J = 1000000;
+            
+            var PARDirect = Radiation.Direct * energyFractionPAR * MJ_to_J;
+            var PARDiffuse = Radiation.Diffuse * energyFractionPAR * MJ_to_J;
+            var NIRDirect = Radiation.Direct * energyFractionNIR * MJ_to_J;
+            var NIRDiffuse = Radiation.Diffuse * energyFractionNIR * MJ_to_J;
 
             var PARTotalIrradiance = absorbed.CalcTotalRadiation(PARDirect, PARDiffuse);
             var SunlitPARTotalIrradiance = absorbed.CalcSunlitRadiation(PARDirect, PARDiffuse);

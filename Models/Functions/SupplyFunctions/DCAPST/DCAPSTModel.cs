@@ -145,7 +145,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         private void OnDoDCAPST(object sender, EventArgs e)
         {
             // Needs to be leaf for photosynthesis to occur
-            if (Plant.Leaf.LAI == 0) return;
+            if (Plant.Leaf.LAI < 0.5) return;
 
             DailyRun();
         }
@@ -181,9 +181,10 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             var actual = (arbitrator.WatSupply > totalDemand) ? potential : CalculateActual(limitedSupply, sunlitDemand, shadedDemand);
 
             var rsr = Plant.AboveGround.Wt / (Plant.AboveGround.Wt + Plant.Root.Wt);
+            var hrs_to_seconds = 3600;
 
-            ActualBiomass = actual * 3600 / 1000000 * 44 * B / (1 + rsr);
-            PotentialBiomass = potential * 3600 / 1000000 * 44 * B / (1 + rsr);
+            ActualBiomass = actual * hrs_to_seconds / 1000000 * 44 * B / (1 + rsr);
+            PotentialBiomass = potential * hrs_to_seconds / 1000000 * 44 * B / (1 + rsr);
             WaterDemanded = totalDemand;
             WaterSupplied = (arbitrator.WatSupply < totalDemand) ? limitedSupply.Sum() : waterDemands.Sum();
             InterceptedRadiation = intercepted;
