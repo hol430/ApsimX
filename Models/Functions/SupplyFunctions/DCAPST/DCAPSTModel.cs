@@ -59,6 +59,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
 
         [Link]
         SorghumArbitrator arbitrator = null;
+        [Link]
+        RootShoot rootShoot = null;
 
         /// <summary>
         /// Describes how electron transport rate changes with temperature
@@ -145,7 +147,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         private void OnDoDCAPST(object sender, EventArgs e)
         {
             // Needs to be leaf for photosynthesis to occur
-            if (Plant.Leaf.LAI < 0.5) return;
+            if (Plant.Leaf.LAI <= 0.0) return;
 
             DailyRun();
         }
@@ -183,8 +185,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             var rsr = Plant.AboveGround.Wt / (Plant.AboveGround.Wt + Plant.Root.Wt);
             var hrs_to_seconds = 3600;
 
-            ActualBiomass = actual * hrs_to_seconds / 1000000 * 44 * B / (1 + rsr);
-            PotentialBiomass = potential * hrs_to_seconds / 1000000 * 44 * B / (1 + rsr);
+            ActualBiomass = actual * hrs_to_seconds / 1000000 * 44 * B / (1 + rootShoot.Ratio);
+            PotentialBiomass = potential * hrs_to_seconds / 1000000 * 44 * B / (1 + rootShoot.Ratio);
             WaterDemanded = totalDemand;
             WaterSupplied = (arbitrator.WatSupply < totalDemand) ? limitedSupply.Sum() : waterDemands.Sum();
             InterceptedRadiation = intercepted;

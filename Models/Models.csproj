@@ -287,6 +287,7 @@
     <Compile Include="Functions\SupplyFunctions\DCAPST\DCAPSTModel.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Extensions.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Canopy\TemperatureResponse.cs" />
+    <Compile Include="Functions\SupplyFunctions\DCAPST\RootShoot.cs" />
     <Compile Include="Graph\DefaultPainter.cs" />
     <Compile Include="Graph\ShadedBarsOnGraph.cs" />
     <Compile Include="Graph\GraphPanel.cs" />
