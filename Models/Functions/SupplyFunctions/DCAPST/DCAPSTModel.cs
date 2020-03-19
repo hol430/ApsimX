@@ -3,6 +3,7 @@ using System.Linq;
 
 using Models.Core;
 using Models.PMF;
+using Models.Soils;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
@@ -58,7 +59,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         Plant Plant = null;
 
         [Link]
-        SorghumArbitrator arbitrator = null;
+        SoilWater water = null;
+
         [Link]
         RootShoot rootShoot = null;
 
@@ -178,17 +180,17 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             double maxHourlyT = Math.Min(waterDemands.Max(), maxTranspiration);
             waterDemands = waterDemands.Select(w => w > maxHourlyT ? maxHourlyT : w).ToArray();
 
-            var limitedSupply = CalculateWaterSupplyLimits(arbitrator.WatSupply, maxHourlyT, waterDemands);
+            var available = water.ESW.Sum();
+            var limitedSupply = CalculateWaterSupplyLimits(available, maxHourlyT, waterDemands);
 
-            var actual = (arbitrator.WatSupply > totalDemand) ? potential : CalculateActual(limitedSupply, sunlitDemand, shadedDemand);
+            var actual = (available > totalDemand) ? potential : CalculateActual(limitedSupply, sunlitDemand, shadedDemand);
 
-            var rsr = Plant.AboveGround.Wt / (Plant.AboveGround.Wt + Plant.Root.Wt);
             var hrs_to_seconds = 3600;
 
             ActualBiomass = actual * hrs_to_seconds / 1000000 * 44 * B / (1 + rootShoot.Ratio);
             PotentialBiomass = potential * hrs_to_seconds / 1000000 * 44 * B / (1 + rootShoot.Ratio);
             WaterDemanded = totalDemand;
-            WaterSupplied = (arbitrator.WatSupply < totalDemand) ? limitedSupply.Sum() : waterDemands.Sum();
+            WaterSupplied = (available < totalDemand) ? limitedSupply.Sum() : waterDemands.Sum();
             InterceptedRadiation = intercepted;
         }
 
