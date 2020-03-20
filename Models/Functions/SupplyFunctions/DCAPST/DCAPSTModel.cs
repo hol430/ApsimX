@@ -3,6 +3,7 @@ using System.Linq;
 
 using Models.Core;
 using Models.PMF;
+using Models.PMF.Organs;
 using Models.Interfaces;
 using Models.Soils;
 
@@ -59,8 +60,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         IAssimilationArea Shaded = null;
 
         [Link]
+        ISoilWater water = null;
 
-        SoilWater water = null;
         /// <summary>
         /// The root-shoot ratio
         /// </summary>

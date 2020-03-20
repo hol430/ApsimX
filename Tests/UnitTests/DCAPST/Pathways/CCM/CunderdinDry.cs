@@ -7,6 +7,7 @@ using Models.PMF;
 using Models.PMF.Organs;
 using Models.Soils;
 
+using UnitTests.DCAPST.Fakes;
 using UnitTests.DCAPST.Environment.Fakes;
 
 namespace UnitTests.DCAPST.Pathways
@@ -17,8 +18,8 @@ namespace UnitTests.DCAPST.Pathways
         private double delta = 0.0000000000001;
 
         private DCAPSTModel dcapst;
-        private Plant plant;
-        private SorghumArbitrator arbitrator;
+        private FakeSoilWater water;
+        private FakeFunction RootShoot;
         private SorghumLeaf sorghum;
         private FakeWeather weather;
         private FakeClock clock;
@@ -157,18 +158,18 @@ namespace UnitTests.DCAPST.Pathways
             dcapst.Children.Add(temperature);
             dcapst.Children.Add(structure);
 
-            arbitrator = new SorghumArbitrator();
-
             sorghum = new SorghumLeaf();
             sorghum.Children.Add(dcapst);
 
-            plant = new Plant();
+            var plant = new Plant();
 
-            plant.AboveGround = new Biomass();
-            plant.Root = new Root();
+            RootShoot = new FakeFunction() { Name = "RootShoot" };
 
-            plant.Children.Add(arbitrator);
+            water = new FakeSoilWater();
+
+            plant.Children.Add(RootShoot);
             plant.Children.Add(sorghum);
+            plant.Children.Add(water);
 
             Apsim.ParentAllChildren(plant);
 
@@ -214,12 +215,11 @@ namespace UnitTests.DCAPST.Pathways
              * the weights in such a way that after the calculation is performed, we return the desired 
              * ratio. This is achieved by setting the numerator to the value we want, and ensuring the 
              * denominator is always 1.
-             */            
+             */
 
-            plant.AboveGround.StructuralWt = RootShootRatio;
-            plant.Root.Live.StructuralWt = (1.0 - RootShootRatio);
+            RootShoot.Value = RootShootRatio;
 
-            arbitrator.WatSupply = SWAvailable;
+            water.ESW[0] = SWAvailable;
 
             dcapst.DailyRun();
 
