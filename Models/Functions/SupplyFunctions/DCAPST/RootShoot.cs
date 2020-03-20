@@ -15,40 +15,40 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(DCAPSTModel))]
-    public class RootShoot : Model
+    public class RootShoot : Model, IFunction
     {
         [Link]
         Phenology phenology = null;
 
         /// <summary>
-        /// The root-shoot ratio of the plant
+        /// 
         /// </summary>
-        public double Ratio
+        /// <param name="arrayIndex"></param>
+        /// <returns></returns>
+        public double Value(int arrayIndex = -1)
         {
-            get
+            switch (phenology.CurrentPhase.Name)
             {
-                // TODO: Might be better to use stage number, not phase name?
+                case ("Emerging"):
+                    return Emerging;
 
-                switch (phenology.CurrentPhase.Name)
-                {
-                    case ("Emerging"):
-                        return Emerging;
+                case ("Juvenile"):
+                    return Juvenile;
 
-                    case ("Juvenile"):
-                        return Juvenile;
+                case ("JuvenileToFloralInit"):
+                    return Juvenile;
 
-                    case ("JuvenileToFloralInit"):
-                        return FloralInitialisation;
+                case ("FloralInitToFlagLeaf"):
+                    return FloralInitialisation;
 
-                    case ("FloralInitToFlagLeaf"):
-                        return LeafFlag;
+                case ("FlagLeafToFlowering"):
+                    return LeafFlag;
 
-                    case ("FlagLeafToFlowering"):
-                        return Flowering;
+                case ("FloweringToGrainFilling"):
+                    return Flowering;
 
-                    default:
-                        return 0;
-                }
+                default:
+                    return 0;
             }
         }
 
@@ -80,6 +80,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// The flowering ratio
         /// </summary>
         [Description("Flowering ratio")]
-        public double Flowering { get; set; }
+        public double Flowering { get; set; }        
     }
 }

@@ -3,6 +3,7 @@ using System.Linq;
 
 using Models.Core;
 using Models.PMF;
+using Models.Interfaces;
 using Models.Soils;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
@@ -58,13 +59,13 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         IAssimilationArea Shaded = null;
 
         [Link]
-        Plant Plant = null;
 
-        [Link]
         SoilWater water = null;
-
-        [Link]
-        RootShoot rootShoot = null;
+        /// <summary>
+        /// The root-shoot ratio
+        /// </summary>
+        [Link(ByName = true)]
+        IFunction RootShoot = null;
 
         /// <summary>
         /// Describes how electron transport rate changes with temperature
@@ -180,8 +181,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
 
             var hrs_to_seconds = 3600;
 
-            ActualBiomass = actual * hrs_to_seconds / 1000000 * 44 * B / (1 + rootShoot.Ratio);
-            PotentialBiomass = potential * hrs_to_seconds / 1000000 * 44 * B / (1 + rootShoot.Ratio);
+            ActualBiomass = actual * hrs_to_seconds / 1000000 * 44 * B / (1 + RootShoot.Value());
+            PotentialBiomass = potential * hrs_to_seconds / 1000000 * 44 * B / (1 + RootShoot.Value());
             WaterDemanded = totalDemand;
             WaterSupplied = (available < totalDemand) ? limitedSupply.Sum() : waterDemands.Sum();
             InterceptedRadiation = intercepted;
