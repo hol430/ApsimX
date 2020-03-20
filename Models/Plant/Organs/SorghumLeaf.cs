@@ -11,7 +11,7 @@ using Models.PMF.Phen;
 using Models.PMF.Struct;
 using System.Linq;
 using Models.Functions.DemandFunctions;
-using Models.Functions.SupplyFunctions;
+using Models.Functions.SupplyFunctions.DCAPST;
 
 namespace Models.PMF.Organs
 {
@@ -245,6 +245,9 @@ namespace Models.PMF.Organs
         #endregion
 
         #region Parameters
+
+        [Link(Type = LinkType.Child)]
+        DCAPSTModel dcapst = null;
 
         /// <summary>The extinction coefficient function</summary>
         [Link(Type = LinkType.Child, ByName = true, IsOptional = true)]
@@ -616,12 +619,17 @@ namespace Models.PMF.Organs
             DltSenescedN = 0;
         }
 
+        private bool useDCAPST = false;
+
         /// <summary>Event from sequencer telling us to do our potential growth.</summary>
         /// <param name="sender">The sender.</param>
         /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
         [EventSubscribe("DoPotentialPlantGrowth")]
         private void OnDoPotentialPlantGrowth(object sender, EventArgs e)
         {
+            // Switch to DCAPST once the LAI hits 0.5 for the first time
+            if (!useDCAPST && LAI > 0.5) useDCAPST = true;
+
             leafSize = CalcLeafSize();
             // save current state
             if (parentPlant.IsEmerged)
@@ -646,11 +654,22 @@ namespace Models.PMF.Organs
                     dltStressedLAI = dltPotentialLAI * ExpansionStress.Value();
                 }
 
-                //old model calculated BiomRUE at the end of the day
-                //this is done at strat of the day
-                BiomassRUE = Photosynthesis.Value();
-                //var bimT = 0.009 / waterFunction.VPD / 0.001 * Arbitrator.WSupply;
-                BiomassTE = PotentialBiomassTEFunction.Value();
+                if (useDCAPST && LAI > 0)
+                {
+                    // Might need another test for 0 LAI somewhere? Possible (but very unlikely) edge case?
+                    dcapst.DailyRun();
+
+                    BiomassRUE = dcapst.PotentialBiomass;
+                    BiomassTE = dcapst.PotentialBiomass; // Where does TE come from
+                }
+                else
+                {
+                    //old model calculated BiomRUE at the end of the day
+                    //this is done at strat of the day
+                    BiomassRUE = Photosynthesis.Value();
+                    //var bimT = 0.009 / waterFunction.VPD / 0.001 * Arbitrator.WSupply;
+                    BiomassTE = PotentialBiomassTEFunction.Value();
+                }                
 
                 Height = HeightFunction.Value();
 
@@ -866,14 +885,26 @@ namespace Models.PMF.Organs
 
         private double calcLaiSenescenceWater()
         {
-            //watSupply is calculated in SorghumArbitrator:StoreWaterVariablesForNitrogenUptake
-            //Arbitrator.WatSupply = Plant.Root.PlantAvailableWaterSupply();
-            double dlt_dm_transp = PotentialBiomassTEFunction.Value();
+            double dlt_dm_transp;
+            double effectiveRue;
 
-            //double radnCanopy = divide(plant->getRadnInt(), coverGreen, plant->today.radn);
-            double effectiveRue = MathUtilities.Divide(Photosynthesis.Value(), RadIntTot, 0);
+            if (useDCAPST)
+            {
+                dlt_dm_transp = MathUtilities.Divide(dcapst.PotentialBiomass, dcapst.WaterSupplied, 0);
+                effectiveRue = MathUtilities.Divide(dcapst.PotentialBiomass, dcapst.InterceptedRadiation, 0);
+            }
+            else
+            {
+                //watSupply is calculated in SorghumArbitrator:StoreWaterVariablesForNitrogenUptake
+                //Arbitrator.WatSupply = Plant.Root.PlantAvailableWaterSupply();
+                dlt_dm_transp = PotentialBiomassTEFunction.Value();
 
-            double radnCanopy = MathUtilities.Divide(RadIntTot, CoverGreen, MetData.Radn);
+                //double radnCanopy = divide(plant->getRadnInt(), coverGreen, plant->today.radn);
+                effectiveRue = MathUtilities.Divide(Photosynthesis.Value(), RadIntTot, 0);
+            }            
+
+            double radnCanopy = MathUtilities.Divide(RadIntTot, CoverGreen, MetData.Radn);            
+            
             if (MathUtilities.FloatsAreEqual(CoverGreen, 0))
                 radnCanopy = 0;
 

@@ -11,11 +11,13 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     /// Models daily biomass growth due to photosynthetic activity
     /// </summary>
     [Serializable]
-    [Description("Calculates daily biomass growth due to photosynthetic activity, using the DCAPST model")]
+    [Description("Calculates daily biomass growth due to photosynthetic activity, using the DCAPST model." +
+        "DCAPST only activates once the LAI reaches 0.5, prior to that the normal RUE model is used." +
+        "DCAPST stays in use even if the LAI falls below 0.5 again.")]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(Model))]
-    public class DCAPSTModel : Model, IDCAPSTModel, IFunction
+    public class DCAPSTModel : Model, IDCAPSTModel
     {
         #region Links
 
@@ -144,15 +146,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         #endregion
 
         #region Methods
-
-        [EventSubscribe("DoDCAPST")] // Needs to run after the phenology but before potential plant growth
-        private void OnDoDCAPST(object sender, EventArgs e)
-        {
-            // Needs to be leaf for photosynthesis to occur
-            if (Plant.Leaf.LAI <= 0.0) return;
-
-            DailyRun();
-        }
 
         /// <summary>
         /// Calculates the potential and actual biomass growth of a canopy across the span of a day,
@@ -315,16 +308,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
                 else maxDemandRate = averageDemandRate;
             }
             return demand.Select(d => d > averageDemandRate ? averageDemandRate : d).ToArray();
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="arrayIndex"></param>
-        /// <returns></returns>
-        public double Value(int arrayIndex = -1)
-        {
-            return PotentialBiomass;
         }
 
         #endregion
