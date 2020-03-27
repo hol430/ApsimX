@@ -18,7 +18,7 @@ namespace UnitTests.DCAPST.Pathways
         private double delta = 0.0000000000001;
 
         private DCAPSTModel dcapst;
-        private FakeSoilWater water;
+        private SorghumArbitrator water;
         private FakeFunction RootShoot;
         private SorghumLeaf sorghum;
         private FakeWeather weather;
@@ -98,7 +98,7 @@ namespace UnitTests.DCAPST.Pathways
             shaded.Children.Add(new AssimilationPathway() { Type = PathwayType.Ac2, Name = "Ac2" });
             shaded.Children.Add(new AssimilationPathway() { Type = PathwayType.Aj, Name = "Aj" });
 
-            var structure = new CanopyStructure()
+            var structure = new CanopyAttributes()
             {
                 DiffuseExtCoeff = 0.78,
                 DiffuseExtCoeffNIR = 0.8,
@@ -127,7 +127,7 @@ namespace UnitTests.DCAPST.Pathways
 
             weather = new FakeWeather()
             {
-                AirPressure = 1.01325
+                AirPressure = 1010
             };
 
             clock = new FakeClock();
@@ -165,7 +165,7 @@ namespace UnitTests.DCAPST.Pathways
 
             RootShoot = new FakeFunction() { Name = "RootShoot" };
 
-            water = new FakeSoilWater();
+            water = new SorghumArbitrator();
 
             plant.Children.Add(RootShoot);
             plant.Children.Add(sorghum);
@@ -218,8 +218,7 @@ namespace UnitTests.DCAPST.Pathways
              */
 
             RootShoot.Value = RootShootRatio;
-
-            water.ESW[0] = SWAvailable;
+            water.WatSupply = SWAvailable;
 
             dcapst.DailyRun();
 
