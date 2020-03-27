@@ -10,7 +10,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [Description("Models how a C4 crop assimilates biomass")]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(ICanopyStructure))]
+    [ValidParent(ParentType = typeof(ICanopyAttributes))]
     public class AssimilationC4 : Assimilation
     {       
         /// <summary>

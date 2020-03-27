@@ -3,7 +3,7 @@
     /// <summary>
     /// Models the structure of the canopy
     /// </summary>
-    public interface ICanopyStructure
+    public interface ICanopyAttributes
     {       
         /// <summary>
         /// Performs initial calculations for the canopy provided daily conditions 

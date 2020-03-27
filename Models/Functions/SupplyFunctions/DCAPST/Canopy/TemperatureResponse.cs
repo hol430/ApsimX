@@ -9,7 +9,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [Serializable]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(ICanopyStructure))]
+    [ValidParent(ParentType = typeof(ICanopyAttributes))]
     public class TemperatureResponse : Model
     {
         #region Links

@@ -11,7 +11,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(IDCAPSTModel))]
-    public class CanopyStructure : Model, ICanopyStructure
+    public class CanopyAttributes : Model, ICanopyAttributes
     {
         #region Links
 
