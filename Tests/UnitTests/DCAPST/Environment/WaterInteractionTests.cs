@@ -18,7 +18,7 @@ namespace UnitTests.DCAPST.Environment
         {
             var weather = new FakeWeather()
             {
-                AirPressure = 1.01325,
+                AirPressure = 1010,
                 MinT = 16.2
             };
 

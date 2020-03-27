@@ -10,7 +10,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [Serializable]
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
-    [ValidParent(ParentType = typeof(ICanopyStructure))]
+    [ValidParent(ParentType = typeof(ICanopyAttributes))]
     public class WaterInteraction : Model, IWaterInteraction
     {
         /// <summary>
@@ -67,6 +67,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
 
         #region Parameters
 
+        /// <summary>Pressure in Atm</summary>
+        private double Pressure => (Weather.AirPressure + 3.25) * 0.001; // hPa to Atm unit conversion
+
         /// <summary> Boundary H20 conductance </summary>
         private double Gbw => gbh / k;
 
@@ -74,7 +77,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         private double Rbh => 1 / gbh;
 
         /// <summary> Boundary CO2 conductance </summary>
-        private double GbCO2 => Weather.AirPressure * Temperature.AirMolarDensity * Gbw / m;
+        private double GbCO2 => Pressure * Temperature.AirMolarDensity * Gbw / m;
 
         /// <summary> Outgoing thermal radiation</summary>
         private double ThermalRadiation => 8 * kb * Math.Pow(Temperature.AirTemperature + 273, 3) * (leafTemp - Temperature.AirTemperature);
@@ -124,10 +127,10 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             var atm_to_kPa = 100;
 
             // Leaf water mol fraction
-            double Wl = VpLeaf / (Weather.AirPressure * atm_to_kPa);
+            double Wl = VpLeaf / (Pressure * atm_to_kPa);
 
             // Air water mol fraction
-            double Wa = VptMin / (Weather.AirPressure * atm_to_kPa);
+            double Wa = VptMin / (Pressure * atm_to_kPa);
 
             // temporary variables
             double b = (Wl - Wa) * (Ca + Ci) / (2 - (Wl + Wa));
@@ -147,7 +150,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             // Total leaf water conductance
             double gtw = 1 / total;
 
-            double rtw = Temperature.AirMolarDensity / gtw * Weather.AirPressure;
+            double rtw = Temperature.AirMolarDensity / gtw * Pressure;
             return rtw;
         }
 
@@ -186,7 +189,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         public double TotalCO2Conductance(double rtw)
         {
             // Limited water gsCO2
-            var gsCO2 = Temperature.AirMolarDensity * (Weather.AirPressure / (rtw - (1 / Gbw))) / n;
+            var gsCO2 = Temperature.AirMolarDensity * (Pressure / (rtw - (1 / Gbw))) / n;
             var boundaryCO2Resistance = 1 / GbCO2;
             var stomatalCO2Resistance = 1 / gsCO2;
             return 1 / (boundaryCO2Resistance + stomatalCO2Resistance);

@@ -58,8 +58,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         {
             get
             {
-                var atm_to_Pa = 100000;
-                var pressure = Weather.AirPressure * atm_to_Pa;
+                var hPa_to_Pa = 100;
+                var pressure = (Weather.AirPressure + 3.25) * hPa_to_Pa;
 
                 var molarMassAir = 28.966;
 
