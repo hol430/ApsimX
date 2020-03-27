@@ -45,7 +45,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// The canopy undergoing photosynthesis
         /// </summary>
         [Link]
-        ICanopyStructure Canopy = null;
+        ICanopyAttributes Canopy = null;
 
         /// <summary>
         /// The part of the canopy in sunlight
@@ -58,9 +58,6 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         [Link(ByName = true)]
         IAssimilationArea Shaded = null;
-
-        [Link]
-        ISoilWater water = null;
 
         /// <summary>
         /// The root-shoot ratio
@@ -79,6 +76,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         [Link(ByName = true)]
         TemperatureResponseParameters MesophyllCO2Conductance = null;
+
+        [Link]
+        SorghumArbitrator arbitrator = null;
 
         #endregion
 
@@ -175,7 +175,8 @@ namespace Models.Functions.SupplyFunctions.DCAPST
             double maxHourlyT = Math.Min(waterDemands.Max(), maxTranspiration);
             waterDemands = waterDemands.Select(w => w > maxHourlyT ? maxHourlyT : w).ToArray();
 
-            var available = water.ESW.Sum();
+            //var available = water.ESW.Sum();
+            double available = arbitrator.WatSupply;
             var limitedSupply = CalculateWaterSupplyLimits(available, maxHourlyT, waterDemands);
 
             var actual = (available > totalDemand) ? potential : CalculateActual(limitedSupply, sunlitDemand, shadedDemand);
