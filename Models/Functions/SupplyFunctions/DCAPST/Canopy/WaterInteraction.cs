@@ -13,15 +13,21 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [ValidParent(ParentType = typeof(ICanopyAttributes))]
     public class WaterInteraction : Model, IWaterInteraction
     {
+        #region Links
+
         /// <summary>
         /// The weather
         /// </summary>
         [Link]
         IWeather Weather = null;
 
-        /// <summary> Environment temperature model </summary>
+        /// <summary>
+        /// Environment temperature model
+        /// </summary>
         [Link]
         ITemperature Temperature = null;
+
+        #endregion
 
         #region Fields
         /// <summary>
@@ -44,13 +50,19 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         /// </summary>
         private readonly double latentHeatOfVapourisation = 2447000;
 
-        /// <summary>Heat to water vapour conductance factor</summary>
+        /// <summary>
+        /// Heat to water vapour conductance factor
+        /// </summary>
         private readonly double k = 0.92;
 
-        /// <summary>Boundary water to CO2 diffusion factor</summary>
+        /// <summary>
+        /// Boundary water to CO2 diffusion factor
+        /// </summary>
         private readonly double m = 1.37;
 
-        /// <summary>Stomata water diffusion factor</summary> 
+        /// <summary>
+        /// Stomata water diffusion factor
+        /// </summary> 
         private readonly double n = 1.6;
 
         /// <summary> 

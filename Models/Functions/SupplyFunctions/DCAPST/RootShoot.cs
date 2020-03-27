@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Linq;
 
 using Models.Core;
 using Models.PMF.Phen;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
-    // TODO: Implement IFunction? It matches the pattern
-
     /// <summary>
     /// Provides the root-shoot ratio through the UI
     /// </summary>
@@ -17,14 +14,15 @@ namespace Models.Functions.SupplyFunctions.DCAPST
     [ValidParent(ParentType = typeof(DCAPSTModel))]
     public class RootShoot : Model, IFunction
     {
+        /// <summary>
+        /// The phenology modelling the phases
+        /// </summary>
         [Link]
         Phenology phenology = null;
 
         /// <summary>
-        /// 
+        /// Returns the root-shoot ratio of the current phase
         /// </summary>
-        /// <param name="arrayIndex"></param>
-        /// <returns></returns>
         public double Value(int arrayIndex = -1)
         {
             switch (phenology.CurrentPhase.Name)

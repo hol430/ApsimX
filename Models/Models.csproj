@@ -279,7 +279,7 @@
     <Compile Include="Functions\SupplyFunctions\DCAPST\Assimilation\CanopyTypes\AssimilationCCM.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Canopy\AbsorbedRadiation.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Assimilation\AssimilationArea.cs" />
-    <Compile Include="Functions\SupplyFunctions\DCAPST\Canopy\CanopyStructure.cs" />
+    <Compile Include="Functions\SupplyFunctions\DCAPST\Canopy\CanopyAttributes.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Canopy\WaterInteraction.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Environment\SolarGeometry.cs" />
     <Compile Include="Functions\SupplyFunctions\DCAPST\Environment\SolarRadiation.cs" />

@@ -33,6 +33,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         [Link(ByName = true)]
         IAssimilationArea Shaded = null;
 
+        /// <summary>
+        /// The sorghum leaf
+        /// </summary>
         [Link]
         SorghumLeaf Sorghum = null;
 
@@ -325,7 +328,7 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         }
 
         /// <summary>
-        /// 
+        /// Calculate a maximum rate
         /// </summary>
         private double CalcMaximumRate(double psi, double coefficient)
         {

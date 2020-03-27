@@ -3,9 +3,6 @@ using System.Linq;
 
 using Models.Core;
 using Models.PMF;
-using Models.PMF.Organs;
-using Models.Interfaces;
-using Models.Soils;
 
 namespace Models.Functions.SupplyFunctions.DCAPST
 {
@@ -77,6 +74,9 @@ namespace Models.Functions.SupplyFunctions.DCAPST
         [Link(ByName = true)]
         TemperatureResponseParameters MesophyllCO2Conductance = null;
 
+        /// <summary>
+        /// The arbitrator
+        /// </summary>
         [Link]
         SorghumArbitrator arbitrator = null;
 
