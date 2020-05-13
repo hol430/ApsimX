@@ -120,6 +120,15 @@
                     series.X2FieldName = series.X2FieldName?.Replace("[Soil]", Apsim.FullPath(this.model.Parent));
                     series.YFieldName = series.YFieldName?.Replace("[Soil]", Apsim.FullPath(this.model.Parent));
                     series.Y2FieldName = series.Y2FieldName?.Replace("[Soil]", Apsim.FullPath(this.model.Parent));
+
+                    if (series.Type == SeriesType.Region && soil != null)
+                    {
+                        // The default behaviour is to shade between initial SW and soil LL.
+                        // If there is only 1 soilcrop though, we shade between initial SW and crop LL.
+                        List<SoilCrop> soilCrops = Apsim.ChildrenRecursively(soil, typeof(SoilCrop)).Cast<SoilCrop>().ToList();
+                        if (soilCrops.Count == 1)
+                            series.X2FieldName = $"{Apsim.FullPath(soilCrops[0])}.LL";
+                    }
                 }
 
                 this.parentForGraph = this.model.Parent as IModel;

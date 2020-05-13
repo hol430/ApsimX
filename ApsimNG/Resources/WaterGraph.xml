@@ -20,9 +20,9 @@
           <YAxis>Left</YAxis>
           <ColourArgb>-3479297</ColourArgb>
           <Marker>None</Marker>
-          <XFieldName>[Soil].LL15</XFieldName>
+          <XFieldName>[Soil].SWAtWaterThickness</XFieldName>
           <YFieldName>[Soil].DepthMidPoints</YFieldName>
-          <X2FieldName>[Soil].DUL</X2FieldName>
+          <X2FieldName>[Soil].LL15</X2FieldName>
           <Y2FieldName>[Soil].DepthMidPoints</Y2FieldName>
           <SplitOn>*</SplitOn>
         </Series>
@@ -30,6 +30,7 @@
           <Name>Air dry</Name>
           <Type>Scatter</Type>
           <Title>Air dry</Title>
+          <Line>Dash</Line>
           <ShowInLegend>true</ShowInLegend>
           <XAxis>Top</XAxis>
           <YAxis>Left</YAxis>
@@ -69,6 +70,7 @@
           <Name>SAT</Name>
           <Type>Scatter</Type>
           <Title>SAT</Title>
+          <Line>Dash</Line>
           <ShowInLegend>true</ShowInLegend>
           <XAxis>Top</XAxis>
           <YAxis>Left</YAxis>
