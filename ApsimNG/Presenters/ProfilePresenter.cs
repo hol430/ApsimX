@@ -98,6 +98,15 @@
 
             // Populate the graph.
             this.graph = Utility.Graph.CreateGraphFromResource("WaterGraph");
+            Soil soil = Apsim.Find(this.model, typeof(Soil)) as Soil;
+            if (soil != null)
+            {
+                if (soil.Graph == null)
+                    soil.Graph = this.graph;
+                else
+                    this.graph = soil.Graph;
+            }
+
             graph.Name = "";
             if (this.graph == null)
                 this.view.ShowGraph(false);
@@ -123,6 +132,14 @@
                     int padding = (this.view as ProfileView).MainWidget.Allocation.Width / 2 / 2;
                     this.view.Graph.LeftRightPadding = padding;
                     this.graphPresenter = new GraphPresenter();
+
+                    // Remove all crop LL series, and manually re-add
+                    // them as necessary, so that the graph will not
+                    // continue to show crop LL after the user removes
+                    // the soil crop from the soil.
+                    graph.Children.RemoveAll(c => c.Name.Contains("LL") &&
+                                                  c is Series s &&
+                                                  s.Type != SeriesType.Region);
                     for (int i = 0; i < this.profileGrid.Properties.Length; i++)
                     {
                         string columnName = profileGrid.Properties[i].Name;
@@ -157,7 +174,8 @@
                             this.graph.Children.Add(cropLLSeries);
                         }
                     }
-
+                    Apsim.ParentAllChildren(graph);
+                    
                     this.graph.LegendPosition = Graph.LegendPositionType.RightTop;
                     explorerPresenter.ApsimXFile.Links.Resolve(graphPresenter);
                     this.graphPresenter.Attach(this.graph, this.view.Graph, this.explorerPresenter);
@@ -178,6 +196,8 @@
         {
             this.explorerPresenter.CommandHistory.ModelChanged -= this.OnModelChanged;
 
+            if (graph != null)
+                this.graph.Parent = null;
             propertyPresenter.Detach();
             profileGrid.Detach();
             if (this.graphPresenter != null)

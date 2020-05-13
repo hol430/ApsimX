@@ -28,15 +28,25 @@
         /// <summary>Gets the water.</summary>
         private Physical waterNode;
 
-
         /// <summary>
         /// The multipore water model.  An alternativie soil water model that is not yet fully functional
         /// </summary>
-        /// 
         [XmlIgnore]
         public WEIRDO Weirdo;
+
         /// <summary>A reference to the layer structure node or null if not present.</summary>
         private LayerStructure structure;
+
+        /// <summary>
+        /// Keeps track of the graph settings in the UI which have been modified by the user.
+        /// </summary>
+        [NonSerialized]
+        private Graph graph;
+
+        /// <summary>
+        /// Keeps track of the graph settings in the UI which have been modified by the user.
+        /// </summary>
+        public Graph Graph { get { return graph; } set { graph = value; } }
 
         /// <summary>Gets or sets the record number.</summary>
         [Summary]
