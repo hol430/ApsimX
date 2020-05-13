@@ -226,6 +226,9 @@ namespace UserInterface.Presenters
                 // Column name by default would be something like XF but we
                 // want the column to be called 'Wheat XF'.
                 columnName = crop.Name.Replace("Soil", "") + " " + property.Name;
+
+                if (property.Name == "PAWC")
+                    columnName += $" ({MathUtilities.Sum(property.Value as double[]).ToString(grid.NumericFormat)})";
             }
 
             if (property.Units != null)
@@ -346,6 +349,12 @@ namespace UserInterface.Presenters
                 VariableProperty property = properties[i] as VariableProperty;
                 if (property.IsReadOnly && property.DataType.IsArray)
                 {
+                    // Need to update column name - these can be variable,
+                    // as in the case of PAWC.
+                    string columnName = GetColumnName(properties[i]);
+                    grid.DataSource.Columns[i].ColumnName = columnName;
+                    grid.GetColumn(i).HeaderText = columnName;
+
                     Array value = property.Value as Array;
                     for (int j = 0; j < value.Length; j++)
                         grid.DataSource.Rows[j][i] = GetCellValue(j, i);

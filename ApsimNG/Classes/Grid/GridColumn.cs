@@ -264,10 +264,12 @@
             {
                 return this.gridView.Grid.Columns[this.ColumnIndex].Title;
             }
-
             set
             {
                 this.gridView.Grid.Columns[this.ColumnIndex].Title = value;
+
+                // Need to manually change the label text for some reason.
+                this.gridView.GetColumnHeaderLabel(ColumnIndex).Text = value;
             }
         }
 
