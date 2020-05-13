@@ -676,7 +676,9 @@
         /// <param name="cropName">Name of the crop.</param>
         public SoilCrop Crop(string cropName) 
         {
-            cropName = cropName + "Soil";
+            if (!cropName.EndsWith("Soil"))
+                // We don't want to look for WheatSoilSoil
+                cropName = cropName + "Soil";
             var foundCrop = Crops?.Find(crop => crop.Name.Equals(cropName, StringComparison.InvariantCultureIgnoreCase));
             if (foundCrop == null)
                 throw new Exception("Cannot find a soil-crop parameterisation for " + cropName);
