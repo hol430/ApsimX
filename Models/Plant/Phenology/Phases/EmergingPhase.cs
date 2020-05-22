@@ -94,21 +94,15 @@ namespace Models.PMF.Phen
         public virtual void ResetPhase()
         {
             ProgressThroughPhase = 0;
-            if(phenology.SorghumFlag == null)
-            {
-                Target = 0;
-            }
-            //resetting to 0 affects the old sorghum model
+            Target = 0;
+        }
+
+        /// <summary>Will trigger emergence on the day it is called</summary>
+        public void ForceEmergence()
+        {
+            ProgressThroughPhase = Target;
         }
         
-        /// <summary>Writes the summary.</summary>
-        /// <param name="writer">The text writer.</param>
-        public void WriteSummary(TextWriter writer)
-        {
-            writer.WriteLine("      " + Name);
-        }
-
-
         // 4. Private method
         //-----------------------------------------------------------------------------------------------------------------
 

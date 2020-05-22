@@ -803,6 +803,7 @@ namespace Models.PMF.OilPalm
             SowingData.BudNumber = budNumber;
             SowingData.RowSpacing = rowSpacing;
             CropInGround = true;
+            plant_status = "alive";
 
             if (SowingData.Cultivar == "")
                 throw new Exception("Cultivar not specified on sow line.");
@@ -837,19 +838,6 @@ namespace Models.PMF.OilPalm
 
         /// <summary>Occurs when [biomass removed].</summary>
         public event BiomassRemovedDelegate BiomassRemoved;
-
-        /// <summary>Called when [sow].</summary>
-        /// <param name="Sow">The sow.</param>
-        [EventSubscribe("Sow")]
-        private void OnSow(SowPlant2Type Sow)
-        {
-            SowingData = Sow;
-            plant_status = "alive";
-            Population = SowingData.Population;
-
-            if (Sowing != null)
-                Sowing.Invoke(this, new EventArgs());
-        }
 
         /// <summary>Called when [do plant growth].</summary>
         /// <param name="sender">The sender.</param>
@@ -1209,7 +1197,7 @@ namespace Models.PMF.OilPalm
                 Fvpd = Math.Max(0.0, 1 - (VPD - 18) / (50 - 18));
 
 
-            PEP = (Soil.SoilWater as SoilWater).Eo * cover_green*Math.Min(Fn, Fvpd);
+            PEP = (Soil.SoilWater as ISoilWater).Eo * cover_green*Math.Min(Fn, Fvpd);
 
 
             for (int j = 0; j < Soil.LL15mm.Length; j++)
@@ -1658,7 +1646,7 @@ namespace Models.PMF.OilPalm
         {
 
             UnderstoryCoverGreen = UnderstoryCoverMax * (1 - cover_green);
-            UnderstoryPEP = (Soil.SoilWater as SoilWater).Eo * UnderstoryCoverGreen * (1 - cover_green);
+            UnderstoryPEP = (Soil.SoilWater as ISoilWater).Eo * UnderstoryCoverGreen * (1 - cover_green);
 
             for (int j = 0; j < Soil.Thickness.Length; j++)
                 UnderstoryPotSWUptake[j] = Math.Max(0.0, RootProportion(j, UnderstoryRootDepth) * UnderstoryKLmax * UnderstoryCoverGreen * (Soil.Water[j] - Soil.LL15mm[j]));

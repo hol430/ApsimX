@@ -27,7 +27,7 @@ namespace Models.CLEM.Resources
     {
         private List<string> WarningsMultipleEntry = new List<string>();
         private List<string> WarningsNotFound = new List<string>();
-        private LabourAERelationship adultEquivalentRelationship = null;
+        private Relationship adultEquivalentRelationship = null;
 
         /// <summary>
         /// Get the Clock.
@@ -72,7 +72,7 @@ namespace Models.CLEM.Resources
             availabilityList = Apsim.Children(this, typeof(LabourAvailabilityList)).Cast<LabourAvailabilityList>().FirstOrDefault();
 
             // locate AE relationship
-            adultEquivalentRelationship = Apsim.Children(this, typeof(LabourAERelationship)).Cast<LabourAERelationship>().FirstOrDefault();
+            adultEquivalentRelationship = Apsim.Children(this, typeof(Relationship)).Where(a => a.Name.ToUpper().Contains("AE")).Cast<Relationship>().FirstOrDefault();
 
             if (Clock.Today.Day != 1)
             {
@@ -167,7 +167,7 @@ namespace Models.CLEM.Resources
             // clone pricelist so model can modify if needed and not affect initial parameterisation
             if (Apsim.Children(this, typeof(LabourPricing)).Count() > 0)
             {
-                PayList = (Apsim.Children(this, typeof(LabourPricing)).FirstOrDefault() as LabourPricing).Clone();
+                PayList = Apsim.Clone(Apsim.Children(this, typeof(LabourPricing)).FirstOrDefault()) as LabourPricing;
             }
         }
 
@@ -287,17 +287,11 @@ namespace Models.CLEM.Resources
         {
             if (adultEquivalentRelationship != null)
             {
-                return adultEquivalentRelationship.SolveY(ageInMonths, true);
+                return adultEquivalentRelationship.SolveY(ageInMonths);
             }
             else
             {
                 // no AE relationship provided.
-                //string warningString = "No Adult Equivalent (AE) relationship is provided for [r="+this.Name+"]\nEach individual present is assumed to be an AE\nAdd a [Relationship] below [r=Labour] to define AE as a function of age in months";
-                //if (!WarningsNotFound.Contains(warningString))
-                //{
-                //    WarningsNotFound.Add(warningString);
-                //    Summary.WriteWarning(this, warningString);
-                //}
                 return null;
             }
         }

@@ -5,7 +5,6 @@
     using MigraDoc.Rendering;
     using Models;
     using Models.Core;
-    using Models.Graph;
     using PdfSharp.Drawing;
     using PdfSharp.Fonts;
     using System;
@@ -88,8 +87,7 @@
             document.DefaultPageSetup.LeftMargin = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(1);
             document.DefaultPageSetup.TopMargin = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(1);
             document.DefaultPageSetup.BottomMargin = MigraDoc.DocumentObjectModel.Unit.FromCentimeter(1);
-            if (!portrait)
-                document.DefaultPageSetup.Orientation = Orientation.Landscape;
+            document.DefaultPageSetup.Orientation = portrait ? Orientation.Portrait : Orientation.Landscape;
 
             // Create a MigraDoc section.
             Section section = document.AddSection();
@@ -374,7 +372,11 @@
                     PresenterNameAttribute presenterName = ReflectionUtilities.GetAttribute(modelView.model.GetType(), typeof(PresenterNameAttribute), false) as PresenterNameAttribute;
                     if (viewName != null && presenterName != null)
                     {
-                        ViewBase view = Assembly.GetExecutingAssembly().CreateInstance(viewName.ToString(), false, BindingFlags.Default, null, new object[] { ViewBase.MasterView }, null, null) as ViewBase;
+                        ViewBase owner = ViewBase.MasterView as ViewBase;
+                        if (viewName.ToString() == "UserInterface.Views.MapView")
+                            owner = null;
+
+                        ViewBase view = Assembly.GetExecutingAssembly().CreateInstance(viewName.ToString(), false, BindingFlags.Default, null, new object[] { owner }, null, null) as ViewBase;
                         IPresenter presenter = Assembly.GetExecutingAssembly().CreateInstance(presenterName.ToString()) as IPresenter;
 
                         if (view != null && presenter != null)
@@ -382,21 +384,28 @@
                             explorerPresenter.ApsimXFile.Links.Resolve(presenter);
                             presenter.Attach(modelView.model, view, explorerPresenter);
 
-                            Gtk.Window popupWin = null;
-                            if (view is MapView)
-                            {
-                                popupWin = (view as MapView)?.GetPopupWin();
-                                popupWin?.SetSizeRequest(515, 500);
-                            }
-                            if (popupWin == null)
-                            {
-                                popupWin = new Gtk.Window(Gtk.WindowType.Popup);
-                                popupWin.SetSizeRequest(800, 800);
-                                popupWin.Add(view.MainWidget);
-                            }
+                            Gtk.Window popupWin = new Gtk.Window(Gtk.WindowType.Popup);
+                            popupWin.SetSizeRequest(800, 800);
+                            popupWin.Add(view.MainWidget);
+
+                            if (view is IMapView map)
+                                map.HideZoomControls();
+
                             popupWin.ShowAll();
+
                             while (Gtk.Application.EventsPending())
                                 Gtk.Application.RunIteration();
+
+                            // From MapView:
+                            // With WebKit, it appears we need to give it time to actually update the display
+                            // Really only a problem with the temporary windows used for generating documentation
+                            if (view is MapView)
+                            {
+                                var watch = new System.Diagnostics.Stopwatch();
+                                watch.Start();
+                                while (watch.ElapsedMilliseconds < 1000)
+                                    Gtk.Application.RunIteration();
+                            }
 
                             string pngFileName = (presenter as IExportable).ExportToPNG(WorkingDirectory);
                             section.AddImage(pngFileName);
@@ -470,15 +479,15 @@
 
             // Create a line series.
             graph.DrawLineAndMarkers("", graphAndTable.xyPairs.X, graphAndTable.xyPairs.Y, null, null, null,
-                                     Models.Graph.Axis.AxisType.Bottom, Models.Graph.Axis.AxisType.Left,
-                                     System.Drawing.Color.Blue, Models.Graph.LineType.Solid, Models.Graph.MarkerType.None,
-                                     Models.Graph.LineThicknessType.Normal, Models.Graph.MarkerSizeType.Normal, true);
+                                     Models.Axis.AxisType.Bottom, Models.Axis.AxisType.Left,
+                                     System.Drawing.Color.Blue, Models.LineType.Solid, Models.MarkerType.None,
+                                     Models.LineThicknessType.Normal, Models.MarkerSizeType.Normal, 1, true);
 
             graph.ForegroundColour = OxyPlot.OxyColors.Black;
             graph.BackColor = OxyPlot.OxyColors.White;
             // Format the axes.
-            graph.FormatAxis(Models.Graph.Axis.AxisType.Bottom, graphAndTable.xName, false, double.NaN, double.NaN, double.NaN, false);
-            graph.FormatAxis(Models.Graph.Axis.AxisType.Left, graphAndTable.yName, false, double.NaN, double.NaN, double.NaN, false);
+            graph.FormatAxis(Models.Axis.AxisType.Bottom, graphAndTable.xName, false, double.NaN, double.NaN, double.NaN, false);
+            graph.FormatAxis(Models.Axis.AxisType.Left, graphAndTable.yName, false, double.NaN, double.NaN, double.NaN, false);
             graph.FontSize = 10;
             graph.Refresh();
 
@@ -538,7 +547,7 @@
                 graphView.BackColor = OxyPlot.OxyColors.White;
                 graphView.ForegroundColour = OxyPlot.OxyColors.Black;
                 graphView.FontSize = 22;
-                graphView.MarkerSize = 8;
+                graphView.MarkerSize = MarkerSizeType.Normal;
                 graphView.Width = image.Width / numColumns;
                 graphView.Height = image.Height / numRows;
                 graphView.LeftRightPadding = 0;
@@ -563,10 +572,10 @@
                     }
                 }
 
-                string pngFileName = Path.Combine(WorkingDirectory,
-                                                  graphPage.graphs[0].Parent.Parent.Name +
-                                                  graphPage.graphs[0].Parent.Name +
-                                                  graphPage.name + ".png");
+                string basePngFileName = Apsim.FullPath(graphPage.graphs[0].Parent) + "." +
+                                                        graphPage.name + ".png";
+                basePngFileName = basePngFileName.TrimStart('.');
+                string pngFileName = Path.Combine(WorkingDirectory, basePngFileName);
                 image.Save(pngFileName, System.Drawing.Imaging.ImageFormat.Png);
 
                 MigraDoc.DocumentObjectModel.Shapes.Image sectionImage = section.AddImage(pngFileName);
@@ -651,7 +660,7 @@
                 // maxSize, on the other hand, is the length of the longest string in the column.
                 // The actual column width is whichever of these two values is smaller.
                 // MigraDoc will automatically wrap text to ensure the column respects this width.
-                double maxWidth = graphics.MeasureString(Enumerable.Repeat('m', tableObj.ColumnWidth).ToString(), gdiFont).Width;
+                double maxWidth = graphics.MeasureString(new string('m', tableObj.ColumnWidth), gdiFont).Width;
                 table.Columns[columnIndex].Width = Unit.FromPoint(Math.Min(maxWidth, maxSize) + 10);
             }
             

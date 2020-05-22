@@ -1,12 +1,7 @@
-﻿// -----------------------------------------------------------------------
-// <copyright file="IModel.cs" company="APSIM Initiative">
-//     Copyright (c) APSIM Initiative
-// </copyright>
-//-----------------------------------------------------------------------
+﻿
 namespace Models.Core
 {
     using System.Collections.Generic;
-using System.IO;
 
     /// <summary>
     /// The IModel interface specifies the properties and methods that all
@@ -27,7 +22,7 @@ using System.IO;
         /// <summary>
         /// Gets of sets the child models. Can be empty array but never null.
         /// </summary>
-        List<Model> Children { get; set; }
+        List<IModel> Children { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether a model is hidden from the user.
@@ -54,6 +49,5 @@ using System.IO;
         /// cloning or deserialisation.
         /// </summary>
         void OnCreated();
-
     }
 }

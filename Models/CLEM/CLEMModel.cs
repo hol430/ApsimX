@@ -17,12 +17,13 @@ namespace Models.CLEM
     ///</summary> 
     [Serializable]
     [Description("This is the Base CLEM model and should not be used directly.")]
-    public abstract class CLEMModel: Model, ICLEMUI
+    public abstract class CLEMModel : Model, ICLEMUI
     {
         /// <summary>
         /// Link to summary
         /// </summary>
         [Link]
+        [NonSerialized]
         public ISummary Summary = null;
 
         private Guid id = Guid.NewGuid();
@@ -90,7 +91,6 @@ namespace Models.CLEM
                         catch (Exception ex)
                         {
                             Summary.WriteWarning(this, ex.Message);
-                            //eat it... Or maybe Debug.Writeline(ex);
                         }
                     }
                 }
@@ -110,16 +110,6 @@ namespace Models.CLEM
         {
             var parents = ReflectionUtilities.GetAttributes(this.GetType(), typeof(ValidParentAttribute), false).Cast<ValidParentAttribute>().ToList();
             return (parents.Where(a => a.ParentType.Name == this.Parent.GetType().Name).Count() > 0);
-        }
-
-        /// <summary>
-        /// Finds a shared marketplace
-        /// </summary>
-        /// <returns>Market</returns>
-        public Market FindMarket()
-        {
-            IModel parentSim = Apsim.Parent(this, typeof(Simulation));
-            return Apsim.Children(parentSim, typeof(Market)).Where(a => a.Enabled).FirstOrDefault() as Market;
         }
 
         /// <summary>
@@ -190,7 +180,11 @@ namespace Models.CLEM
 
             if(this.ModelSummaryStyle == HTMLSummaryStyle.Default)
             {
-                if (this.GetType().IsSubclassOf(typeof(ResourceBaseWithTransactions)))
+                if (this is Relationship || this.GetType().IsSubclassOf(typeof(Relationship)) )
+                {
+                    this.ModelSummaryStyle = HTMLSummaryStyle.Default;
+                }
+                else if (this.GetType().IsSubclassOf(typeof(ResourceBaseWithTransactions)))
                 {
                     this.ModelSummaryStyle = HTMLSummaryStyle.Resource;
                 }
@@ -202,15 +196,12 @@ namespace Models.CLEM
                 {
                     this.ModelSummaryStyle = HTMLSummaryStyle.Activity;
                 }
-                else if (this.GetType().IsSubclassOf(typeof(CLEMModel)))
-                {
-                    this.ModelSummaryStyle = HTMLSummaryStyle.Activity;
-                }
             }
 
             switch (ModelSummaryStyle)
             {
                 case HTMLSummaryStyle.Default:
+                    overall = "default";
                     break;
                 case HTMLSummaryStyle.Resource:
                     overall = "resource";

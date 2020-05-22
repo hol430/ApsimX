@@ -32,9 +32,20 @@ namespace Models.Functions
         /// <value>The value.</value>
         public double Value(int arrayIndex = -1)
         {
-            object o = locator.Get(VariableName.Trim());
-//            if (o == null)
-//                throw new Exception("Unable to locate " + VariableName.Trim() + " called from the variable reference function " + Name + " within "+ this.Parent.Name);
+            object o;
+            try
+            {
+                o = locator.Get(VariableName.Trim());
+            }
+            catch (Exception err)
+            {
+                throw new Exception($"Error while locating variable '{VariableName}' in variable reference '{Apsim.FullPath(this)}'", err);
+            }
+
+            // This should never happen: the locator is supposed to throw
+            // if the variable cannot be found.
+            if (o == null)
+                throw new Exception("Unable to locate " + VariableName.Trim() + " called from the variable reference function " + Apsim.FullPath(this));
 
             if (o is IFunction)
                 return (o as IFunction).Value(arrayIndex);

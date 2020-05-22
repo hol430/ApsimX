@@ -1,10 +1,4 @@
-﻿// -----------------------------------------------------------------------
-// <copyright file="NeedContextItemsArgs.cs" company="APSIM Initiative">
-//     Copyright (c) APSIM Initiative
-// </copyright>
-// -----------------------------------------------------------------------
-
-namespace UserInterface.EventArguments
+﻿namespace UserInterface.EventArguments
 {
     using System;
     using System.Collections;
@@ -111,7 +105,7 @@ namespace UserInterface.EventArguments
                             IsProperty = true,
                             IsEvent = false,
                             IsWriteable = !var.IsReadOnly,
-                            TypeName = var.DataType.Name,
+                            TypeName = GetTypeName(var.DataType),
                             Descr = GetDescription(property),
                             Units = var.Units
                         };
@@ -326,8 +320,13 @@ namespace UserInterface.EventArguments
                 string modelName = matches[0].Value.Replace("[", "").Replace("]", "");
 
                 // Get the node in the simulations tree corresponding to the model name which was surrounded by square brackets.
-                node = Apsim.ChildrenRecursively(Apsim.Parent(relativeTo, typeof(Simulations))).FirstOrDefault(child => child.Name == modelName);
+                node = Apsim.Find(relativeTo, modelName);
 
+                // If we're under replacements we won't be able to find some simulation-
+                // related nodes such as weather/soil/etc. In this scenario, we should
+                // search through all models, not just those in scope.
+                if (node == null && Apsim.Parent(relativeTo, typeof(Replacements)) != null)
+                    node = Apsim.ChildrenRecursively(Apsim.Parent(relativeTo, typeof(Simulations))).FirstOrDefault(child => child.Name == modelName);
             }
 
             // If the object name string does not contain any children/properties 
@@ -430,6 +429,18 @@ namespace UserInterface.EventArguments
                 squareBracketIndex = -1;
             }
              return node;
+        }
+
+        private static string GetTypeName(Type type)
+        {
+            if (type.IsGenericType)
+            {
+                string name = type.Name;
+                if (name.Contains("`"))
+                    name = name.Substring(0, name.IndexOf('`'));
+                return $"{name}<{string.Join(", ", type.GenericTypeArguments.Select(t => GetTypeName(t)))}>";
+            }
+            return type.Name;
         }
 
         /// <summary>

@@ -88,6 +88,8 @@ namespace Models.PMF.Organs
 
         /// <summary>The dry matter demand</summary>
         public BiomassPoolType DMDemand { get; set; }
+        /// <summary>The dry matter demand</summary>
+        public BiomassPoolType DMDemandPriorityFactor { get; set; }
 
         /// <summary>Structural nitrogen demand</summary>
         public BiomassPoolType NDemand { get;  set; }
@@ -721,6 +723,10 @@ namespace Models.PMF.Organs
         protected void OnSimulationCommencing(object sender, EventArgs e)
         {
             DMDemand = new BiomassPoolType();
+            DMDemandPriorityFactor = new BiomassPoolType();
+            DMDemandPriorityFactor.Structural = 1.0;
+            DMDemandPriorityFactor.Metabolic = 1.0;
+            DMDemandPriorityFactor.Storage = 1.0;
             NDemand = new BiomassPoolType();
             DMSupply = new BiomassSupplyType();
             NSupply = new BiomassSupplyType();
@@ -786,7 +792,7 @@ namespace Models.PMF.Organs
             if (Plant.IsAlive)
             {
                 SenesceLeaves();
-                double LKF = Math.Max(0.0, Math.Min(LeafKillFraction.Value(), (1 - MinimumLAI.Value() / LAI)));
+                double LKF = Math.Max(0.0, Math.Min(LeafKillFraction.Value(), MathUtilities.Divide(1 - MinimumLAI.Value(), LAI, 0.0)));
                 if (LKF>0)
                    KillLeavesUniformly(LKF);
                 Detached = DetachLeaves();
@@ -804,7 +810,7 @@ namespace Models.PMF.Organs
                 }
 
                 if (DryMatterContent != null)
-                    LiveFWt = Live.Wt / DryMatterContent.Value();
+                    LiveFWt = MathUtilities.Divide(Live.Wt, DryMatterContent.Value(), 0.0);
             }
         }
 

@@ -1,19 +1,7 @@
-﻿// -----------------------------------------------------------------------
-// <copyright file="Model.cs" company="APSIM Initiative">
-//     Copyright (c) APSIM Initiative
-// </copyright>
-//-----------------------------------------------------------------------
-namespace Models.Core
+﻿namespace Models.Core
 {
-    using Storage;
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
-    using System.IO;
-    using System.Reflection;
-    using System.Runtime.Serialization;
-    using System.Runtime.Serialization.Formatters.Binary;
-    using System.Xml;
     using System.Xml.Serialization;
 
     /// <summary>
@@ -32,7 +20,7 @@ namespace Models.Core
         {
             this.Name = GetType().Name;
             this.IsHidden = false;
-            this.Children = new List<Model>();
+            this.Children = new List<IModel>();
             IncludeInDocumentation = true;
             Enabled = true;
         }
@@ -45,7 +33,7 @@ namespace Models.Core
         /// <summary>
         /// Gets or sets a list of child models.   
         /// </summary>
-        public List<Model> Children { get; set; }
+        public List<IModel> Children { get; set; }
 
         /// <summary>
         /// Gets or sets the parent of the model.

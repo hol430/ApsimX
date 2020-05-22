@@ -58,7 +58,7 @@
                 {
                     Name = "Sim",
                     FileName = Path.GetTempFileName(),
-                    Children = new List<Model>()
+                    Children = new List<IModel>()
                     {
                         new Clock()
                         {
@@ -66,7 +66,7 @@
                             EndDate = new DateTime(1980, 1, 2)
                         },
                         new MockSummary(),
-                        new Models.Report.Report()
+                        new Models.Report()
                         {
                             Name = "Report",
                             VariableNames = new string[] {"[Clock].Today"},
@@ -103,14 +103,14 @@
                 // Create a folder of 2 simulations.
                 var folder = new Folder()
                 {
-                    Children = new List<Model>()
+                    Children = new List<IModel>()
                     {
                         new DataStore(database),
                         new Simulation()
                         {
                             Name = "Sim1",
                             FileName = Path.GetTempFileName(),
-                            Children = new List<Model>()
+                            Children = new List<IModel>()
                             {
                                 new Clock()
                                 {
@@ -118,7 +118,7 @@
                                     EndDate = new DateTime(1980, 1, 2)
                                 },
                                 new MockSummary(),
-                                new Models.Report.Report()
+                                new Models.Report()
                                 {
                                     Name = "Report",
                                     VariableNames = new string[] {"[Clock].Today"},
@@ -130,7 +130,7 @@
                         {
                             Name = "Sim2",
                             FileName = Path.GetTempFileName(),
-                            Children = new List<Model>()
+                            Children = new List<IModel>()
                             {
                                 new Clock()
                                 {
@@ -138,7 +138,7 @@
                                     EndDate = new DateTime(1980, 1, 4)
                                 },
                                 new MockSummary(),
-                                new Models.Report.Report()
+                                new Models.Report()
                                 {
                                     Name = "Report",
                                     VariableNames = new string[] {"[Clock].Today"},
@@ -188,14 +188,14 @@
                 // Create a folder of 2 simulations.
                 var folder = new Folder()
                 {
-                    Children = new List<Model>()
+                    Children = new List<IModel>()
                     {
                         new DataStore(database),
                         new Simulation()
                         {
                             Name = "Sim1",
                             FileName = Path.GetTempFileName(),
-                            Children = new List<Model>()
+                            Children = new List<IModel>()
                             {
                                 new Clock()
                                 {
@@ -203,7 +203,7 @@
                                     EndDate = new DateTime(1980, 1, 2)
                                 },
                                 new MockSummary(),
-                                new Models.Report.Report()
+                                new Models.Report()
                                 {
                                     Name = "Report",
                                     VariableNames = new string[] {"[Clock].Today"},
@@ -215,7 +215,7 @@
                         {
                             Name = "Sim2",
                             FileName = Path.GetTempFileName(),
-                            Children = new List<Model>()
+                            Children = new List<IModel>()
                             {
                                 new Clock()
                                 {
@@ -223,7 +223,7 @@
                                     EndDate = new DateTime(1980, 1, 4)
                                 },
                                 new MockSummary(),
-                                new Models.Report.Report()
+                                new Models.Report()
                                 {
                                     Name = "Report",
                                     VariableNames = new string[] {"[Clock].Today"},
@@ -273,7 +273,7 @@
                 {
                     Name = "Sim",
                     FileName = Path.GetTempFileName(),
-                    Children = new List<Model>()
+                    Children = new List<IModel>()
                     {
                         new Clock()
                         {
@@ -311,7 +311,7 @@
                 {
                     Name = "Sim",
                     FileName = Path.GetTempFileName(),
-                    Children = new List<Model>()
+                    Children = new List<IModel>()
                     {
                         new Clock()
                         {
@@ -361,7 +361,7 @@
                 {
                     Name = "Sim",
                     FileName = Path.GetTempFileName(),
-                    Children = new List<Model>()
+                    Children = new List<IModel>()
                     {
                         new Clock()
                         {
@@ -413,7 +413,7 @@
                 {
                     Name = "Sim",
                     FileName = Path.GetTempFileName(),
-                    Children = new List<Model>()
+                    Children = new List<IModel>()
                     {
                         new Clock()
                         {
@@ -456,7 +456,7 @@
                 {
                     Name = "Sim",
                     FileName = Path.GetTempFileName(),
-                    Children = new List<Model>()
+                    Children = new List<IModel>()
                     {
                         new Clock()
                         {
@@ -508,7 +508,7 @@
                 {
                     Name = "Sim",
                     FileName = Path.GetTempFileName(),
-                    Children = new List<Model>()
+                    Children = new List<IModel>()
                     {
                         new Clock()
                         {
@@ -558,13 +558,13 @@
             {
                 Name = "Simulations",
                 Version = Converter.LatestVersion,
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new Simulation()
                     {
                         Name = "Sim1",
                         FileName = Path.GetTempFileName(),
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new Clock()
                             {

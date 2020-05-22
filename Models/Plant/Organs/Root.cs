@@ -76,6 +76,10 @@
         [Link]
         public ISurfaceOrganicMatter SurfaceOrganicMatter = null;
 
+        /// <summary>The RootShape model</summary> 
+        [Link(Type = LinkType.Child, ByName = false)]
+        public IRootShape RootShape = null;
+
         /// <summary>Link to biomass removal model</summary>
         [Link(Type = LinkType.Child)]
         private BiomassRemoval biomassRemovalModel = null;
@@ -84,6 +88,11 @@
         [Link(Type = LinkType.Child, ByName = true)]
         [Units("g/m2/d")]
         private BiomassDemand dmDemands = null;
+
+        /// <summary>Factors for assigning priority to DM demands</summary>
+        [Link(IsOptional = true, Type = LinkType.Child, ByName = true)]
+        [Units("g/m2/d")]
+        private BiomassDemand dmDemandPriorityFactors = null;
 
         /// <summary>Link to the KNO3 link</summary>
         [Link(Type = LinkType.Child, ByName = true)]
@@ -97,28 +106,19 @@
         [Link(Type = LinkType.Child, ByName = true)]
         private IFunction nUptakeSWFactor = null;
 
-        /// <summary>Gets or sets the initial biomass dry matter weight</summary>
+        /// <summary>Initial wt</summary>
         [Link(Type = LinkType.Child, ByName = true)]
-        [Units("g/plant")]
-        private IFunction initialDM = null;
+        public BiomassDemand InitialWt = null;
 
         /// <summary>Gets or sets the specific root length</summary>
         [Link(Type = LinkType.Child, ByName = true)]
         [Units("m/g")]
         private IFunction specificRootLength = null;
 
-        /// <summary>The nitrogen demand switch</summary>
-        [Link(Type = LinkType.Child, ByName = true)]
-        private IFunction nitrogenDemandSwitch = null;
-
         /// <summary>The N demand function</summary>
         [Link(Type = LinkType.Child, ByName = true, IsOptional = true)]
         [Units("g/m2/d")]
         private BiomassDemand nDemands = null;
-
-        /// <summary>The nitrogen root calc switch</summary>
-        [Link(Type = LinkType.Child, ByName = true, IsOptional = true)]
-        private IFunction NitrogenRootCalcSwitch = null;
 
         /// <summary>The nitrogen root calc switch</summary>
         [Link(Type = LinkType.Child, ByName = true, IsOptional = true)]
@@ -168,7 +168,7 @@
         [Link(Type = LinkType.Child, ByName = true, IsOptional = true)]
         [Units("g/g")]
         private IFunction criticalNConc = null;
-
+ 
         /// <summary>The maximum daily N uptake</summary>
         [Link(Type = LinkType.Child, ByName = true)]
         [Units("kg N/ha")]
@@ -220,6 +220,9 @@
         /// <summary>The dry matter demand</summary>
         public BiomassPoolType DMDemand { get; set; }
 
+        /// <summary>The dry matter demand</summary>
+        public BiomassPoolType DMDemandPriorityFactor { get; set; }
+
         /// <summary>Structural nitrogen demand</summary>
         public BiomassPoolType NDemand { get; set; }
 
@@ -238,23 +241,13 @@
         /// <summary>The N supply for reallocation</summary>
         private double nReallocationSupply = 0.0;
 
-        /// <summary>The structural N demand</summary>
-        private double structuralNDemand = 0.0;
-
-        /// <summary>The non structural N demand</summary>
-        private double storageNDemand = 0.0;
-
-        /// <summary>The metabolic N demand</summary>
-        private double metabolicNDemand = 0.0;
-
-
         /// <summary>Constructor</summary>
         public Root()
         {
             Zones = new List<ZoneState>();
             ZoneNamesToGrowRootsIn = new List<string>();
             ZoneRootDepths = new List<double>();
-            ZoneInitialDM = new List<double>();
+            ZoneInitialDM = new List<BiomassDemand>();
         }
 
         /// <summary>Gets a value indicating whether the biomass is above ground or not</summary>
@@ -270,7 +263,7 @@
 
         /// <summary>The live weights for each addition zone.</summary>
         [XmlIgnore]
-        public List<double> ZoneInitialDM { get; set; }
+        public List<BiomassDemand> ZoneInitialDM { get; set; }
 
         /// <summary>A list of all zones to grow roots in</summary>
         [XmlIgnore]
@@ -334,6 +327,14 @@
         /// <summary>Root depth.</summary>
         [XmlIgnore]
         public double Depth { get { return PlantZone.Depth; } }
+
+        /// <summary>Root length.</summary>
+        [XmlIgnore]
+        public double Length { get { return PlantZone.RootLength; } }
+
+        /// <summary>Root area.</summary>
+        [XmlIgnore]
+        public double Area { get { return PlantZone.RootArea; } }
 
         /// <summary>Layer live</summary>
         [XmlIgnore]
@@ -435,6 +436,9 @@
         /// <summary>Gets or sets the minimum nconc.</summary>
         public double MinNconc { get { return minimumNConc.Value(); } }
 
+        /// <summary>Gets the critical nconc.</summary>
+        public double CritNconc { get { return criticalNConc.Value(); } }
+
         /// <summary>Gets the total biomass</summary>
         public Biomass Total { get { return Live + Dead; } }
 
@@ -448,18 +452,8 @@
 
         /// <summary>Gets the total (live + dead) N concentration (g/g)</summary>
         [XmlIgnore]
-        public double Nconc
-        {
-            get
-            {
-                if (Wt > 0.0)
-                    return N / Wt;
-                else
-                    return 0.0;
-            }
-        }
-
-
+        public double Nconc { get{ return MathUtilities.Divide(N,Wt,0.0);}}
+        
         /// <summary>Gets or sets the n fixation cost.</summary>
         [XmlIgnore]
         public double NFixationCost { get { return 0; } }
@@ -578,6 +572,19 @@
                     DMDemand.Storage = 0;
                     DMDemand.Metabolic = 0;
                 }
+
+                if (dmDemandPriorityFactors != null)
+                {
+                    DMDemandPriorityFactor.Structural = dmDemandPriorityFactors.Structural.Value();
+                    DMDemandPriorityFactor.Metabolic = dmDemandPriorityFactors.Metabolic.Value();
+                    DMDemandPriorityFactor.Storage = dmDemandPriorityFactors.Storage.Value();
+                }
+                else
+                {
+                    DMDemandPriorityFactor.Structural = 1.0;
+                    DMDemandPriorityFactor.Metabolic = 1.0;
+                    DMDemandPriorityFactor.Storage = 1.0;
+                }
             }
         }
 
@@ -585,71 +592,29 @@
         [EventSubscribe("SetNDemand")]
         private void SetNDemand(object sender, EventArgs e)
         {
-            if(NitrogenRootCalcSwitch != null && nDemands != null && NitrogenRootCalcSwitch.Value() > 0.9)
-            {
-                //use interface NDemand functions - used for sorghum model
-                CalculateNDemandsUsingSimpleFunctions();
-                return;
-            }
-            // This is basically the old/original function with added metabolicN.
-            // Calculate N demand based on amount of N needed to bring root N content in each layer up to maximum.
-
-            double NitrogenSwitch = (nitrogenDemandSwitch == null) ? 1.0 : nitrogenDemandSwitch.Value();
-            double criticalN = (criticalNConc == null) ? minimumNConc.Value() : criticalNConc.Value();
-
-            structuralNDemand = 0.0;
-            metabolicNDemand = 0.0;
-            storageNDemand = 0.0;
-            foreach (ZoneState Z in Zones)
-            {
-                Z.StructuralNDemand = new double[Z.soil.Thickness.Length];
-                Z.StorageNDemand = new double[Z.soil.Thickness.Length];
-                //Note: MetabolicN is assumed to be zero
-
-                double NDeficit = 0.0;
-                double minNConc = minimumNConc.Value();
-                double maxNConc = maximumNConc.Value();
-
-                for (int i = 0; i < Z.LayerLive.Length; i++)
-                {
-                    Z.StructuralNDemand[i] = Z.PotentialDMAllocated[i] * minNConc * NitrogenSwitch;
-                    NDeficit = Math.Max(0.0, maxNConc * (Z.LayerLive[i].Wt + Z.PotentialDMAllocated[i]) - (Z.LayerLive[i].N + Z.StructuralNDemand[i]));
-                    Z.StorageNDemand[i] = Math.Max(0, NDeficit - Z.StructuralNDemand[i]) * NitrogenSwitch;
-
-                    structuralNDemand += Z.StructuralNDemand[i];
-                    storageNDemand += Z.StorageNDemand[i];
-                }
-            }
-            NDemand.Structural = structuralNDemand;
-            NDemand.Storage = storageNDemand;
-            NDemand.Metabolic = metabolicNDemand;
-
-        }
-
-        /// <summary>alternative calculation that uses similar nDemands interface functions to GenericOrgan.</summary>
-        public void CalculateNDemandsUsingSimpleFunctions()
-        {
-            //TODO jb check if this is correct usage - possibly copied over by arbitrator
             NDemand.Structural = nDemands.Structural.Value();
+            if (NDemand.Structural < 0)
+                throw new Exception("Structural N demand function in root returning negative, check parameterisation");
             NDemand.Metabolic = nDemands.Metabolic.Value();
+            if (NDemand.Metabolic < 0)
+                throw new Exception("Structural N demand function in root returning negative, check parameterisation");
             NDemand.Storage = nDemands.Storage.Value();
-
-            //The DM is allocated using CalculateRootActivityValues to proportion between layers
-            double TotalRAw = 0;
-            foreach (ZoneState Z in Zones)
-                TotalRAw += MathUtilities.Sum(Z.CalculateRootActivityValues());
+            if (NDemand.Storage < 0)
+                throw new Exception("Structural N demand function in root returning negative, check parameterisation");
 
             foreach (ZoneState Z in Zones)
             {
                 Z.StructuralNDemand = new double[Z.soil.Thickness.Length];
                 Z.StorageNDemand = new double[Z.soil.Thickness.Length];
+                Z.MetabolicNDemand = new double[Z.soil.Thickness.Length];
                 //Note: MetabolicN is assumed to be zero
 
                 double[] RAw = Z.CalculateRootActivityValues();
                 for (int i = 0; i < Z.LayerLive.Length; i++)
                 {
-                    Z.StructuralNDemand[i] = NDemand.Structural * RAw[i] / TotalRAw;
-                    Z.StorageNDemand[i] = 0; //sorghum isn't using metabolic storage in roots;
+                    Z.StructuralNDemand[i] = NDemand.Structural;
+                    Z.StorageNDemand[i] = NDemand.Storage;
+                    Z.MetabolicNDemand[i] = NDemand.Metabolic;
                 }
             }
         }
@@ -714,7 +679,7 @@
                 throw new Exception("Error trying to partition root biomass");
 
             foreach (ZoneState Z in Zones)
-                Z.PartitionRootMass(TotalRAw, Allocated.Wt);
+                Z.PartitionRootMass(TotalRAw, Allocated);
             needToRecalculateLiveDead = true;
         }
 
@@ -761,15 +726,8 @@
                         //diffusion
                         var swAvailFrac = RWC[layer] = (water[layer] - ll15mm[layer]) / (dulmm[layer] - ll15mm[layer]);
                         //old sorghum stores N03 in g/ms not kg/ha
-                        var no3Diffusion = MathUtilities.Bound(swAvailFrac, 0.0, 1.0) * (zone.NO3N[layer] * kgha2gsm); 
-
-                        if (layer == currentLayer)
-                        {
-                            var proportion = myZone.soil.ProportionThroughLayer(currentLayer, myZone.Depth);
-                            no3Diffusion *= proportion;
-                        }
-
-                        myZone.Diffusion[layer] = no3Diffusion;
+                        var no3Diffusion = MathUtilities.Bound(swAvailFrac, 0.0, 1.0) * (zone.NO3N[layer] * kgha2gsm);
+                        myZone.Diffusion[layer] = no3Diffusion * myZone.RootProportions[layer];
 
                         //NH4Supply[layer] = no3massFlow;
                         //onyl 2 fields passed in for returning data. 
@@ -809,11 +767,13 @@
         {
             double totalStructuralNDemand = 0;
             double totalStorageNDemand = 0;
+            double totalMetabolicDemand = 0;
 
             foreach (ZoneState Z in Zones)
             {
                 totalStructuralNDemand += MathUtilities.Sum(Z.StructuralNDemand);
                 totalStorageNDemand += MathUtilities.Sum(Z.StorageNDemand);
+                totalMetabolicDemand += MathUtilities.Sum(Z.MetabolicNDemand);
             }
             NTakenUp = nitrogen.Uptake;
             Allocated.StructuralN = nitrogen.Structural;
@@ -841,6 +801,13 @@
                         double NonStructFrac = Z.StorageNDemand[i] / totalStorageNDemand;
                         Z.LayerLive[i].StorageN += nitrogen.Storage * NonStructFrac;
                         NAllocated += nitrogen.Storage * NonStructFrac;
+                    }
+
+                    if (totalMetabolicDemand > 0)
+                    {
+                        double MetabolFrac = Z.MetabolicNDemand[i] / totalMetabolicDemand;
+                        Z.LayerLive[i].MetabolicN += nitrogen.Metabolic * MetabolFrac;
+                        NAllocated += nitrogen.Metabolic * MetabolFrac;
                     }
                 }
             }
@@ -883,23 +850,15 @@
                     double[] ll = soilCrop.LL;
 
                     double[] lldep = new double[myZone.soil.Thickness.Length];
-                    double[] available = new double[myZone.soil.Thickness.Length];
-
                     double[] supply = new double[myZone.soil.Thickness.Length];
+
                     LayerMidPointDepth = myZone.soil.DepthMidPoints;
                     for (int layer = 0; layer <= currentLayer; layer++)
                     {
-                        lldep[layer] = ll[layer] * myZone.soil.Thickness[layer];
-                        available[layer] = Math.Max(zone.Water[layer] - lldep[layer], 0.0);
-                        if (currentLayer == layer)
-                        {
-                            var layerproportion = myZone.soil.ProportionThroughLayer(layer, myZone.Depth);
-                            available[layer] *= layerproportion;
-                        }
+                        double available = zone.Water[layer] - ll[layer] * myZone.soil.Thickness[layer] * myZone.LLModifier[layer];
 
-                        var proportionThroughLayer = rootProportionInLayer(layer, myZone);
-                        var klMod = klModifier.Value(layer);
-                        supply[layer] = Math.Max(0.0, kl[layer] * klMod * KLModiferDueToDamage(layer) * available[layer] * proportionThroughLayer);
+                        supply[layer] = Math.Max(0.0, kl[layer] * klModifier.Value(layer) * KLModiferDueToDamage(layer) *
+                            available * myZone.RootProportions[layer]);
                     }
 
                     return supply;
@@ -915,8 +874,10 @@
                     {
                         if (layer <= myZone.soil.LayerIndexOfDepth(myZone.Depth))
                         {
+                            double available = zone.Water[layer] - ll[layer] * myZone.soil.Thickness[layer] * myZone.LLModifier[layer];
+
                             supply[layer] = Math.Max(0.0, kl[layer] * klModifier.Value(layer) * KLModiferDueToDamage(layer) *
-                            (zone.Water[layer] - ll[layer] * myZone.soil.Thickness[layer]) * rootProportionInLayer(layer, myZone));
+                            available * myZone.RootProportions[layer]);
                         }
                     }
                     return supply;
@@ -924,50 +885,8 @@
             }            
         }
 
-        /// <summary>Calculate the proportion of root in a layer within a zone.</summary>
-        /// <param name="layer">The zone.</param>
-        /// <param name="zone">The zone.</param>
-        public double rootProportionInLayer(int layer, ZoneState zone)
-        {
-            if (RootFrontCalcSwitch?.Value() >= 1.0)
-            {
-                /* Row Spacing and configuration (skip) are used to calculate semicircular root front to give
-                    proportion of the layer occupied by the roots. */
-                double top;
-
-                top = layer == 0 ? 0 : MathUtilities.Sum(zone.soil.Thickness, 0, layer - 1);
-
-                if (top > zone.Depth)
-                    return 0;
-
-                double bottom = top + zone.soil.Thickness[layer];
-
-                double rootArea;
-                IFunction calcType = Apsim.Child(this, "RootAreaCalcType") as IFunction;
-                if (calcType != null && MathUtilities.FloatsAreEqual(calcType.Value(), 1))
-                {
-                    rootArea = GetRootArea(top, bottom, zone.RootFront, zone.RightDist);
-                    rootArea += GetRootArea(top, bottom, zone.RootFront, zone.LeftDist);
-                }
-                else
-                {
-                    rootArea = calcRootArea(zone, top, bottom, zone.RightDist);    // Right side
-                    rootArea += calcRootArea(zone, top, bottom, zone.LeftDist);          // Left Side
-                }
-
-                double soilArea = (zone.RightDist + zone.LeftDist) * (bottom - top);
-
-                return Math.Max(0.0, MathUtilities.Divide(rootArea, soilArea, 0.0));
-            }
-                
-            return zone.soil.ProportionThroughLayer(layer, zone.Depth);
-        }
-
         //------------------------------------------------------------------------------------------------
-        //sorghum specific variables
-        /// <summary>Gets the RootFront</summary>
-        public double RootAngle { get; set; } = 45;
-
+        // sorghum specific variables
         /// <summary>Link to the KNO3 link</summary>
         [Link(Type = LinkType.Child, ByName = true, IsOptional = true)]
         public IFunction RootDepthStressFactor = null;
@@ -990,76 +909,6 @@
 
         /// <summary>The kgha2gsm</summary>
         protected const double kgha2gsm = 0.1;
-
-        double DegToRad(double degs)
-        {
-            return degs * Math.PI / 180.0;
-        }
-
-        double RadToDeg(double rads)
-        {
-            return rads * 180.0 / Math.PI;
-        }
-
-        double calcRootArea(ZoneState zone, double top, double bottom, double hDist)
-        {
-            if (zone.RootFront == 0.0)
-            {
-                return 0.0;
-            }
-
-            double depth, depthInLayer;
-
-            zone.RootSpread = zone.RootFront * Math.Tan(DegToRad(RootAngle));   //Semi minor axis
-
-            if (zone.RootFront >= bottom)
-            {
-                depth = (bottom - top) / 2.0 + top;
-                depthInLayer = bottom - top;
-            }
-            else
-            {
-                depth = (zone.RootFront - top) / 2.0 + top;
-                depthInLayer = zone.RootFront - top;
-            }
-            double xDist = zone.RootSpread * Math.Sqrt(1 - (Math.Pow(depth, 2) / Math.Pow(zone.RootFront, 2)));
-
-            return Math.Min(depthInLayer * xDist, depthInLayer * hDist);
-        }
-
-        double GetRootArea(double top, double bottom, double rootLength, double hDist)
-        {
-            // get the area occupied by roots in a semi-circular section between top and bottom
-            double SDepth, rootArea;
-
-            // intersection of roots and Section
-            if (rootLength <= hDist)
-                SDepth = 0.0;
-            else
-                SDepth = Math.Sqrt(Math.Pow(rootLength, 2) - Math.Pow(hDist, 2));
-
-            // Rectangle - SDepth past bottom of this area
-            if (SDepth >= bottom)
-                rootArea = (bottom - top) * hDist;
-            else               // roots Past top
-            {
-                double Theta = 2 * Math.Acos(MathUtilities.Divide(Math.Max(top, SDepth), rootLength, 0));
-                double topArea = (Math.Pow(rootLength, 2) / 2.0 * (Theta - Math.Sin(Theta))) / 2.0;
-
-                // bottom down
-                double bottomArea = 0;
-                if (rootLength > bottom)
-                {
-                    Theta = 2 * Math.Acos(bottom / rootLength);
-                    bottomArea = (Math.Pow(rootLength, 2) / 2.0 * (Theta - Math.Sin(Theta))) / 2.0;
-                }
-                // rectangle
-                if (SDepth > top)
-                    topArea = topArea + (SDepth - top) * hDist;
-                rootArea = topArea - bottomArea;
-            }
-            return rootArea;
-        }
 
         /// <summary>Removes biomass from root layers when harvest, graze or cut events are called.</summary>
         /// <param name="biomassRemoveType">Name of event that triggered this biomass remove call.</param>
@@ -1162,8 +1011,12 @@
             for (int layer = 0; layer < LL.Length; layer++)
             {
                 if (layer <= PlantZone.soil.LayerIndexOfDepth(Depth))
-                    supply += Math.Max(0.0, KL[layer] * klModifier.Value(layer) * KLModiferDueToDamage(layer) * (SWmm[layer] - LL[layer] * DZ[layer]) *
-                        rootProportionInLayer(layer, PlantZone));
+                {
+                    double available = Math.Max(SWmm[layer] - LL[layer] * DZ[layer] * PlantZone.LLModifier[layer], 0);
+
+                    supply += Math.Max(0.0, KL[layer] * klModifier.Value(layer) * KLModiferDueToDamage(layer) *
+                            available * PlantZone.RootProportions[layer]);
+                }
             }
             return supply;
         }
@@ -1190,7 +1043,7 @@
             {
                 if (layer <= currentLayer)
                 {
-                    available[layer] = Math.Max(0.0, SWmm[layer] - LL[layer] * DZ[layer]);
+                    available[layer] = Math.Max(0.0, SWmm[layer] - LL[layer] * DZ[layer] * PlantZone.LLModifier[layer]);
                 }
             }
             available[currentLayer] *= layerProportion;
@@ -1200,12 +1053,8 @@
             {
                 if (layer <= currentLayer)
                 {
-                    var propoortion = rootProportionInLayer(layer, PlantZone);
-                    var kl = KL[layer];
-                    var klmod = klModifier.Value(layer);
-
                     supply[layer] = Math.Max(0.0, available[layer] * KL[layer] * klModifier.Value(layer) * KLModiferDueToDamage(layer) *
-                        rootProportionInLayer(layer, PlantZone));
+                        PlantZone.RootProportions[layer]);
 
                     supplyTotal += supply[layer];
                 }
@@ -1313,10 +1162,11 @@
             if (soil.Weirdo == null && soil.Crop(parentPlant.Name) == null)
                 throw new Exception("Cannot find a soil crop parameterisation for " + parentPlant.Name);
 
-            PlantZone = new ZoneState(parentPlant, this, soil, 0, initialDM.Value(), parentPlant.Population, maximumNConc.Value(),
+            PlantZone = new ZoneState(parentPlant, this, soil, 0, InitialWt, parentPlant.Population, maximumNConc.Value(),
                                       rootFrontVelocity, maximumRootDepth, remobilisationCost);
             Zones = new List<ZoneState>();
             DMDemand = new BiomassPoolType();
+            DMDemandPriorityFactor = new BiomassPoolType();
             NDemand = new BiomassPoolType();
             DMSupply = new BiomassSupplyType();
             NSupply = new BiomassSupplyType();
@@ -1346,7 +1196,7 @@
             if (data.Plant == parentPlant)
             {
                 //sorghum calcs
-                PlantZone.Initialise(parentPlant.SowingData.Depth, initialDM.Value(), parentPlant.Population, maximumNConc.Value());
+                PlantZone.Initialise(parentPlant.SowingData.Depth, InitialWt, parentPlant.Population, maximumNConc.Value());
                 InitialiseZones();
 
                 needToRecalculateLiveDead = true;

@@ -2,7 +2,7 @@
 {
     using APSIM.Shared.Utilities;
     using Models.Core;
-    using Models.Graph;
+    using Models;
     using Models.Storage;
     using NUnit.Framework;
     using System.Collections.Generic;
@@ -19,7 +19,7 @@
             var sim = new Simulation()
             {
                 Name = "Sim1",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new Series()
                     {
@@ -75,7 +75,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -149,7 +149,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -265,7 +265,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -399,7 +399,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -510,7 +510,7 @@
             var sim = new Simulation()
             {
                 Name = "Sim1",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new Series()
                     {
@@ -519,7 +519,7 @@
                         XFieldName = "Col1",
                         YFieldName = "Col2",
 
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new Regression()
                             {
@@ -575,7 +575,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -584,7 +584,7 @@
                     }),
                     new Graph()
                     {
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new Series()
                             {
@@ -644,7 +644,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -653,7 +653,7 @@
                     }),
                     new Graph()
                     {
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new Series()
                             {
@@ -703,7 +703,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -712,7 +712,7 @@
                     }),
                     new Graph()
                     {
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new Series()
                             {
@@ -782,7 +782,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -791,7 +791,7 @@
                     }),
                     new Graph()
                     {
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new Series()
                             {
@@ -808,12 +808,12 @@
             Apsim.ParentAllChildren(folder);
 
             string data =
-                "SimulationName Col1  Col2\r\n" +
-                "            ()   ()   (g)\r\n" +
-                "          Sim1    1    10\r\n" +
-                "          Sim1    2    20\r\n" +
-                "          Sim2    1    30\r\n" +
-                "          Sim2    2    40\r\n";
+                "CheckpointName SimulationName Col1  Col2\r\n" +
+                "            ()             ()   ()   (g)\r\n" +
+                "       Current           Sim1    1    10\r\n" +
+                "       Current           Sim1    2    20\r\n" +
+                "       Current           Sim2    1    30\r\n" +
+                "       Current           Sim2    2    40\r\n";
 
             var reader = new TextStorageReader(data);
 
@@ -842,7 +842,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -851,7 +851,7 @@
                     }),
                     new Graph()
                     {
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new Series()
                             {
@@ -869,16 +869,16 @@
             Apsim.ParentAllChildren(folder);
 
             string data =
-                "  ABC  DEF Col1  Col2\r\n" +
-                "   ()   ()   ()   (g)\r\n" +
-                "    A    d    1    10\r\n" +
-                "    A    d    2    20\r\n" +
-                "    A    e    1    30\r\n" +
-                "    A    e    2    40\r\n" +
-                "    B    d    1    50\r\n" +
-                "    B    d    2    60\r\n" +
-                "    B    e    1    70\r\n" +
-                "    B    e    2    80\r\n";
+                " CheckpointName ABC  DEF Col1  Col2\r\n" +
+                "             ()  ()   ()   ()   (g)\r\n" +
+                "        Current   A    d    1    10\r\n" +
+                "        Current   A    d    2    20\r\n" +
+                "        Current   A    e    1    30\r\n" +
+                "        Current   A    e    2    40\r\n" +
+                "        Current   B    d    1    50\r\n" +
+                "        Current   B    d    2    60\r\n" +
+                "        Current   B    e    1    70\r\n" +
+                "        Current   B    e    2    80\r\n";
 
             var reader = new TextStorageReader(data);
 
@@ -923,7 +923,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -973,7 +973,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -1024,12 +1024,12 @@
             var simulations = new Simulations()
             {
                 Name = "Simulations",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new Folder()
                     {
                         Name = "Folder1",
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new MockSimulationDescriptionGenerator(new List<Description>()
                             {
@@ -1038,7 +1038,7 @@
                             }),
                             new Graph()
                             {
-                                Children = new List<Model>()
+                                Children = new List<IModel>()
                                 {
                                     new Series()
                                     {
@@ -1055,7 +1055,7 @@
                     new Folder()
                     {
                         Name = "Folder2",
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new MockSimulationDescriptionGenerator(new List<Description>()
                             {
@@ -1111,12 +1111,12 @@
             var simulations = new Simulations()
             {
                 Name = "Simulations",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new Folder()
                     {
                         Name = "Folder1",
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new MockSimulationDescriptionGenerator(new List<Description>()
                             {
@@ -1124,7 +1124,7 @@
                             }),
                             new Graph()
                             {
-                                Children = new List<Model>()
+                                Children = new List<IModel>()
                                 {
                                     new Series()
                                     {
@@ -1140,7 +1140,7 @@
                     new Folder()
                     {
                         Name = "Folder2",
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new MockSimulationDescriptionGenerator(new List<Description>()
                             {
@@ -1184,12 +1184,12 @@
             var simulations = new Simulations()
             {
                 Name = "Simulations",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new Folder()
                     {
                         Name = "Folder1",
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new MockSimulationDescriptionGenerator(new List<Description>()
                             {
@@ -1197,7 +1197,7 @@
                             }),
                             new Graph()
                             {
-                                Children = new List<Model>()
+                                Children = new List<IModel>()
                                 {
                                     new Series()
                                     {
@@ -1214,7 +1214,7 @@
                     new Folder()
                     {
                         Name = "Folder2",
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new MockSimulationDescriptionGenerator(new List<Description>()
                             {
@@ -1254,7 +1254,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -1265,7 +1265,7 @@
                     }),
                     new Graph()
                     {
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new Series()
                             {
@@ -1317,7 +1317,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -1327,7 +1327,7 @@
                     }),
                     new Graph()
                     {
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new Series()
                             {
@@ -1373,7 +1373,7 @@
             var folder = new Folder()
             {
                 Name = "Folder",
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockSimulationDescriptionGenerator(new List<Description>()
                     {
@@ -1384,7 +1384,7 @@
                     }),
                     new Graph()
                     {
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new Series()
                             {

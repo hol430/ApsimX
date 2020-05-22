@@ -43,10 +43,6 @@
             {
             }
 
-            public void WriteSummary(TextWriter writer)
-            {
-                throw new NotImplementedException();
-            }
         }
 
         /// <summary>Ensure the hold function can deal with exceptions.</summary>
@@ -57,12 +53,12 @@
             {
                 WhenToHold = "B",
 
-                Children = new List<Model>()
+                Children = new List<IModel>()
                 {
                     new MockFunctionThatThrows() { Name = "ValueToHold" },
                     new Phenology()
                     {
-                        Children = new List<Model>()
+                        Children = new List<IModel>()
                         {
                             new Zone(),
                             new Clock(),
