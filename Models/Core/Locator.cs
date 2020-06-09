@@ -179,6 +179,9 @@
                     }
                     else
                     {
+                        var property = relativeTo.GetType().GetProperty(namePathBits[i], BindingFlags.Public | BindingFlags.FlattenHierarchy | BindingFlags.Instance);
+                        if (property != null)
+                            throw new Exception($"Ambiguous model reference: '{cacheKey}'. {relativeTo.Name} has a child and a property both called {namePathBits[i]}");
                         relativeTo = localModel as Model;
                     }
                 }
