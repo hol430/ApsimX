@@ -258,6 +258,7 @@
     <Compile Include="Core\Run\GenerateApsimXFiles.cs" />
     <Compile Include="Core\Run\IReplacement.cs" />
     <Compile Include="Core\Run\ISimulationDescriptionGenerator.cs" />
+    <Compile Include="Core\Run\SimpleJobRunner.cs" />
     <Compile Include="Core\Run\SimulationGroup.cs" />
     <Compile Include="Core\Run\ModelReplacement.cs" />
     <Compile Include="Core\Run\PropertyReplacement.cs" />

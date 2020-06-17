@@ -137,7 +137,7 @@
         {
             try
             {
-                RunAPSIMInternal(multiProcessRunner: false);
+                RunAPSIMInternal(Runner.RunTypeEnum.MultiThreaded);
             }
             catch (Exception err)
             {
@@ -162,7 +162,33 @@
         {
             try
             {
-                RunAPSIMInternal(multiProcessRunner: true);
+                RunAPSIMInternal(Runner.RunTypeEnum.MultiProcess);
+            }
+            catch (Exception err)
+            {
+                explorerPresenter.MainPresenter.ShowError(err);
+            }
+        }
+
+        /// <summary>
+        /// Event handler for a User interface "Run APSIM" action
+        /// </summary>
+        /// <param name="sender">Sender of the event</param>
+        /// <param name="e">Event arguments</param>
+        [ContextMenu(MenuName = "Run APSIM (Simple/Experimental runner)",
+                     AppliesTo = new Type[] { typeof(Simulation),
+                                              typeof(Simulations),
+                                              typeof(Experiment),
+                                              typeof(Folder),
+                                              typeof(Morris),
+                                              typeof(Sobol),
+                                              typeof(APSIM.Shared.JobRunning.IRunnable)},
+                     ShortcutKey = "F7")]
+        public void RunAPSIMSimple(object sender, EventArgs e)
+        {
+            try
+            {
+                RunAPSIMInternal(Runner.RunTypeEnum.Flood);
             }
             catch (Exception err)
             {
@@ -412,17 +438,13 @@
         }
 
         /// <summary>Run APSIM.</summary>
-        /// <param name="multiProcessRunner">Use the multi-process runner?</param>
-        private void RunAPSIMInternal(bool multiProcessRunner)
+        /// <param name="runType">Determines which job runner to use.</param>
+        private void RunAPSIMInternal(Runner.RunTypeEnum runType)
         {
             if (this.explorerPresenter.Save())
             {
-                Runner.RunTypeEnum typeOfRun = Runner.RunTypeEnum.MultiThreaded;
-                if (multiProcessRunner)
-                    typeOfRun = Runner.RunTypeEnum.MultiProcess;
-
                 Model model = Apsim.Get(this.explorerPresenter.ApsimXFile, this.explorerPresenter.CurrentNodePath) as Model;
-                var runner = new Runner(model, runType:typeOfRun, wait: false);
+                var runner = new Runner(model, runType: runType, wait: false);
                 this.command = new RunCommand(model.Name, runner, this.explorerPresenter);
                 this.command.Do(null);
             }

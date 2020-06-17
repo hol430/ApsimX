@@ -47,18 +47,21 @@
             MultiThreaded,
 
             /// <summary>Run using multiple, separate processes - each job asynchronously.</summary>
-            MultiProcess
+            MultiProcess,
+
+            /// <summary>Use the simple job runner.</summary>
+            Flood,
         }
 
         /// <summary>
         /// Gets the aggregate progress of all jobs as a real number in range [0, 1].
         /// </summary>
-        public double Progress { get { return jobRunner.Progress; } }
+        public double Progress { get { return jobRunner?.Progress ?? 1; } }
 
         /// <summary>
         /// Current status of the running jobs.
         /// </summary>
-        public string Status { get { return jobRunner.Status; } }
+        public string Status { get { return jobRunner?.Status; } }
 
         /// <summary>Constructor</summary>
         /// <param name="relativeTo">The model to use to search for simulations to run.</param>
@@ -174,6 +177,11 @@
                     case RunTypeEnum.MultiProcess:
                         jobRunner = new JobRunnerMultiProcess(numberOfProcessors);
                         break;
+                    case RunTypeEnum.Flood:
+                        jobRunner = new SimpleJobRunner();
+                        break;
+                    default:
+                        throw new Exception($"Unknown run type: {runType}");
                 }
 
                 jobRunner.JobCompleted += OnJobCompleted;
