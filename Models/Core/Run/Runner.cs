@@ -12,6 +12,10 @@
     /// <summary>
     /// An class for encapsulating a list of simulations that are ready
     /// to be run. An instance of this class can be used with a job runner.
+    /// 
+    /// This is mainly a convenience class - you describe how you want
+    /// everything to be run, and it will go ahead and instantiate and
+    /// run the appropriate job managers, job runners, etc.
     /// </summary>
     public class Runner
     {
@@ -19,7 +23,7 @@
         private List<IJobManager> jobs = new List<IJobManager>();
         
         /// <summary>The job runner being used.</summary>
-        private JobRunner jobRunner = null;
+        private IJobRunner jobRunner = null;
 
         /// <summary>The stop watch we can use to time all runs.</summary>
         private DateTime startTime;
@@ -49,49 +53,12 @@
         /// <summary>
         /// Gets the aggregate progress of all jobs as a real number in range [0, 1].
         /// </summary>
-        public double Progress
-        {
-            get
-            {
-                if (jobRunner == null || jobs == null)
-                    return 0;
-
-                int numJobs = jobs.Select(j => j.NumJobs).Sum();
-                if (numJobs == 0)
-                    return 0;
-
-                return (jobRunner.NumJobsCompleted + jobRunner.SimsRunning.Sum(j => j.Progress)) / numJobs;
-            }
-        }
+        public double Progress { get { return jobRunner.Progress; } }
 
         /// <summary>
         /// Current status of the running jobs.
         /// </summary>
-        public string Status
-        {
-            get
-            {
-                if (jobRunner == null || jobs == null)
-                    return null;
-
-                int numComplete = jobRunner.NumJobsCompleted;
-                int numJobs = jobs.Select(j => j.NumJobs).Sum();
-
-                // If progress is at 100% (ie all jobs have finished running), and the job manager supports
-                // status reporting, allow the job manager to provide a status message. This lets the user
-                // know why the job is still running even though progress is at 100%.
-                if (MathUtilities.FloatsAreEqual(Progress, 1) && jobs.Count == 1 && jobs[0] is IReportsStatus jobManager)
-                    return jobManager.Status;
-
-                // If there's only one job to be run, and that job is specifically designed
-                // to provide status reports, return that job's status message.
-                if (numJobs == 1 && jobRunner.SimsRunning.Count == 1 && jobRunner.SimsRunning[0] is IReportsStatus statusReporter)
-                    return statusReporter.Status;
-
-                // Otherwise, return the generic "x of y completed" message.
-                return $"{numComplete} of {numJobs} completed";
-            }
-        }
+        public string Status { get { return jobRunner.Status; } }
 
         /// <summary>Constructor</summary>
         /// <param name="relativeTo">The model to use to search for simulations to run.</param>

@@ -130,7 +130,7 @@
                         DummyJob dummy = new DummyJob(job.RunnableJob);
                         if (!(job.RunnableJob is JobRunnerSleepJob))
                             lock (runningLock)
-                                SimsRunning.Add(dummy);
+                                simsRunning.Add(dummy);
 
                         // Send the job to APSIMRunner.exe - this will run the simulation.
                         PipeUtilities.SendObjectToPipe(pipeWrite, job.JobSentToClient);
@@ -159,7 +159,7 @@
                             lock (runningLock)
                             {
                                 NumJobsCompleted++;
-                                SimsRunning.Remove(dummy);
+                                simsRunning.Remove(dummy);
                             }
 
                         // Signal end of job.

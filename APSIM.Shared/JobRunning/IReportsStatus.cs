@@ -1,4 +1,4 @@
-﻿namespace Models.Core.Run
+﻿namespace APSIM.Shared.JobRunning
 {
     /// <summary>
     /// Encapsulates a class that reports status.

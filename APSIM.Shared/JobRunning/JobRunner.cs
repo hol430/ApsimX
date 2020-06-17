@@ -1,5 +1,6 @@
 ﻿namespace APSIM.Shared.JobRunning
 {
+    using APSIM.Shared.Utilities;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -10,7 +11,7 @@
     /// The class encapsulates the ability to run multiple collections of IRunnable jobs.
     /// Multiple JobManager instances can be added, each managing a collection of jobs.
     /// </summary>
-    public class JobRunner
+    public class JobRunner : IJobRunner
     {
         /// <summary>A list of job managers to iterate through looking for jobs.</summary>
         protected List<IJobManager> jobManagers = new List<IJobManager>();
@@ -31,10 +32,10 @@
         /// A list of jobs current running. 
         /// We keep track of this to allow us to query how much of each job has been completed
         /// </summary>
-        public List<IRunnable> SimsRunning { get; private set; } = new List<IRunnable>();
+        protected List<IRunnable> simsRunning = new List<IRunnable>();
 
         /// <summary>
-        /// Lock object controlling access to SimsRunning list
+        /// Lock object controlling access to simsRunning list.
         /// </summary>
         protected readonly object runningLock = new object();
 
@@ -74,6 +75,53 @@
 
         /// <summary>The total time taken by the runner to run all jobs.</summary>
         public TimeSpan ElapsedTime { get; protected set; }
+
+        /// <summary>
+        /// Gets the aggregate progress of all jobs as a real number in range [0, 1].
+        /// </summary>
+        public double Progress
+        {
+            get
+            {
+                if (jobManagers == null)
+                    return 0;
+
+                int numJobs = jobManagers.Select(j => j.NumJobs).Sum();
+                if (numJobs == 0)
+                    return 0;
+
+                return (NumJobsCompleted + simsRunning.Sum(j => j.Progress)) / numJobs;
+            }
+        }
+
+        /// <summary>
+        /// Current status of the running jobs.
+        /// </summary>
+        public string Status
+        {
+            get
+            {
+                if (jobManagers == null)
+                    return null;
+
+                int numComplete = NumJobsCompleted;
+                int numJobs = jobManagers.Select(j => j.NumJobs).Sum();
+
+                // If progress is at 100% (ie all jobs have finished running), and the job manager supports
+                // status reporting, allow the job manager to provide a status message. This lets the user
+                // know why the job is still running even though progress is at 100%.
+                if (MathUtilities.FloatsAreEqual(Progress, 1) && jobManagers.Count == 1 && jobManagers[0] is IReportsStatus jobManager)
+                    return jobManager.Status;
+
+                // If there's only one job to be run, and that job is specifically designed
+                // to provide status reports, return that job's status message.
+                if (numJobs == 1 && simsRunning.Count == 1 && simsRunning[0] is IReportsStatus statusReporter)
+                    return statusReporter.Status;
+
+                // Otherwise, return the generic "x of y completed" message.
+                return $"{numComplete} of {numJobs} completed";
+            }
+        }
 
         /// <summary>Add a jobmanager to the collection of jobmanagers to run.</summary>
         /// <param name="jobManager">The job manager to add.</param>
@@ -161,7 +209,7 @@
                 if (!(job is JobRunnerSleepJob))
                     lock (runningLock)
                     {
-                        SimsRunning.Add(job);
+                        simsRunning.Add(job);
                     }
 
                 var startTime = DateTime.Now;
@@ -184,7 +232,7 @@
                     lock (runningLock)
                     {
                         NumJobsCompleted++;
-                        SimsRunning.Remove(job);
+                        simsRunning.Remove(job);
                     }
             }
             finally
