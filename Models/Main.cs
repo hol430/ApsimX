@@ -30,6 +30,7 @@
         private static bool csv { get { return arguments.Contains("/Csv"); } }
         private static bool mergeDBFiles { get { return arguments.Contains("/MergeDBFiles"); } }
         private static bool edit { get { return arguments.Contains("/Edit"); } }
+        private static bool simple { get { return arguments.Contains("/Simple"); } }
 
         private static Runner.RunTypeEnum runType
         {
@@ -39,6 +40,8 @@
                     return Runner.RunTypeEnum.SingleThreaded;
                 else if (arguments.Contains("/MultiProcess"))
                     return Runner.RunTypeEnum.MultiProcess;
+                else if (arguments.Contains("/Simple"))
+                    return Runner.RunTypeEnum.Flood;
                 else
                     return Runner.RunTypeEnum.MultiThreaded;
             }
@@ -126,7 +129,7 @@
         /// </summary>
         private static void WriteUsageMessage()
         {
-            string usageMessage = "Usage: Models ApsimXFileSpec [/Recurse] [/SingleThreaded] [/RunTests] [/Csv] [/Version] [/Verbose] [/Upgrade] [/m] [/?]";
+            string usageMessage = "Usage: Models ApsimXFileSpec [/Recurse] [/SingleThreaded] [/RunTests] [/Csv] [/Version] [/Verbose] [/Upgrade] [/MultiProcess] [/Simple] [/?]";
             string detailedHelpInfo = usageMessage;
             detailedHelpInfo += Environment.NewLine + Environment.NewLine;
             detailedHelpInfo += "ApsimXFileSpec:          The path to an .apsimx file. May include wildcard.";
@@ -143,7 +146,7 @@
             detailedHelpInfo += "    /SimulationNameRegexPattern:xx  Use to filter simulation names to run." + Environment.NewLine;
             detailedHelpInfo += "    /MergeDBFiles                   Merges .db files into a single .db file." + Environment.NewLine;
             detailedHelpInfo += "    /Edit <PathToConfigFile>        Edits the .apsimx file. Path to a config file must be specified which contains lines of parameters to change in the form 'path = value'" + Environment.NewLine;
-
+            detailedHelpInfo += "    /Simple                         Use the simple job runner (experimental)" + Environment.NewLine;
             detailedHelpInfo += "    /?                              Show detailed help information.";
             Console.WriteLine(detailedHelpInfo);
         }
