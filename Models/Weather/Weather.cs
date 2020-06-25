@@ -583,8 +583,13 @@
             { // Move everything forward a day
                 YesterdaysMetData = TodaysMetData;
                 TodaysMetData = TomorrowsMetData;
-                try { TomorrowsMetData = GetMetData(this.clock.Today.AddDays(1)); }
-                catch { } // Keep tomorrows met data as todays if last day of file
+
+                // Don't attempt to read tomorrow's met data on the final 
+                // of the simulation. It would be better to always read it
+                // in, even on the last day, iff the met file contains data
+                // for tomorrow.
+                if (clock.Today.Date != clock.EndDate.Date)
+                    TomorrowsMetData = GetMetData(this.clock.Today.AddDays(1));
             }
 
             this.Radn = TodaysMetData.Radn;
