@@ -49,3 +49,4 @@ Documentation/errors.txt
 *.db-journal
 *.db-shm
 *.db-wal
+Docs/api-doxygen/
