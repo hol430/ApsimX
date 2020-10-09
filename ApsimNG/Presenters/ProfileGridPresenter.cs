@@ -27,6 +27,8 @@ namespace UserInterface.Presenters
         /// </summary>
         private IModel model;
 
+        private bool kgha;
+
         /// <summary>
         /// Attach the model to the view.
         /// </summary>
@@ -48,11 +50,45 @@ namespace UserInterface.Presenters
             }
 
             grid.NumericFormat = "N3";
+            grid.GridColumnClicked += OnColumnRightClicked;
 
             PopulateGrid(this.model);
 
             grid.CellsChanged += OnCellsChanged;
             presenter.CommandHistory.ModelChanged += OnModelChanged;
+        }
+
+        private void OnColumnRightClicked(object sender, GridColumnClickedArgs e)
+        {
+            try
+            {
+                if (e.Column.ColumnIndex >= properties.Count)
+                    return;
+
+                VariableProperty property = properties[e.Column.ColumnIndex];
+                if (e.OnHeader && e.RightClick && (property.Units == "ppm" || property.Units == "kg/ha") )
+                {
+                    string msg = $"Change units to {(kgha ? "ppm" : "kg/ha")}";
+                    grid.AddContextActionWithAccel(msg, OnToggleUntis, null);
+                }
+            }
+            catch (Exception err)
+            {
+                presenter.MainPresenter.ShowError(err);
+            }
+        }
+
+        private void OnToggleUntis(object sender, EventArgs e)
+        {
+            try
+            {
+                kgha = !kgha;
+                PopulateGrid(model);
+            }
+            catch (Exception err)
+            {
+                presenter.MainPresenter.ShowError(err);
+            }
         }
 
         /// <summary>
@@ -229,7 +265,14 @@ namespace UserInterface.Presenters
             }
 
             if (property.Units != null)
-                columnName += $" \n({property.Units})";
+            {
+                if (property.Units == "ppm" && kgha)
+                    columnName += $" \n(kg/ha)";
+                else if (property.Units == "kg/ha" && !kgha)
+                    columnName += $" \n(ppm)";
+                else
+                    columnName += $" \n({property.Units})";
+            }
 
             return columnName;
         }
@@ -280,6 +323,18 @@ namespace UserInterface.Presenters
             if (arr == null || arr.Length <= row)
                 return null;
 
+            double[] thickness = model.GetType().GetProperty("Thickness")?.GetValue(model) as double[];
+            double[] bd = properties.Find(p => p.Name == "BD")?.Value as double[];
+            if (bd == null)
+                bd = model.FindInScope<Physical>()?.BD;
+            if (arr.GetType() == typeof(double[]) && thickness != null && bd != null)
+            {
+                if (kgha && property.Units == "ppm")
+                    arr = SoilUtilities.ppm2kgha(thickness, bd, (double[])arr);
+                else if (!kgha && property.Units == "kg/ha")
+                    arr = SoilUtilities.kgha2ppm(thickness, bd, (double[])arr);
+            }
+
             object value = arr.GetValue(row);
             if (value == null)
                 return null;
@@ -327,6 +382,18 @@ namespace UserInterface.Presenters
 
                 if (!MathUtilities.ValuesInArray(array))
                     return null;
+
+                double[] thickness = model.GetType().GetProperty("Thickness")?.GetValue(model) as double[];
+                double[] bd = properties.Find(p => p.Name == "BD")?.Value as double[];
+                if (bd == null)
+                    bd = model.FindInScope<Physical>()?.BD;
+                if (array.GetType() == typeof(double[]) && bd != null && thickness != null)
+                {
+                    if (kgha && property.Units == "ppm")
+                        array = SoilUtilities.ppm2kgha(thickness, bd, (double[])array);
+                    else if (!kgha && property.Units == "kg/ha")
+                        array = SoilUtilities.kgha2ppm(thickness, bd, (double[])array);
+                }
 
                 return array;
             }
@@ -474,6 +541,19 @@ namespace UserInterface.Presenters
                     continue;
                 newArray = Clone(newArray, property.DataType.GetElementType());
 
+                // Convert between kgha/ppm if necessary.
+                double[] thickness = model.GetType().GetProperty("Thickness")?.GetValue(model) as double[];
+                double[] bd = properties.Find(p => p.Name == "BD")?.Value as double[];
+                if (bd == null)
+                    bd = model.FindInScope<Physical>()?.BD;
+                if (newArray.GetType() == typeof(double[]) && bd != null && thickness != null)
+                {
+                    if (kgha && property.Units == "ppm")
+                        newArray = SoilUtilities.ppm2kgha(thickness, bd, (double[])newArray);
+                    else if (!kgha && property.Units == "kg/ha")
+                        newArray = SoilUtilities.kgha2ppm(thickness, bd, (double[])newArray);
+                }
+
                 // It's possible to change multiple values in the same column
                 // simultaneously via multi-selection. If we just add a change
                 // property command for each individual change, later changes
@@ -500,6 +580,15 @@ namespace UserInterface.Presenters
 
                     newArray.SetValue(element, change.RowIndex);
                 }
+
+                if (newArray.GetType() == typeof(double[]) && bd != null && thickness != null)
+                {
+                    if (kgha && property.Units == "ppm")
+                        newArray = SoilUtilities.kgha2ppm(thickness, bd, (double[])newArray);
+                    else if (!kgha && property.Units == "kg/ha")
+                        newArray = SoilUtilities.ppm2kgha(thickness, bd, (double[])newArray);
+                }
+
                 changes.Add(new ChangeProperty.Property(property.Object, property.Name, newArray));
             }
 

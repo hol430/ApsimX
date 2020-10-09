@@ -111,6 +111,14 @@
         void AddContextOption(string itemName, string menuItemText, System.EventHandler onClick, bool active);
 
         /// <summary>
+        /// Add an action (on context menu) on the series grid.
+        /// </summary>
+        /// <param name="menuItemText">The text of the menu item.</param>
+        /// <param name="onClick">The event handler to call when menu is selected.</param>
+        /// <param name="shortcut">The shortcut keys.</param>
+        void AddContextActionWithAccel(string menuItemText, EventHandler onClick, string shortcut);
+
+        /// <summary>
         /// Clear all presenter defined context items.
         /// </summary>
         void ClearContextActions(bool hideDefault);

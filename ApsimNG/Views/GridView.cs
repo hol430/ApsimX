@@ -804,9 +804,9 @@
         /// </summary>
         public void ClearContextActions(bool showDefaults = true)
         {
-            while (popupMenu.Children.Length > 3)
-                popupMenu.Remove(popupMenu.Children[3]);
-            for (int i = 0; i < 3; i++)
+            while (popupMenu.Children.Length > 4)
+                popupMenu.Remove(popupMenu.Children[4]);
+            for (int i = 0; i < 4; i++)
                 popupMenu.Children[i].Visible = showDefaults;
         }
 
@@ -1850,6 +1850,7 @@
                 }
                 else if (e.Event.Button == 3)
                 {
+                    ClearContextActions();
                     int columnNumber = GetColNoFromButton(sender as Button);
                     GridColumnClickedArgs args = new GridColumnClickedArgs();
                     args.Column = GetColumn(columnNumber);
@@ -2050,7 +2051,7 @@
         /// <param name="menuItemText">The text of the menu item.</param>
         /// <param name="onClick">The event handler to call when menu is selected.</param>
         /// <param name="shortcut">The shortcut keys.</param>
-        private void AddContextActionWithAccel(string menuItemText, EventHandler onClick, string shortcut)
+        public void AddContextActionWithAccel(string menuItemText, EventHandler onClick, string shortcut)
         {
             ImageMenuItem item = new ImageMenuItem(menuItemText);
             if (!string.IsNullOrEmpty(shortcut))
@@ -2742,6 +2743,7 @@
                 }
                 else if (e.Event.Button == 3)
                 {
+                    ClearContextActions();
                     if (GridColumnClicked != null)
                     {
                         GridColumnClickedArgs args = new GridColumnClickedArgs();
