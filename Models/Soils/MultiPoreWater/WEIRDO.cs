@@ -655,6 +655,8 @@ namespace Models.Soils
         
         private double[] no3Values { get; set; }
         private double[] ureaValues { get; set; }
+        [NonSerialized]
+        private double[] targetThickness;
         #endregion
 
         #region Event Handlers
@@ -686,6 +688,11 @@ namespace Models.Soils
             SaturatedWaterDepth = new double[ProfileLayers];
             HourlyWaterExtraction = new double[ProfileLayers];
             RootLengthDensity = new double[ProfileLayers];
+
+            if (SoluteFluxEfficiency == null)
+                SoluteFluxEfficiency = Enumerable.Repeat<double>(1, ProfileLayers).ToArray();
+            if (SoluteFlowEfficiency == null)
+                SoluteFlowEfficiency = Enumerable.Repeat<double>(1, ProfileLayers).ToArray();
 
             no3Values = new double[ProfileLayers];
             ureaValues = new double[ProfileLayers];
@@ -733,6 +740,20 @@ namespace Models.Soils
                     throw new Exception("The initial Water content in mapped layer " + l + " of " + initial.SWVolumetric[l] + " is greater than the layers saturated water content of " + MappedSAT[l]);
                 if (MappedLL15[l] - initial.SWVolumetric[l] > 1e-10)
                     throw new Exception("The initial Water content in mapped layer " + l + " of " + initial.SWVolumetric[l] + " is less than the layers lower limit water content of " + MappedLL15[l]);
+            }
+        }
+
+        [EventSubscribe("StartOfSimulation")]
+        private void OnStartOfSimulation(object sender, EventArgs args)
+        {
+            MappedNH4 = Layers.MapMass(nh4.kgha, Thickness, targetThickness);
+            MappedNO3 = Layers.MapMass(no3.kgha, Thickness, targetThickness);
+            MappedUrea = Layers.MapMass(urea.kgha, Thickness, targetThickness);
+
+            for (int i = 0; i < ProfileLayers; i++)
+            {
+                no3Values[i] = MappedNO3[i];
+                ureaValues[i] = MappedUrea[i];
             }
         }
 
@@ -890,11 +911,7 @@ namespace Models.Soils
             MappedUpperRepellentWC = Layers.MapConcentration(UpperRepellentWC, Thickness, targetThickness, SAT[SAT.Length - 1]);
             MappedLowerRepellentWC = Layers.MapConcentration(LowerRepellentWC, Thickness, targetThickness, SAT[SAT.Length - 1]);
             MappedMinRepellancyFactor = Layers.MapConcentration(MinRepellancyFactor, Thickness, targetThickness, SAT[SAT.Length - 1]);
-
-            MappedNH4 = Layers.MapMass(nh4.kgha, Thickness, targetThickness);
-            MappedNO3 = Layers.MapMass(no3.kgha, Thickness, targetThickness);
-            MappedUrea = Layers.MapMass(urea.kgha, Thickness, targetThickness);
-
+            this.targetThickness = targetThickness;
         }
 
         private void doPrecipitation()
@@ -1362,9 +1379,6 @@ namespace Models.Soils
                 LL15mm[l] = MappedLL15[l] * Thickness[l];
                 SATmm[l] = MappedSAT[l] * Thickness[l];
                 ProfileSaturation += MappedSAT[l] * Thickness[1];
-
-                no3Values[l] = MappedNO3[l];
-                ureaValues[l] = MappedUrea[l];
             }
             doGravitionalPotential();
             for (int l = 0; l < ProfileLayers; l++)
