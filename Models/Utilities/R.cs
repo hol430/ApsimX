@@ -368,7 +368,7 @@ namespace Models.Utilities
         /// <summary>
         /// Gets the directory that the latest version of R is installed to.
         /// </summary>
-        private string GetRInstallDirectoryFromRegistry()
+        public string GetRInstallDirectoryFromRegistry()
         {
             string registryKey = @"SOFTWARE\R-core";
             List<string> subKeyNames = GetSubKeys(registryKey);

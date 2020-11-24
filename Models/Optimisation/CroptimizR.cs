@@ -461,8 +461,18 @@ namespace Models.Optimisation
         /// <param name="path">Path to the .Rdata file on disk.</param>
         public DataTable ReadRData(string path)
         {
-            REngine engine = REngine.GetInstance();
-            engine.Evaluate($"load('{path.Replace(@"\", @"\\")}')");
+            REngine engine;
+            try
+            {
+                engine = REngine.GetInstance();
+                engine.Evaluate($"load('{path.Replace(@"\", @"\\")}')");
+            }
+            catch (NullReferenceException)
+            {
+                StartupParameter rinit = new StartupParameter();
+                rinit.RHome = new R().GetRInstallDirectoryFromRegistry();
+                engine = REngine.GetInstance(null, true, rinit);
+            }
 
             GenericVector nlo = engine.GetSymbol("nlo").AsList();
             DataTable table = new DataTable(Name);
