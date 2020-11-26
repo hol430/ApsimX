@@ -11,7 +11,7 @@
     using System.Timers;
     using Utility;
 
-    class RunCommand : ICommand
+    public sealed class RunCommand : IDisposable
     {
         /// <summary>The name of the job</summary>
         private string jobName;
@@ -47,24 +47,28 @@
         public bool IsRunning { get; private set; } = false;
 
         /// <summary>Perform the command</summary>
-        public void Do(CommandHistory commandHistory)
+        public void Do()
         {
             IsRunning = true;
             jobRunner.Run();
 
-            timer = new Timer();
-            timer.Interval = 1000;
-            timer.AutoReset = true;
-            timer.Elapsed += OnTimerTick;
-            timer.Start();
+            if (IsRunning)
+            {
+                timer = new Timer();
+                timer.Interval = 1000;
+                timer.AutoReset = true;
+                timer.Elapsed += OnTimerTick;
+                timer.Start();
+            }
         }
-
-        /// <summary>Undo the command</summary>
-        public void Undo(CommandHistory commandHistory) { }
 
         /// <summary>All jobs have completed</summary>
         private void OnAllJobsCompleted(object sender, Runner.AllJobsCompletedArgs e)
         {
+            IsRunning = false;
+            if (timer != null)
+                timer.Elapsed -= OnTimerTick;
+
             if (e.AllExceptionsThrown != null)
                 errors.AddRange(e.AllExceptionsThrown);
             try
@@ -126,7 +130,11 @@
         private void Stop()
         {
             this.explorerPresenter.MainPresenter.RemoveStopHandler(OnStopSimulation);
-            timer?.Stop();
+            if (timer != null)
+            {
+                timer.Stop();
+                timer.Elapsed -= OnTimerTick;
+            }
             jobRunner?.Stop();
             jobRunner = null;
             IsRunning = false;
@@ -139,14 +147,25 @@
         /// <param name="e"></param>
         private void OnTimerTick(object sender, ElapsedEventArgs e)
         {
-            if (jobRunner.TotalNumberOfSimulations > 0)
+            if (jobRunner == null)
             {
-                explorerPresenter.MainPresenter.ShowMessage(jobName + " running (" +
-                         jobRunner.NumberOfSimulationsCompleted + " of " +
-                         (jobRunner.TotalNumberOfSimulations) + " completed)", Simulation.MessageType.Information);
-
-                explorerPresenter.MainPresenter.ShowProgress(Convert.ToInt32(jobRunner.PercentComplete(), CultureInfo.InvariantCulture));
+                timer?.Stop();
+                timer.Elapsed -= OnTimerTick;
             }
+            else //if (jobRunner?.TotalNumberOfSimulations > 0)
+            {
+                double progress = jobRunner?.Progress ?? 0;
+                explorerPresenter.MainPresenter.ShowMessage($"{jobName} running ({jobRunner.Status})", Simulation.MessageType.Information);
+                explorerPresenter.MainPresenter.ShowProgress(Convert.ToInt32(progress * 100, CultureInfo.InvariantCulture));
+            }
+            //else if (jobRunner != null)
+            //    explorerPresenter.MainPresenter.ShowProgress(Convert.ToInt32(jobRunner.Progress * 100, CultureInfo.InvariantCulture));
+        }
+
+        public void Dispose()
+        {
+            if (timer != null)
+                timer.Dispose();
         }
     }
 }

@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
 
 namespace Models.CLEM.Groupings
 {
@@ -33,8 +33,14 @@ namespace Models.CLEM.Groupings
         /// <summary>
         /// Combined ML ruleset for LINQ expression tree
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public object CombinedRules { get; set; } = null;
+
+        /// <summary>
+        /// Proportion of group to use
+        /// </summary>
+        [JsonIgnore]
+        public double Proportion { get; set; }
 
         /// <summary>
         /// Constructor
@@ -42,25 +48,6 @@ namespace Models.CLEM.Groupings
         protected LabourPriceGroup()
         {
             base.ModelSummaryStyle = HTMLSummaryStyle.SubResource;
-        }
-
-        /// <summary>
-        /// Create a copy of the current instance
-        /// </summary>
-        /// <returns></returns>
-        public LabourPriceGroup Clone()
-        {
-            LabourPriceGroup clone = new LabourPriceGroup()
-            {
-                Value = this.Value
-            };
-
-            foreach (LabourFilter item in this.Children.OfType<LabourFilter>())
-            {
-                clone.Children.Add(item.Clone());
-            }
-
-            return clone;
         }
 
         /// <summary>
@@ -128,7 +115,7 @@ namespace Models.CLEM.Groupings
             if (formatForParentControl)
             {
                 html += "<tr><td>" + this.Name + "</td><td>";
-                if (!(Apsim.Children(this, typeof(LabourFilter)).Count() >= 1))
+                if (!(this.FindAllChildren<LabourFilter>().Count() >= 1))
                 {
                     html += "<div class=\"filter\">All individuals</div>";
                 }
@@ -136,7 +123,7 @@ namespace Models.CLEM.Groupings
             else
             {
                 html += "\n<div class=\"filterborder clearfix\">";
-                if (!(Apsim.Children(this, typeof(LabourFilter)).Count() >= 1))
+                if (!(this.FindAllChildren<LabourFilter>().Count() >= 1))
                 {
                     html += "<div class=\"filter\">All individuals</div>";
                 }

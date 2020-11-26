@@ -7,6 +7,9 @@ pipeline {
 					agent {
 						label "windows && midweight"
 					}
+					environment {
+						GRAPEVINE_PASSWORD = credentials('grapevine-validation-password')
+					}
 					steps {
 						bat '''
 							@echo off
@@ -16,7 +19,8 @@ pipeline {
 							)
 							cd ApsimX\\Jenkins
 							call cleanup
-							call build
+							if errorlevel 1 exit /b 1
+							call build /r
 							if errorlevel 1 exit /b 1
 							call runTests Prototypes
 						'''
@@ -38,7 +42,8 @@ pipeline {
 							)
 							cd ApsimX\\Jenkins
 							call cleanup
-							call build
+							if errorlevel 1 exit /b 1
+							call build /r
 							if errorlevel 1 exit /b 1
 							call runTests Validation
 							if errorlevel 1 exit /b 1
@@ -60,7 +65,8 @@ pipeline {
 							)
 							cd ApsimX\\Jenkins
 							call cleanup
-							call build
+							if errorlevel 1 exit /b 1
+							call build /r
 							if errorlevel 1 exit /b 1
 							call runTests Examples
 						'''
@@ -79,7 +85,8 @@ pipeline {
 							)
 							cd ApsimX\\Jenkins
 							call cleanup
-							call build
+							if errorlevel 1 exit /b 1
+							call build /r
 							if errorlevel 1 exit /b 1
 							call runTests UI
 						'''
@@ -98,7 +105,8 @@ pipeline {
 							)
 							cd ApsimX\\Jenkins
 							call cleanup
-							call build
+							if errorlevel 1 exit /b 1
+							call build /r
 							if errorlevel 1 exit /b 1
 							call runTests Unit
 						'''

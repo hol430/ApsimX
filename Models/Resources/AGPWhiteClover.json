@@ -1,12 +1,11 @@
 {
   "$type": "Models.Core.Simulations, Models",
   "ExplorerWidth": 0,
-  "Version": 79,
+  "Version": 123,
   "Name": "Simulations",
   "Children": [
     {
       "$type": "Models.AgPasture.PastureSpecies, Models",
-      "MaximumNUptake": 10.0,
       "Albedo": 0.26,
       "Gsmax": 0.011,
       "R50": 200.0,
@@ -31,11 +30,6 @@
       "GrowthRespirationCoefficient": 0.25,
       "RespirationTReference": 20.0,
       "RespirationExponent": 1.5,
-      "NThresholdsForRoots": [
-        0.0225,
-        0.01,
-        0.0275
-      ],
       "DegreesDayForGermination": 125.0,
       "TargetShootRootRatio": 4.0,
       "MaxRootAllocation": 0.25,
@@ -52,8 +46,7 @@
       "FractionLeafExponent": 3.0,
       "FractionToStolon": 0.2,
       "SpecificLeafArea": 32.0,
-      "SpecificRootLength": 45.0,
-      "StolonEffectOnLAI": 0.3,
+      "StolonEffectOnLAI": 0.0,
       "ShootMaxEffectOnLAI": 500.0,
       "MaxStemEffectOnLAI": 0.5,
       "LiveLeavesPerTiller": 3.0,
@@ -75,20 +68,14 @@
       "NDillutionCoefficient": 1.0,
       "GlfGeneric": 1.0,
       "GlfSoilFertility": 1.0,
-      "PlantHeightMinimum": 300.0,
+      "PlantHeightMinimum": 25.0,
       "PlantHeightMaximum": 300.0,
       "PlantHeightMassForMax": 7500.0,
       "PlantHeightExponent": 2.5,
-      "RootDepthMinimum": 30.0,
-      "RootDepthMaximum": 350.0,
-      "RootElongationRate": 25.0,
-      "RootDistributionDepthParam": 70.0,
-      "RootDistributionExponent": 2.5,
       "MinimumGreenWt": 50.0,
       "PreferenceForGreenOverDead": 1.0,
       "PreferenceForLeafOverStems": 1.0,
       "WaterAvailableMethod": 0,
-      "NitrogenAvailableMethod": 0,
       "Name": "AGPWhiteClover",
       "Children": [
         {
@@ -241,11 +228,52 @@
           "IncludeInDocumentation": true,
           "Enabled": true,
           "ReadOnly": false
+        },
+        {
+          "$type": "Models.AgPasture.PastureBelowGroundOrgan, Models",
+          "NConcOptimum": 0.0225,
+          "NConcMinimum": 0.01,
+          "NConcMaximum": 0.0275,
+          "RootDistributionDepthParam": 70.0,
+          "RootDistributionExponent": 2.5,
+          "RootBottomDistributionFactor": 1.05,
+          "SpecificRootLength": 45.0,
+          "RootDepthMinimum": 30.0,
+          "RootDepthMaximum": 350.0,
+          "RootElongationRate": 25.0,
+          "KNO3": 0.01,
+          "KNH4": 0.005,
+          "MaximumNUptake": 10.0,
+          "ReferenceRLD": 5.0,
+          "ReferenceKSuptake": 15.0,
+          "Name": "Root",
+          "Children": [
+            {
+              "$type": "Models.AgPasture.RootTissue, Models",
+              "Name": "Live",
+              "Children": [],
+              "IncludeInDocumentation": true,
+              "Enabled": true,
+              "ReadOnly": false
+            },
+            {
+              "$type": "Models.AgPasture.RootTissue, Models",
+              "Name": "Dead",
+              "Children": [],
+              "IncludeInDocumentation": true,
+              "Enabled": true,
+              "ReadOnly": false
+            }
+          ],
+          "IncludeInDocumentation": true,
+          "Enabled": true,
+          "ReadOnly": false
         }
       ],
       "IncludeInDocumentation": true,
       "Enabled": true,
-      "ReadOnly": false
+      "ReadOnly": false,
+      "PlantType": "AGPWhiteClover"
     }
   ]
 }

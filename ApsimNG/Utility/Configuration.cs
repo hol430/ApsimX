@@ -41,11 +41,20 @@ namespace Utility
         /// <summary>The previous height of the status panel</summary>
         public int StatusPanelHeight { get; set; }
 
+        /// <summary>
+        /// The position of the splitter between the variables
+        /// and frequency text editors in the report UI.
+        /// </summary>
+        public int ReportSplitterPosition { get; set; }
+
         /// <summary>Keeps track of whether the dark theme is enabled.</summary>
         public bool DarkTheme { get; set; }
 
         /// <summary>Iff true, the GUI will not play a sound when simulations finish running.</summary>
         public bool Muted { get; set; }
+
+        /// <summary>Use the new property presenter?</summary>
+        public bool UseNewPropertyPresenter { get; set; }
 
         /// <summary>Return the name of the summary file JPG.</summary>
         public string SummaryPngFileName
@@ -119,7 +128,17 @@ namespace Utility
         /// Stores the user's preferred font.
         /// </summary>
         /// <value></value>
-        public Pango.FontDescription Font { get; set; }
+        public string FontName { get; set; } = "Segoe UI 11";
+
+        /// <summary>
+        /// Stores the user's preferred font for the manager script text editor.
+        /// </summary>
+        public string EditorFontName { get; set; } = "monospace 10";
+
+        /// <summary>
+        /// Country name used in the download soil view.
+        /// </summary>
+        public string DownloadFromDataSourceCountry { get; set; }
 
         public ApsimFileMetadata GetMruFile(string fileName)
         {

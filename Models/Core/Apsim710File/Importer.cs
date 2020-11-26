@@ -268,6 +268,7 @@
                 {
                     XmlNode newSim = this.AddCompNode(destParent, "Simulation", XmlUtilities.NameAttr(compNode));
                     this.AddChildComponents(compNode, newSim);
+                    AddCompNode(newSim, "SoilArbitrator", "SoilArbitrator");
                 }
                 else if (compNode.Name == "folder")
                 {
@@ -315,17 +316,39 @@
                 else if (compNode.Name.ToLower() == "sample")
                 {
                     newNode = CopyNode(compNode, destParent, "Sample");
+                    StripMissingValues(newNode, "Depth");
+                    StripMissingValues(newNode, "Thickness");
+                    StripMissingValues(newNode, "NO3");
+                    StripMissingValues(newNode, "NH4");
+                    StripMissingValues(newNode, "SW");
+                    StripMissingValues(newNode, "OC");
+                    StripMissingValues(newNode, "EC");
+                    StripMissingValues(newNode, "PH");
+                    StripMissingValues(newNode, "CL");
+                    StripMissingValues(newNode, "ESP");
                 }
                 else if (compNode.Name.ToLower() == "water")
                 {
                     newNode = this.ImportWater(compNode, destParent, newNode);
+                }
+                else if (compNode.Name.ToLower() == "layerstructure")
+                {
+                    newNode = CopyNode(compNode, destParent, "LayerStructure");
+                }
+                else if (compNode.Name.ToLower() == "swim")
+                {
+                    newNode = CopyNode(compNode, destParent, "Swim3");
+                    this.AddCompNode(destParent, "SoilNitrogen", "SoilNitrogen");
+                    this.AddCompNode(destParent, "CERESSoilTemperature", "Temperature");
+
+                    // may need to copy more details for SoilNitrogen
                 }
                 else if (compNode.Name.ToLower() == "soilwater")
                 {
                     newNode = CopyNode(compNode, destParent, "SoilWater");
                     this.soilWaterExists = newNode != null;
                     this.AddCompNode(destParent, "SoilNitrogen", "SoilNitrogen");
-                    this.AddCompNode(destParent, "CERESSoilTemperature", "CERESSoilTemperature");
+                    this.AddCompNode(destParent, "CERESSoilTemperature", "Temperature");
 
                     // may need to copy more details for SoilNitrogen
                 }
@@ -340,6 +363,12 @@
                 else if (compNode.Name == "Analysis")
                 {
                     newNode = CopyNode(compNode, destParent, "Analysis");
+                    StripMissingValues(newNode, "Depth");
+                    StripMissingValues(newNode, "Thickness");
+                    StripMissingValues(newNode, "EC");
+                    StripMissingValues(newNode, "PH");
+                    StripMissingValues(newNode, "CL");
+                    StripMissingValues(newNode, "ESP");
                 }
                 else if (compNode.Name == "SoilCrop")
                 {
@@ -400,6 +429,10 @@
                 {
                     this.ImportPlant(compNode, destParent, newNode);
                 }
+                else if (string.Equals("irrigation", compNode.Name, StringComparison.InvariantCultureIgnoreCase))
+                    AddCompNode(destParent, "Irrigation", "Irrigation");
+                else if (string.Equals("fertiliser", compNode.Name, StringComparison.InvariantCultureIgnoreCase))
+                    AddCompNode(destParent, "Fertiliser", "Fertiliser");
                 else
                 {
                     // Do nothing.
@@ -410,6 +443,17 @@
                 throw new Exception("Cannot import " + compNode.Name + " :Error - " + exp.ToString() + "\n");
             }
             return newNode;
+        }
+
+        private void StripMissingValues(XmlNode newNode, string arrayName)
+        {
+            var values = XmlUtilities.Values(newNode, arrayName + "/double");
+            var indexOfFirstMissing = values.FindIndex(value => string.IsNullOrEmpty(value) || value == "999999" || value == "NaN");
+            if (indexOfFirstMissing != -1)
+            {
+                values.RemoveRange(indexOfFirstMissing, values.Count - indexOfFirstMissing);
+                XmlUtilities.SetValues(newNode, arrayName + "/double", values);
+            }
         }
 
         /// <summary>

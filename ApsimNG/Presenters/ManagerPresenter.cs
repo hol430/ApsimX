@@ -1,25 +1,15 @@
-﻿// -----------------------------------------------------------------------
-// <copyright file="ManagerPresenter.cs"  company="APSIM Initiative">
-//     Copyright (c) APSIM Initiative
-// </copyright>
-// -----------------------------------------------------------------------
-
-namespace UserInterface.Presenters
+﻿namespace UserInterface.Presenters
 {
     using System;
-    using System.Collections.Generic;
     using System.Drawing;
     using System.Linq;
-    using System.Reflection;
     using APSIM.Shared.Utilities;
     using EventArguments;
     using Models;
     using Models.Core;
     using Views;
-    using System.IO;
-    using System.Diagnostics;
-    using System.Threading.Tasks;
     using ICSharpCode.NRefactory.CSharp;
+    using Utility;
 
     /// <summary>
     /// Presenter for the Manager component
@@ -29,7 +19,7 @@ namespace UserInterface.Presenters
         /// <summary>
         /// The presenter used for properties
         /// </summary>
-        private PropertyPresenter propertyPresenter = new PropertyPresenter();
+        private IPresenter propertyPresenter;
 
         /// <summary>
         /// The manager object
@@ -39,7 +29,7 @@ namespace UserInterface.Presenters
         /// <summary>
         /// The compiled script model.
         /// </summary>
-        private Model scriptModel;
+        private IModel scriptModel;
 
         /// <summary>
         /// The view for the manager
@@ -80,7 +70,11 @@ namespace UserInterface.Presenters
                     explorerPresenter.ShowDescriptionInRightHandPanel(descriptionName.ToString());
             }
 
-            propertyPresenter.Attach(scriptModel, managerView.GridView, presenter);
+            if (Configuration.Settings.UseNewPropertyPresenter)
+                propertyPresenter = new SimplePropertyPresenter();
+            else
+                propertyPresenter = new PropertyPresenter();
+            propertyPresenter.Attach(scriptModel, managerView.PropertyEditor, presenter);
             managerView.Editor.Mode = EditorType.ManagerScript;
             managerView.Editor.Text = manager.Code;
             managerView.Editor.ContextItemsNeeded += OnNeedVariableNames;
@@ -139,10 +133,15 @@ namespace UserInterface.Presenters
             if (!intellisense.Visible)
                 BuildScript();
             if (scriptModel != null)
-            {
-                propertyPresenter.UpdateModel(scriptModel);
-                propertyPresenter.Refresh();
-            }
+                RefreshProperties();
+        }
+
+        private void RefreshProperties()
+        {
+            if (propertyPresenter is SimplePropertyPresenter simplePresenter)
+                simplePresenter.RefreshView(scriptModel);
+            else if (propertyPresenter is PropertyPresenter presenter)
+                presenter.Refresh();
         }
 
         /// <summary>
@@ -154,10 +153,6 @@ namespace UserInterface.Presenters
             if (changedModel == manager)
             {
                 managerView.Editor.Text = manager.Code;
-            }
-            else if (changedModel == scriptModel)
-            {
-                propertyPresenter.UpdateModel(scriptModel);
             }
         }
 
@@ -196,9 +191,7 @@ namespace UserInterface.Presenters
             try
             {
                 // User could have added more inputs to manager script - therefore we update the property presenter.
-                scriptModel = Apsim.Child(manager, "Script") as Model;
-                if (scriptModel != null)
-                    propertyPresenter.Refresh();
+                scriptModel = manager.FindChild("Script") as Model;
             }
             catch (Exception err)
             {
@@ -218,6 +211,8 @@ namespace UserInterface.Presenters
             try
             {
                 BuildScript();
+                if (scriptModel != null)
+                    RefreshProperties();
             }
             catch (Exception err)
             {

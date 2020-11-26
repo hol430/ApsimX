@@ -1,8 +1,3 @@
-// -----------------------------------------------------------------------
-// <copyright file="TreeView.cs"  company="APSIM Initiative">
-//     Copyright (c) APSIM Initiative
-// </copyright>
-// -----------------------------------------------------------------------
 namespace UserInterface.Views
 {
     using APSIM.Shared.Utilities;
@@ -364,7 +359,7 @@ namespace UserInterface.Views
             Gdk.Pixbuf pixbuf = null;
             if (MasterView != null && MasterView.HasResource(description.ResourceNameForImage))
                 pixbuf = new Gdk.Pixbuf(null, description.ResourceNameForImage);
-            string tick = description.Checked ? "✔" : "";
+            string tick = description.Checked ? "✓" : "";
             treemodel.SetValues(node, description.Name, pixbuf, description.ToolTip, tick, description.Colour, description.Strikethrough);
 
             for (int i = 0; i < description.Children.Count; i++)
@@ -568,9 +563,18 @@ namespace UserInterface.Views
         {
             try
             {
+                // Note - this will not be called on the main thread, so we
+                // need to wrap any Gtk calls inside an appropriate delegate
                 Gtk.Application.Invoke(delegate
                 {
-                    BeginRenamingCurrentNode();
+                    try
+                    {
+                        BeginRenamingCurrentNode();
+                    }
+                    catch (Exception err)
+                    {
+                        ShowError(err);
+                    }
                 });
             }
             catch (Exception err)
@@ -894,10 +898,10 @@ namespace UserInterface.Views
         /// Expands all child nodes recursively.
         /// </summary>
         /// <param name="path">Path to the node. e.g. ".Simulations.DataStore"</param>
-        public void ExpandChildren(string path)
+        public void ExpandChildren(string path, bool recursive = true)
         {
             TreePath nodePath = treemodel.GetPath(FindNode(path));
-            treeview1.ExpandRow(nodePath, true);
+            treeview1.ExpandRow(nodePath, recursive);
         }
 
         /// <summary>

@@ -10,7 +10,7 @@
             ],
             "Rows": [
                 {
-                    "Name": "AGPRyegrass, AGPWhiteClover (AgPasture)",
+                    "Name": "AGPRyegrass (AgPasture)",
                     "Documents": [
                         {
                             "Name": "PDF",
@@ -19,11 +19,53 @@
                         {
                             "Name": "PDF",
                             "FileName": "Tests/Validation/AgPasture/AgPasture.apsimx",
+                            "OutputFileName": "AGPRyegrass.pdf",
                             "ModelNameToDocument": "AGPRyegrass"
                         },
                         {
-                            "Name": "PDF",
+                            "Name": "Science documentation",
                             "URL": "https://apsimdev.apsim.info/ApsimX/Documents/AgPastureScience.pdf"
+                        },			
+                        {
+                            "Name": "Species parameters",
+                            "FileName": "Tests/Validation/AgPasture/SpeciesTable.apsimx",
+                        }						
+                    ]
+                },
+                {
+                    "Name": "AGPWhiteClover (AgPasture)",
+                    "Documents": [
+                        {
+                            "Name": "PDF",
+                            "FileName": "Tests/Validation/AgPasture/AgPasture.apsimx"
+                        },
+                        {
+                            "Name": "PDF",
+                            "FileName": "Tests/Validation/AgPasture/AgPasture.apsimx",
+                            "OutputFileName": "AGPWhiteClover.pdf",
+                            "ModelNameToDocument": "AGPWhiteClover"
+                        },
+                        {
+                            "Name": "Science documentation",
+                            "URL": "https://apsimdev.apsim.info/ApsimX/Documents/AgPastureScience.pdf"
+                        },
+                        {
+                            "Name": "Species parameters",
+                            "FileName": "Tests/Validation/AgPasture/SpeciesTable.apsimx",
+                        }						
+                    ]
+                },
+                {
+                    "Name": "Agroforestry (under review)",
+                    "Documents": [
+                        {
+                            "Name": "PDF",
+                            "FileName": "Tests/Validation/Agroforestry/AgroforestrySystem.apsimx"
+                        },
+                        {
+                            "Name": "PDF",
+                            "FileName": "Tests/Validation/Agroforestry/AgroforestrySystem.apsimx",
+                            "ModelNameToDocument": "TreeProxy"
                         }
                     ]
                 },
@@ -38,20 +80,6 @@
                             "Name": "PDF",
                             "FileName": "Tests/Validation/Barley/Barley.apsimx",
                             "ModelNameToDocument": "Barley"
-                        }
-                    ]
-                },
-                {
-                    "Name": "Chickpea (under review)",
-                    "Documents": [
-                        {
-                            "Name": "PDF",
-                            "FileName": "Tests/UnderReview/Chickpea/Chickpea.apsimx"
-                        },
-                        {
-                            "Name": "PDF",
-                            "FileName": "Tests/UnderReview/Chickpea/Chickpea.apsimx",
-                            "ModelNameToDocument": "Chickpea"
                         }
                     ]
                 },
@@ -103,6 +131,20 @@
                             "Name": "PDF",
                             "FileName": "Tests/Validation/FodderBeet/FodderBeet.apsimx",
                             "ModelNameToDocument": "FodderBeet"
+                        }
+                    ]
+                },
+                {
+                    "Name": "Gliricidia (Under Review)",
+                    "Documents": [
+                        {
+                            "Name": "PDF",
+                            "FileName": "Tests/UnderReview/Gliricidia/Gliricidia.apsimx"
+                        },
+                        {
+                            "Name": "PDF",
+                            "FileName": "Tests/Validation/Gliricidia/Gliricidia.apsimx",
+                            "ModelNameToDocument": "Gliricidia"
                         }
                     ]
                 },
@@ -289,6 +331,20 @@
                     ]
                 },
                 {
+                    "Name": "Soybean (under review)",
+                    "Documents": [
+                        {
+                            "Name": "PDF",
+                            "FileName": "Tests/UnderReview/Soybean/Soybean.apsimx"
+                        },
+                        {
+                            "Name": "PDF",
+                            "FileName": "Tests/UnderReview/Soybean/Soybean.apsimx",
+                            "ModelNameToDocument": "Soybean"
+                        }
+                    ]
+                },
+                {
                     "Name": "Sugarcane",
                     "Documents": [
                         {
@@ -300,6 +356,24 @@
                             "FileName": "Tests/Validation/Sugarcane/Sugarcane.apsimx",
                             "ModelNameToDocument": "Sugarcane"
                         }
+                    ]
+                },
+                {
+                    "Name": "Stock (under review)",
+                    "Documents": [
+                        {
+                            "Name": "Validation",
+                            "FileName": "Tests/UnderReview/Stock/Stock.apsimx"
+                        },
+                        {
+                            "Name": "PDF",
+                            "FileName": "Tests/UnderReview/Stock/Stock.apsimx",
+                            "ModelNameToDocument": "Stock"
+                        },
+                        {
+                            "Name": "GRAZPLAN animal biology model",
+                            "URL": "https://grazplan.csiro.au/wp-content/uploads/2007/08/TechPaperMay12.pdf"
+                        }						
                     ]
                 },
                 {
@@ -418,7 +492,7 @@
                     "Documents": [
                         {
                             "Name": "Science documentation",
-                            "URL": "http://apsimdev.apsim.info/CLEM/Content/Home.htm"
+                            "URL": "https://apsimdev.apsim.info/CLEM/Content/Home.htm"
                         },
                         {
                             "Name": "Cropping example",

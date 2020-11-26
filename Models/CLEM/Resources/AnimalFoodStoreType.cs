@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
 using Models.Core;
 using System.ComponentModel.DataAnnotations;
 using Models.Core.Attributes;
@@ -25,7 +25,6 @@ namespace Models.CLEM.Resources
         /// <summary>
         /// Unit type
         /// </summary>
-        [Description("Units (nominal)")]
         public string Units { get; private set; }
 
         /// <summary>
@@ -45,7 +44,7 @@ namespace Models.CLEM.Resources
         /// <summary>
         /// Current store nitrogen (%)
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public double CurrentStoreNitrogen { get; set; }
 
         /// <summary>
@@ -58,7 +57,7 @@ namespace Models.CLEM.Resources
         /// <summary>
         /// Amount currently available (kg dry)
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public double Amount { get { return amount; } set { return; } }
         private double amount { get { return roundedAmount; } set { roundedAmount = Math.Round(value, 9); } }
         private double roundedAmount;
@@ -159,10 +158,10 @@ namespace Models.CLEM.Resources
             request.Provided = amountRemoved;
 
             // send to market if needed
-            if (request.MarketTransactionMultiplier > 0 && equivalentMarketStore != null)
+            if (request.MarketTransactionMultiplier > 0 && EquivalentMarketStore != null)
             {
                 additionalDetails.Amount = amountRemoved * request.MarketTransactionMultiplier;
-                (equivalentMarketStore as AnimalFoodStoreType).Add(additionalDetails, request.ActivityModel, "Farm sales");
+                (EquivalentMarketStore as AnimalFoodStoreType).Add(additionalDetails, request.ActivityModel, "Farm sales");
             }
 
             ResourceTransaction details = new ResourceTransaction
@@ -204,7 +203,7 @@ namespace Models.CLEM.Resources
         /// <summary>
         /// Last transaction received
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public ResourceTransaction LastTransaction { get; set; }
 
         #endregion

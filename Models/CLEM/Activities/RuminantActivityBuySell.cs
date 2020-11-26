@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
 using Models.Core.Attributes;
 
 namespace Models.CLEM.Activities
@@ -30,7 +30,7 @@ namespace Models.CLEM.Activities
         /// Bank account to use
         /// </summary>
         [Description("Bank account to use")]
-        [Models.Core.Display(Type = DisplayType.CLEMResourceName, CLEMResourceNameResourceGroups = new Type[] { typeof(Finance) })]
+        [Models.Core.Display(Type = DisplayType.CLEMResource, CLEMResourceGroups = new Type[] { typeof(Finance) })]
         public string BankAccountName { get; set; }
 
         private FinanceType bankAccount = null;
@@ -62,7 +62,7 @@ namespace Models.CLEM.Activities
             }
 
             // get trucking settings
-            trucking = Apsim.Children(this, typeof(TruckingSettings)).FirstOrDefault() as TruckingSettings;
+            trucking = this.FindAllChildren<TruckingSettings>().FirstOrDefault() as TruckingSettings;
 
             // check if pricing is present
             if (bankAccount != null)
@@ -139,6 +139,7 @@ namespace Models.CLEM.Activities
                     saleValue += ind.BreedParams.ValueofIndividual(ind, PurchaseOrSalePricingStyleType.Sale);
                     saleWeight += ind.Weight;
                     ruminantHerd.RemoveRuminant(ind, this);
+                    head++;
                 }
             }
             else
@@ -197,7 +198,7 @@ namespace Models.CLEM.Activities
                     bankAccount.Remove(expenseRequest);
                 }
 
-                foreach (RuminantActivityFee item in Apsim.Children(this, typeof(RuminantActivityFee)))
+                foreach (RuminantActivityFee item in this.FindAllChildren<RuminantActivityFee>())
                 {
                     switch (item.PaymentStyle)
                     {
@@ -214,7 +215,7 @@ namespace Models.CLEM.Activities
                             expenseRequest.Required = saleValue * item.Amount;
                             break;
                         default:
-                            throw new Exception(String.Format("PaymentStyle ({0}) is not supported for ({1}) in ({2})", item.PaymentStyle, item.Name, this.Name));
+                            throw new Exception(String.Format("PaymentStyle [{0}] is not supported for [{1}] in [{2}]", item.PaymentStyle, item.Name, this.Name));
                     }
                     expenseRequest.Reason = item.Name;
                     // uses bank account specified in the RuminantActivityFee
@@ -259,7 +260,7 @@ namespace Models.CLEM.Activities
                     double value = 0;
                     if (newind.SaleFlag == HerdChangeReason.SirePurchase)
                     {
-                        value = newind.BreedParams.ValueofIndividual(newind, PurchaseOrSalePricingStyleType.Purchase,  RuminantFilterParameters.BreedingSire, "true");
+                        value = newind.BreedParams.ValueofIndividual(newind, PurchaseOrSalePricingStyleType.Purchase,  RuminantFilterParameters.IsSire, "true");
                     }
                     else
                     {
@@ -359,7 +360,7 @@ namespace Models.CLEM.Activities
                                 double value = 0;
                                 if (ind.SaleFlag == HerdChangeReason.SirePurchase)
                                 {
-                                    value = ind.BreedParams.ValueofIndividual(ind, PurchaseOrSalePricingStyleType.Purchase, RuminantFilterParameters.BreedingSire, "true");
+                                    value = ind.BreedParams.ValueofIndividual(ind, PurchaseOrSalePricingStyleType.Purchase, RuminantFilterParameters.IsSire, "true");
                                 }
                                 else
                                 {

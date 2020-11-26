@@ -16,7 +16,6 @@
     using System.IO;
     using System.Linq;
     using System.Threading;
-    using System.Xml.Serialization;
     using Utilities;
 
     /// <summary>
@@ -24,7 +23,7 @@
     /// Encapsulates a SOBOL parameter sensitivity analysis.
     /// </summary>
     [Serializable]
-    [ViewName("UserInterface.Views.DualGridView")]
+    [ViewName("UserInterface.Views.PropertyAndGridView")]
     [PresenterName("UserInterface.Presenters.PropertyAndTablePresenter")]
     [ValidParent(ParentType = typeof(Simulations))]
     [ValidParent(ParentType = typeof(Folder))]
@@ -39,12 +38,15 @@
         private int _numPaths = 1000;
 
         /// <summary>Parameter values coming back from R</summary>
+        [JsonIgnore]
         public DataTable ParameterValues { get; set; }
 
         /// <summary>X1 values coming back from R</summary>
+        [JsonIgnore]
         public DataTable X1 { get; set; }
 
         /// <summary>X2 values coming back from R</summary>
+        [JsonIgnore]
         public DataTable X2 { get; set; }
 
         /// <summary>The number of paths to run</summary>
@@ -54,6 +56,17 @@
             get { return _numPaths; }
             set { _numPaths = value; ParametersHaveChanged = true; }
         }
+
+        /// <summary>Name of the table containing predicted data.</summary>
+        [Description("Table name")]
+        [Tooltip("Name of the table containing predicted data")]
+        [Display(Type = DisplayType.TableName)]
+        public string TableName { get; set; }
+
+        /// <summary>The name of the variable to use to aggregiate each Morris analysis.</summary>
+        [Description("Name of variable in table for aggregation")]
+        [Display(Type = DisplayType.FieldName)]
+        public string AggregationVariableName { get; set; }
 
         /// <summary>
         /// List of parameters
@@ -83,7 +96,7 @@
         /// <summary>
         /// Gets or sets the table of values.
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public List<DataTable> Tables
         {
             get
@@ -148,7 +161,7 @@
         /// <summary>Gets a list of simulation descriptions.</summary>
         public List<SimulationDescription> GenerateSimulationDescriptions()
         {
-            var baseSimulation = Apsim.Child(this, typeof(Simulation)) as Simulation;
+            var baseSimulation = this.FindChild<Simulation>();
 
             // Calculate all combinations.
             CalculateFactors();
@@ -189,8 +202,8 @@
             r.InstallPackage("sensitivity");
             if (ParametersHaveChanged)
             {
-                allCombinations.Clear();
-                ParameterValues.Clear();
+                allCombinations?.Clear();
+                ParameterValues?.Clear();
             }
         }
 
@@ -201,7 +214,7 @@
         {
             if (allCombinations.Count == 0)
             {
-                if (ParameterValues.Rows.Count == 0)
+                if (ParameterValues == null || ParameterValues.Rows.Count == 0)
                 {
                     // Write a script to get random numbers from R.
                     string script = string.Format
@@ -277,36 +290,49 @@
         {
             get
             {
-                return Apsim.Child(this, typeof(Simulation)) as Simulation;
+                return this.FindChild<Simulation>();
             }
         }
 
         /// <summary>Main run method for performing our calculations and storing data.</summary>
         public void Run()
         {
-            DataTable predictedData = dataStore.Reader.GetData("Report", filter: "SimulationName LIKE '" + Name + "%'", orderBy: "SimulationID");
+            if (dataStore?.Writer != null && !dataStore.Writer.TablesModified.Contains(TableName))
+                return;
+
+            DataTable predictedData = dataStore.Reader.GetData(TableName, filter: "SimulationName LIKE '" + Name + "%'", orderBy: "SimulationID");
             if (predictedData != null)
             {
                 IndexedDataTable variableValues = new IndexedDataTable(null);
 
-                // Determine how many years we have per simulation
+                // Determine how many aggregation values we have per simulation
                 DataView view = new DataView(predictedData);
                 view.RowFilter = "SimulationName='" + Name + "Simulation1'";
-                var Years = DataTableUtilities.GetColumnAsIntegers(view, "Clock.Today.Year");
+                //var aggregationValues = DataTableUtilities.GetColumnAsIntegers(view, AggregationVariableName);
+                object[] aggregationValues = view.ToTable()
+                                                 .AsEnumerable()
+                                                 .Select(r => r[AggregationVariableName])
+                                                 .Select(r => r == DBNull.Value ? null : r)
+                                                 .ToArray();
+                if (aggregationValues.FirstOrDefault()?.GetType() == typeof(DateTime))
+                    aggregationValues = aggregationValues.Select(d => ((DateTime)d).ToString("yyyy-MM-dd")).ToArray();
 
                 // Create a results table.
                 IndexedDataTable results;
-                if (Years.Count() > 1)
-                    results = new IndexedDataTable(new string[] { "Year" });
+                if (aggregationValues.Count() > 1)
+                    results = new IndexedDataTable(new string[] { AggregationVariableName });
                 else
                     results = new IndexedDataTable(null);
 
 
-                // Loop through all years and perform analysis on each.
+                // Loop through all aggregation values and perform analysis on each.
                 List<string> errorsFromR = new List<string>();
-                foreach (double year in Years)
+                foreach (object value in aggregationValues)
                 {
-                    view.RowFilter = "Clock.Today.Year=" + year;
+                    if (value.GetType() == typeof(string))
+                        view.RowFilter = $"{AggregationVariableName}='{value}'";
+                    else
+                        view.RowFilter = $"{AggregationVariableName}={value}";
 
                     foreach (DataColumn predictedColumn in predictedData.Columns)
                     {
@@ -368,32 +394,32 @@
                         sobolx1FileName.Replace("\\", "/"),
                         sobolVariableValuesFileName.Replace("\\", "/"));
 
-                    DataTable resultsForYear = null;
+                    DataTable resultsForValue = null;
                     try
                     {
-                        resultsForYear = RunR(script);
+                        resultsForValue = RunR(script);
 
                         // Put output from R into results table.
-                        if (Years.Count() > 1)
-                            results.SetIndex(new object[] { year.ToString() });
+                        if (aggregationValues.Count() > 1)
+                            results.SetIndex(new object[] { value.ToString() });
 
-                        foreach (DataColumn col in resultsForYear.Columns)
+                        foreach (DataColumn col in resultsForValue.Columns)
                         {
                             if (col.DataType == typeof(string))
-                                results.SetValues(col.ColumnName, DataTableUtilities.GetColumnAsStrings(resultsForYear, col.ColumnName));
+                                results.SetValues(col.ColumnName, DataTableUtilities.GetColumnAsStrings(resultsForValue, col.ColumnName));
                             else
-                                results.SetValues(col.ColumnName, DataTableUtilities.GetColumnAsDoubles(resultsForYear, col.ColumnName));
+                                results.SetValues(col.ColumnName, DataTableUtilities.GetColumnAsDoubles(resultsForValue, col.ColumnName));
                         }
                     }
                     catch (Exception err)
                     {
                         string msg = err.Message;
 
-                        if (Years.Count() > 1)
-                            msg = "Year " + year + ": " +  msg;
+                        if (aggregationValues.Count() > 1)
+                            msg = $"{AggregationVariableName} {value}: {msg}";
                         errorsFromR.Add(msg);
                     }
-                 }
+                }
                 var resultsRawTable = results.ToTable();
                 resultsRawTable.TableName = Name + "Statistics";
                 dataStore.Writer.WriteTable(resultsRawTable);

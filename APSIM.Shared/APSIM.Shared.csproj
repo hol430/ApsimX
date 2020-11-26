@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>APSIM.Shared</RootNamespace>
     <AssemblyName>APSIM.Shared</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -104,6 +104,9 @@
     <Reference Include="FirebirdSql.Data.FirebirdClient">
       <HintPath>..\packages\FirebirdSql.Data.FirebirdClient.6.1.0\lib\net452\FirebirdSql.Data.FirebirdClient.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
@@ -125,9 +128,10 @@
     <Compile Include="APSoil\Soil.cs" />
     <Compile Include="APSoil\SoilCrop.cs" />
     <Compile Include="APSoil\SoilOrganicMatter.cs" />
-    <Compile Include="APSoil\SoilUtilities.cs" />
+    <Compile Include="APSoil\APSoilUtilities.cs" />
     <Compile Include="APSoil\SoilWater.cs" />
     <Compile Include="APSoil\Water.cs" />
+    <Compile Include="Extensions\CollectionExtensions.cs" />
     <Compile Include="JobRunning\AllCompleteArguments.cs" />
     <Compile Include="JobRunning\IRunnable.cs" />
     <Compile Include="JobRunning\IJobManager.cs" />
@@ -159,6 +163,7 @@
     <Compile Include="Utilities\ProcessUtilities.cs" />
     <Compile Include="Utilities\ReflectionUtilities.cs" />
     <Compile Include="Utilities\SocketServer.cs" />
+    <Compile Include="Utilities\SoilUtilities.cs" />
     <Compile Include="Utilities\SQLite.cs" />
     <Compile Include="Utilities\StreamReaderRandomAccess.cs" />
     <Compile Include="Utilities\StringUtilities.cs" />

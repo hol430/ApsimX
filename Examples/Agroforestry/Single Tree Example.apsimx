@@ -1,7 +1,8 @@
 {
   "$type": "Models.Core.Simulations, Models",
-  "ExplorerWidth": 287,
-  "Version": 73,
+  "ExplorerWidth": 281,
+  "Version": 119,
+  "ApsimVersion": "0.0.0.0",
   "Name": "Simulations",
   "Children": [
     {
@@ -16,6 +17,8 @@
     },
     {
       "$type": "Models.Core.Simulation, Models",
+      "IsRunning": false,
+      "Descriptors": null,
       "Name": "Single Tree Example",
       "Children": [
         {
@@ -40,7 +43,7 @@
           "ReadOnly": false
         },
         {
-          "$type": "Models.Weather, Models",
+          "$type": "Models.Climate.Weather, Models",
           "FileName": "%root%\\Examples\\WeatherFiles\\Dalby.met",
           "ExcelWorkSheetName": null,
           "Name": "Weather",
@@ -242,8 +245,13 @@
                 0.1,
                 0.1
               ],
-              "CanopyWidths": [],
-              "TreeLeafAreas": null,
+              "ShadeModifiers": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
               "Name": "TreeProxy",
               "Children": [],
               "IncludeInDocumentation": true,
@@ -252,7 +260,7 @@
             },
             {
               "$type": "Models.Manager, Models",
-              "Code": "using System;\r\nusing System.Collections.Generic;\r\nusing Models.Core;\r\nusing Models.Agroforestry;\r\nusing Models.PMF;\r\nusing Models.Soils;\r\nusing Models.Utilities;\r\nusing Models.Zones;\r\nusing APSIM.Shared.Utilities;\r\n\r\nnamespace Models\r\n{\r\n    [Serializable]\r\n    public class Script : Model\r\n    {\r\n        [Link] Clock Clock;\r\n        [Link] Summary Summary;\r\n        Accumulator accumulatedRain;\r\n        \r\n        [Description(\"Start of sowing window (d-mmm)\")]\r\n        public string StartDate { get; set; }\r\n        [Description(\"End of sowing window (d-mmm)\")]\r\n        public string EndDate { get; set; }\r\n        [Description(\"Minimum extractable soil water for sowing (mm)\")]\r\n        public double MinESW { get; set; }\r\n        [Description(\"Name of Zone to use for minimum ESW condition\")]\r\n        public string ESWZoneName { get; set; }\r\n        [Description(\"Accumulated rainfall required for sowing (mm)\")]\r\n        public double MinRain { get; set; }\r\n        [Description(\"Duration of rainfall accumulation (d)\")]\r\n        public int RainDays { get; set; }\r\n        [Description(\"Cultivar to be sown\")]\r\n        public string CultivarName { get; set; }\r\n        [Description(\"Sowing depth (mm)\")]\r\n        public double SowingDepth { get; set; }\r\n        [Description(\"Row spacing (mm)\")]\r\n        public double RowSpacing { get; set; }\r\n        [Description(\"Plant population (/m2)\")]\r\n        public double Population { get; set; }\r\n        [Description(\"Amount of fertiliser to be applied (kg/ha)\")]\r\n        public double Amount { get; set; }\r\n        [Description(\"Crop to be fertilised\")]\r\n        public string CropName { get; set; }\r\n        \r\n        private Zone ESWZone;\r\n        private List<IModel> Zones;\r\n        private Plant Wheat;\r\n        private Soil Soil;\r\n        \r\n        [EventSubscribe(\"Commencing\")]\r\n        private void OnSimulationCommencing(object sender, EventArgs e)\r\n        {\r\n            Zones = Apsim.FindAll(this, typeof(CircularZone));\r\n            foreach (Model m in Zones)\r\n            {\r\n                if (m.Name == ESWZoneName)\r\n                {\r\n                    ESWZone = m as Zone;\r\n                    break;\r\n                }\r\n            }\r\n            accumulatedRain = new Accumulator(this, \"[Weather].Rain\", RainDays);\r\n        }\r\n        \r\n        [EventSubscribe(\"DoManagement\")]\r\n        private void OnDoManagement(object sender, EventArgs e)\r\n        {        \r\n            accumulatedRain.Update();\r\n            \r\n            Soil ESWSoil = Apsim.Find(ESWZone, typeof(Soil)) as Soil;\r\n            \r\n            foreach (Zone z in Zones)\r\n            {\r\n                Wheat = Apsim.Find(z, typeof(Plant)) as Plant;    \r\n                Soil = Apsim.Find(z, typeof(Soil)) as Soil;\r\n                        \r\n                if (Wheat != null && DateUtilities.WithinDates(StartDate, Clock.Today, EndDate) &&\r\n                    !Wheat.IsAlive &&\r\n                    MathUtilities.Sum(ESWSoil.SoilWater.ESW) > MinESW &&\r\n                    accumulatedRain.Sum > MinRain)\r\n                {\r\n                    Wheat.Sow(population: Population, cultivar: CultivarName, depth: SowingDepth, rowSpacing: RowSpacing);\r\n                    Fertiliser Fertiliser = Apsim.Find(Wheat.Parent, typeof(Fertiliser)) as Fertiliser;\r\n                    Fertiliser.Apply(Amount: Amount, Type: Fertiliser.Types.NO3N);\r\n                }\r\n\r\n                if (Wheat != null && Wheat.IsReadyForHarvesting)\r\n                {\r\n                    Wheat.Harvest();\r\n                    Wheat.EndCrop();    \r\n                }\r\n\r\n            }\r\n        }\r\n    }\r\n}\r\n",
+              "Code": "using System.Linq;\r\nusing APSIM.Shared.Utilities;\r\nusing Models.Zones;\r\nusing Models.Utilities;\r\nusing Models.Soils;\r\nusing Models.PMF;\r\nusing Models.Agroforestry;\r\nusing Models.Core;\r\nusing System.Collections.Generic;\r\nusing System;\r\nusing Models.Climate;\r\nusing Models.Interfaces;\r\n\r\nnamespace Models\r\n{\r\n    [Serializable]\r\n    public class Script : Model\r\n    {\r\n        [Link] Clock Clock;\r\n        [Link] Summary Summary;\r\n        Accumulator accumulatedRain;\r\n        \r\n        [Description(\"Start of sowing window (d-mmm)\")]\r\n        public string StartDate { get; set; }\r\n        [Description(\"End of sowing window (d-mmm)\")]\r\n        public string EndDate { get; set; }\r\n        [Description(\"Minimum extractable soil water for sowing (mm)\")]\r\n        public double MinESW { get; set; }\r\n        [Description(\"Name of Zone to use for minimum ESW condition\")]\r\n        public string ESWZoneName { get; set; }\r\n        [Description(\"Accumulated rainfall required for sowing (mm)\")]\r\n        public double MinRain { get; set; }\r\n        [Description(\"Duration of rainfall accumulation (d)\")]\r\n        public int RainDays { get; set; }\r\n        [Description(\"Cultivar to be sown\")]\r\n        public string CultivarName { get; set; }\r\n        [Description(\"Sowing depth (mm)\")]\r\n        public double SowingDepth { get; set; }\r\n        [Description(\"Row spacing (mm)\")]\r\n        public double RowSpacing { get; set; }\r\n        [Description(\"Plant population (/m2)\")]\r\n        public double Population { get; set; }\r\n        [Description(\"Amount of fertiliser to be applied (kg/ha)\")]\r\n        public double Amount { get; set; }\r\n        [Description(\"Crop to be fertilised\")]\r\n        public string CropName { get; set; }\r\n        \r\n        private Zone ESWZone;\r\n        private List<IModel> Zones;\r\n        private Plant Wheat;\r\n        private Soil Soil;\r\n        \r\n        [EventSubscribe(\"StartOfSimulation\")]\r\n        private void OnSimulationCommencing(object sender, EventArgs e)\r\n        {\r\n            Zones = this.FindAllInScope<CircularZone>().OfType<IModel>().ToList();\r\n            foreach (Model m in Zones)\r\n            {\r\n                if (m.Name == ESWZoneName)\r\n                {\r\n                    ESWZone = m as Zone;\r\n                    break;\r\n                }\r\n            }\r\n            accumulatedRain = new Accumulator(this, \"[Weather].Rain\", RainDays);\r\n        }\r\n        \r\n        [EventSubscribe(\"DoManagement\")]\r\n        private void OnDoManagement(object sender, EventArgs e)\r\n        {        \r\n            accumulatedRain.Update();\r\n            \r\n            var ESWSoil = ESWZone.FindInScope<ISoilWater>();\r\n            \r\n            foreach (Zone z in Zones)\r\n            {\r\n                Wheat = z.FindInScope<Plant>() as Plant;    \r\n                Soil = z.FindInScope<Soil>() as Soil;\r\n                        \r\n                if (Wheat != null && DateUtilities.WithinDates(StartDate, Clock.Today, EndDate) &&\r\n                    !Wheat.IsAlive &&\r\n                    MathUtilities.Sum(ESWSoil.ESW) > MinESW &&\r\n                    accumulatedRain.Sum > MinRain)\r\n                {\r\n                    Wheat.Sow(population: Population, cultivar: CultivarName, depth: SowingDepth, rowSpacing: RowSpacing);\r\n                    Fertiliser Fertiliser = Wheat.Parent.FindInScope<Fertiliser>() as Fertiliser;\r\n                    Fertiliser.Apply(Amount: Amount, Type: Fertiliser.Types.NO3N);\r\n                }\r\n\r\n                if (Wheat != null && Wheat.IsReadyForHarvesting)\r\n                {\r\n                    Wheat.Harvest();\r\n                    Wheat.EndCrop();    \r\n                }\r\n\r\n            }\r\n        }\r\n    }\r\n}\r\n",
               "Parameters": [
                 {
                   "Key": "StartDate",
@@ -333,6 +341,7 @@
                   "d_interception": 0.0,
                   "soil_albedo": 0.3,
                   "SoilHeatFluxFraction": 0.4,
+                  "MinimumHeightDiffForNewLayer": 0.0,
                   "NightInterceptionFraction": 0.5,
                   "ReferenceHeight": 2.0,
                   "Name": "MicroClimate",
@@ -342,17 +351,15 @@
                   "ReadOnly": false
                 },
                 {
-                  "$type": "Models.Report.Report, Models",
+                  "$type": "Models.Report, Models",
                   "VariableNames": [
                     "[Clock].Today",
-                    "[Wheat].Zadok.Stage",
                     "[Wheat].Phenology.CurrentStageName",
                     "[Wheat].AboveGround.Wt",
                     "[Wheat].AboveGround.N",
-                    "[Wheat].Grain.Yield",
                     "[Wheat].Grain.Protein",
                     "[Wheat].Grain.Size",
-                    "[Wheat].Grain.GrainNo",
+                    "[Wheat].Grain.Number",
                     "[Wheat].Grain.Wt",
                     "[Wheat].Grain.N",
                     "[Wheat].Total.Wt",
@@ -362,6 +369,7 @@
                   "EventNames": [
                     "[Wheat].Harvesting"
                   ],
+                  "GroupByVariableName": null,
                   "Name": "Report",
                   "Children": [],
                   "IncludeInDocumentation": true,
@@ -369,25 +377,21 @@
                   "ReadOnly": false
                 },
                 {
-                  "$type": "Models.Report.Report, Models",
+                  "$type": "Models.Report, Models",
                   "VariableNames": [
                     "[Clock].Today",
                     "sum([Soil].SoilWater.SWmm) as TotalSWmm",
-                    "sum([Soil].SoilNitrogen.NO3.kgha) as TotalNO3N",
-                    "sum([Soil].SoilNitrogen.NH4.kgha) as TotalNH4N",
+                    "sum([Soil].Nutrient.NO3.kgha) as TotalNO3N",
+                    "sum([Soil].Nutrient.NH4.kgha) as TotalNH4N",
                     "[Wheat].AboveGround.Wt",
-                    "[Wheat].EP",
                     "[LocalMicroClimate].Wind",
-                    "[MicroClimate].ga",
-                    "[MicroClimate].gc",
                     "[Wheat].Leaf.LAI",
-                    "[Wheat].Leaf.CoverGreen",
-                    "[Wheat].height",
-                    "[Wheat].PotentialEP"
+                    "[Wheat].Leaf.CoverGreen"
                   ],
                   "EventNames": [
                     "[Clock].DoReport"
                   ],
+                  "GroupByVariableName": null,
                   "Name": "DailyReport",
                   "Children": [],
                   "IncludeInDocumentation": true,
@@ -419,6 +423,7 @@
                   "Latitude": -27.581836,
                   "Longitude": 151.320206,
                   "LocationAccuracy": " +/- 20m",
+                  "YearOfSampling": null,
                   "DataSource": "CSIRO Sustainable Ecosystems, Toowoomba; Characteriesd as part of the GRDC funded project\"Doing it better, doing it smarter, managing soil water in Australian agriculture' 2011",
                   "Comments": "OC, CLL for all crops estimated-based on Bongeen Mywybilla Soil No1",
                   "Name": "Soil",
@@ -444,6 +449,10 @@
                         300.0
                       ],
                       "ParticleSizeClay": null,
+                      "ParticleSizeSand": null,
+                      "ParticleSizeSilt": null,
+                      "Rocks": null,
+                      "Texture": null,
                       "BD": [
                         1.01056473311131,
                         1.07145631083388,
@@ -504,6 +513,11 @@
                       "DULMetadata": null,
                       "SATMetadata": null,
                       "KSMetadata": null,
+                      "RocksMetadata": null,
+                      "TextureMetadata": null,
+                      "ParticleSizeSandMetadata": null,
+                      "ParticleSizeSiltMetadata": null,
+                      "ParticleSizeClayMetadata": null,
                       "Name": "Physical",
                       "Children": [
                         {
@@ -550,7 +564,7 @@
                       "ReadOnly": false
                     },
                     {
-                      "$type": "Models.Soils.SoilWater, Models",
+                      "$type": "Models.WaterModel.WaterBalance, Models",
                       "SummerDate": "1-Nov",
                       "SummerU": 5.0,
                       "SummerCona": 5.0,
@@ -563,10 +577,9 @@
                       "CN2Bare": 73.0,
                       "CNRed": 20.0,
                       "CNCov": 0.8,
-                      "slope": "NaN",
-                      "discharge_width": "NaN",
-                      "catchment_area": "NaN",
-                      "max_pond": 0.0,
+                      "Slope": "NaN",
+                      "DischargeWidth": "NaN",
+                      "CatchmentArea": "NaN",
                       "Thickness": [
                         150.0,
                         150.0,
@@ -575,15 +588,6 @@
                         300.0,
                         300.0,
                         300.0
-                      ],
-                      "Depth": [
-                        "0-15",
-                        "15-30",
-                        "30-60",
-                        "60-90",
-                        "90-120",
-                        "120-150",
-                        "150-180"
                       ],
                       "SWCON": [
                         0.3,
@@ -595,90 +599,8 @@
                         0.3
                       ],
                       "KLAT": null,
-                      "PrecipitationInterception": 0.0,
+                      "ResourceName": "WaterBalance",
                       "Name": "SoilWater",
-                      "Children": [],
-                      "IncludeInDocumentation": true,
-                      "Enabled": true,
-                      "ReadOnly": false
-                    },
-                    {
-                      "$type": "Models.Soils.SoilNitrogen, Models",
-                      "fom_types": [
-                        "default",
-                        "manure",
-                        "mucuna",
-                        "lablab",
-                        "shemp",
-                        "stable"
-                      ],
-                      "fract_carb": [
-                        0.2,
-                        0.3,
-                        0.54,
-                        0.57,
-                        0.45,
-                        0.0
-                      ],
-                      "fract_cell": [
-                        0.7,
-                        0.3,
-                        0.37,
-                        0.37,
-                        0.47,
-                        0.1
-                      ],
-                      "fract_lign": [
-                        0.1,
-                        0.4,
-                        0.09,
-                        0.06,
-                        0.08,
-                        0.9
-                      ],
-                      "Name": "SoilNitrogen",
-                      "Children": [
-                        {
-                          "$type": "Models.Soils.SoilNitrogenNO3, Models",
-                          "Name": "NO3",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenNH4, Models",
-                          "Name": "NH4",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenUrea, Models",
-                          "Name": "Urea",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenPlantAvailableNO3, Models",
-                          "Name": "PlantAvailableNO3",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenPlantAvailableNH4, Models",
-                          "Name": "PlantAvailableNH4",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        }
-                      ],
                       "IncludeInDocumentation": true,
                       "Enabled": true,
                       "ReadOnly": false
@@ -749,6 +671,8 @@
                         36.587130828674873,
                         22.1912165985086
                       ],
+                      "CarbonMetadata": null,
+                      "FOMMetadata": null,
                       "Name": "Organic",
                       "Children": [],
                       "IncludeInDocumentation": true,
@@ -805,6 +729,10 @@
                       "CL": null,
                       "EC": null,
                       "ESP": null,
+                      "ECMetadata": null,
+                      "CLMetadata": null,
+                      "ESPMetadata": null,
+                      "PHMetadata": null,
                       "Name": "Chemical",
                       "Children": [],
                       "IncludeInDocumentation": true,
@@ -843,8 +771,8 @@
                         300.0,
                         300.0
                       ],
-                      "NO3N": null,
-                      "NH4N": null,
+                      "NO3": null,
+                      "NH4": null,
                       "SW": [
                         "NaN",
                         "NaN",
@@ -910,8 +838,16 @@
                     },
                     {
                       "$type": "Models.Soils.CERESSoilTemperature, Models",
-                      "Name": "CERESSoilTemperature",
+                      "Name": "Temperature",
                       "Children": [],
+                      "IncludeInDocumentation": true,
+                      "Enabled": true,
+                      "ReadOnly": false
+                    },
+                    {
+                      "$type": "Models.Soils.Nutrients.Nutrient, Models",
+                      "ResourceName": "Nutrient",
+                      "Name": "Nutrient",
                       "IncludeInDocumentation": true,
                       "Enabled": true,
                       "ReadOnly": false
@@ -923,14 +859,12 @@
                 },
                 {
                   "$type": "Models.Surface.SurfaceOrganicMatter, Models",
-                  "Canopies": [],
                   "InitialResidueName": "wheat_stubble",
                   "InitialResidueType": "wheat",
                   "InitialResidueMass": 500.0,
                   "InitialStandingFraction": 0.0,
                   "InitialCPR": 0.0,
                   "InitialCNR": 100.0,
-                  "FractionFaecesAdded": 0.5,
                   "ResourceName": "SurfaceOrganicMatter",
                   "Name": "SurfaceOrganicMatter",
                   "IncludeInDocumentation": true,
@@ -939,9 +873,6 @@
                 },
                 {
                   "$type": "Models.PMF.Plant, Models",
-                  "CropType": "Wheat",
-                  "IsEnding": false,
-                  "DaysAfterEnding": 0,
                   "ResourceName": "Wheat",
                   "Name": "Wheat",
                   "IncludeInDocumentation": true,
@@ -971,17 +902,15 @@
                   "ReadOnly": false
                 },
                 {
-                  "$type": "Models.Report.Report, Models",
+                  "$type": "Models.Report, Models",
                   "VariableNames": [
                     "[Clock].Today",
-                    "[Wheat].Zadok.Stage",
                     "[Wheat].Phenology.CurrentStageName",
                     "[Wheat].AboveGround.Wt",
                     "[Wheat].AboveGround.N",
-                    "[Wheat].Grain.Yield",
                     "[Wheat].Grain.Protein",
                     "[Wheat].Grain.Size",
-                    "[Wheat].Grain.GrainNo",
+                    "[Wheat].Grain.Number",
                     "[Wheat].Grain.Wt",
                     "[Wheat].Grain.N",
                     "[Wheat].Total.Wt",
@@ -991,6 +920,7 @@
                   "EventNames": [
                     "[Wheat].Harvesting"
                   ],
+                  "GroupByVariableName": null,
                   "Name": "Report",
                   "Children": [],
                   "IncludeInDocumentation": true,
@@ -998,25 +928,21 @@
                   "ReadOnly": false
                 },
                 {
-                  "$type": "Models.Report.Report, Models",
+                  "$type": "Models.Report, Models",
                   "VariableNames": [
                     "[Clock].Today",
                     "sum([Soil].SoilWater.SWmm) as TotalSWmm",
-                    "sum([Soil].SoilNitrogen.NO3.kgha) as TotalNO3N",
-                    "sum([Soil].SoilNitrogen.NH4.kgha) as TotalNH4N",
+                    "sum([Soil].Nutrient.NO3.kgha) as TotalNO3N",
+                    "sum([Soil].Nutrient.NH4.kgha) as TotalNH4N",
                     "[Wheat].AboveGround.Wt",
-                    "[Wheat].EP",
                     "[LocalMicroClimate].Wind",
-                    "[MicroClimate].ga",
-                    "[MicroClimate].gc",
                     "[Wheat].Leaf.LAI",
-                    "[Wheat].Leaf.CoverGreen",
-                    "[Wheat].height",
-                    "[Wheat].PotentialEP"
+                    "[Wheat].Leaf.CoverGreen"
                   ],
                   "EventNames": [
                     "[Clock].DoReport"
                   ],
+                  "GroupByVariableName": null,
                   "Name": "DailyReport",
                   "Children": [],
                   "IncludeInDocumentation": true,
@@ -1048,6 +974,7 @@
                   "Latitude": -27.581836,
                   "Longitude": 151.320206,
                   "LocationAccuracy": " +/- 20m",
+                  "YearOfSampling": null,
                   "DataSource": "CSIRO Sustainable Ecosystems, Toowoomba; Characteriesd as part of the GRDC funded project\"Doing it better, doing it smarter, managing soil water in Australian agriculture' 2011",
                   "Comments": "OC, CLL for all crops estimated-based on Bongeen Mywybilla Soil No1",
                   "Name": "Soil",
@@ -1073,6 +1000,10 @@
                         300.0
                       ],
                       "ParticleSizeClay": null,
+                      "ParticleSizeSand": null,
+                      "ParticleSizeSilt": null,
+                      "Rocks": null,
+                      "Texture": null,
                       "BD": [
                         1.01056473311131,
                         1.07145631083388,
@@ -1133,6 +1064,11 @@
                       "DULMetadata": null,
                       "SATMetadata": null,
                       "KSMetadata": null,
+                      "RocksMetadata": null,
+                      "TextureMetadata": null,
+                      "ParticleSizeSandMetadata": null,
+                      "ParticleSizeSiltMetadata": null,
+                      "ParticleSizeClayMetadata": null,
                       "Name": "Physical",
                       "Children": [
                         {
@@ -1179,7 +1115,7 @@
                       "ReadOnly": false
                     },
                     {
-                      "$type": "Models.Soils.SoilWater, Models",
+                      "$type": "Models.WaterModel.WaterBalance, Models",
                       "SummerDate": "1-Nov",
                       "SummerU": 5.0,
                       "SummerCona": 5.0,
@@ -1192,10 +1128,9 @@
                       "CN2Bare": 73.0,
                       "CNRed": 20.0,
                       "CNCov": 0.8,
-                      "slope": "NaN",
-                      "discharge_width": "NaN",
-                      "catchment_area": "NaN",
-                      "max_pond": 0.0,
+                      "Slope": "NaN",
+                      "DischargeWidth": "NaN",
+                      "CatchmentArea": "NaN",
                       "Thickness": [
                         150.0,
                         150.0,
@@ -1204,15 +1139,6 @@
                         300.0,
                         300.0,
                         300.0
-                      ],
-                      "Depth": [
-                        "0-15",
-                        "15-30",
-                        "30-60",
-                        "60-90",
-                        "90-120",
-                        "120-150",
-                        "150-180"
                       ],
                       "SWCON": [
                         0.3,
@@ -1224,90 +1150,8 @@
                         0.3
                       ],
                       "KLAT": null,
-                      "PrecipitationInterception": 0.0,
+                      "ResourceName": "WaterBalance",
                       "Name": "SoilWater",
-                      "Children": [],
-                      "IncludeInDocumentation": true,
-                      "Enabled": true,
-                      "ReadOnly": false
-                    },
-                    {
-                      "$type": "Models.Soils.SoilNitrogen, Models",
-                      "fom_types": [
-                        "default",
-                        "manure",
-                        "mucuna",
-                        "lablab",
-                        "shemp",
-                        "stable"
-                      ],
-                      "fract_carb": [
-                        0.2,
-                        0.3,
-                        0.54,
-                        0.57,
-                        0.45,
-                        0.0
-                      ],
-                      "fract_cell": [
-                        0.7,
-                        0.3,
-                        0.37,
-                        0.37,
-                        0.47,
-                        0.1
-                      ],
-                      "fract_lign": [
-                        0.1,
-                        0.4,
-                        0.09,
-                        0.06,
-                        0.08,
-                        0.9
-                      ],
-                      "Name": "SoilNitrogen",
-                      "Children": [
-                        {
-                          "$type": "Models.Soils.SoilNitrogenNO3, Models",
-                          "Name": "NO3",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenNH4, Models",
-                          "Name": "NH4",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenUrea, Models",
-                          "Name": "Urea",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenPlantAvailableNO3, Models",
-                          "Name": "PlantAvailableNO3",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenPlantAvailableNH4, Models",
-                          "Name": "PlantAvailableNH4",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        }
-                      ],
                       "IncludeInDocumentation": true,
                       "Enabled": true,
                       "ReadOnly": false
@@ -1378,6 +1222,8 @@
                         36.587130828674873,
                         22.1912165985086
                       ],
+                      "CarbonMetadata": null,
+                      "FOMMetadata": null,
                       "Name": "Organic",
                       "Children": [],
                       "IncludeInDocumentation": true,
@@ -1434,6 +1280,10 @@
                       "CL": null,
                       "EC": null,
                       "ESP": null,
+                      "ECMetadata": null,
+                      "CLMetadata": null,
+                      "ESPMetadata": null,
+                      "PHMetadata": null,
                       "Name": "Chemical",
                       "Children": [],
                       "IncludeInDocumentation": true,
@@ -1472,8 +1322,8 @@
                         300.0,
                         300.0
                       ],
-                      "NO3N": null,
-                      "NH4N": null,
+                      "NO3": null,
+                      "NH4": null,
                       "SW": [
                         "NaN",
                         "NaN",
@@ -1539,8 +1389,16 @@
                     },
                     {
                       "$type": "Models.Soils.CERESSoilTemperature, Models",
-                      "Name": "CERESSoilTemperature",
+                      "Name": "Temperature",
                       "Children": [],
+                      "IncludeInDocumentation": true,
+                      "Enabled": true,
+                      "ReadOnly": false
+                    },
+                    {
+                      "$type": "Models.Soils.Nutrients.Nutrient, Models",
+                      "ResourceName": "Nutrient",
+                      "Name": "Nutrient",
                       "IncludeInDocumentation": true,
                       "Enabled": true,
                       "ReadOnly": false
@@ -1552,14 +1410,12 @@
                 },
                 {
                   "$type": "Models.Surface.SurfaceOrganicMatter, Models",
-                  "Canopies": [],
                   "InitialResidueName": "wheat_stubble",
                   "InitialResidueType": "wheat",
                   "InitialResidueMass": 500.0,
                   "InitialStandingFraction": 0.0,
                   "InitialCPR": 0.0,
                   "InitialCNR": 100.0,
-                  "FractionFaecesAdded": 0.5,
                   "ResourceName": "SurfaceOrganicMatter",
                   "Name": "SurfaceOrganicMatter",
                   "IncludeInDocumentation": true,
@@ -1568,9 +1424,6 @@
                 },
                 {
                   "$type": "Models.PMF.Plant, Models",
-                  "CropType": "Wheat",
-                  "IsEnding": false,
-                  "DaysAfterEnding": 0,
                   "ResourceName": "Wheat",
                   "Name": "Wheat",
                   "IncludeInDocumentation": true,
@@ -1585,6 +1438,7 @@
                   "d_interception": 0.0,
                   "soil_albedo": 0.3,
                   "SoilHeatFluxFraction": 0.4,
+                  "MinimumHeightDiffForNewLayer": 0.0,
                   "NightInterceptionFraction": 0.5,
                   "ReferenceHeight": 2.0,
                   "Name": "MicroClimate",
@@ -1616,17 +1470,15 @@
                   "ReadOnly": false
                 },
                 {
-                  "$type": "Models.Report.Report, Models",
+                  "$type": "Models.Report, Models",
                   "VariableNames": [
                     "[Clock].Today",
-                    "[Wheat].Zadok.Stage",
                     "[Wheat].Phenology.CurrentStageName",
                     "[Wheat].AboveGround.Wt",
                     "[Wheat].AboveGround.N",
-                    "[Wheat].Grain.Yield",
                     "[Wheat].Grain.Protein",
                     "[Wheat].Grain.Size",
-                    "[Wheat].Grain.GrainNo",
+                    "[Wheat].Grain.Number",
                     "[Wheat].Grain.Wt",
                     "[Wheat].Grain.N",
                     "[Wheat].Total.Wt",
@@ -1636,6 +1488,7 @@
                   "EventNames": [
                     "[Wheat].Harvesting"
                   ],
+                  "GroupByVariableName": null,
                   "Name": "Report",
                   "Children": [],
                   "IncludeInDocumentation": true,
@@ -1643,25 +1496,21 @@
                   "ReadOnly": false
                 },
                 {
-                  "$type": "Models.Report.Report, Models",
+                  "$type": "Models.Report, Models",
                   "VariableNames": [
                     "[Clock].Today",
                     "sum([Soil].SoilWater.SWmm) as TotalSWmm",
-                    "sum([Soil].SoilNitrogen.NO3.kgha) as TotalNO3N",
-                    "sum([Soil].SoilNitrogen.NH4.kgha) as TotalNH4N",
+                    "sum([Soil].Nutrient.NO3.kgha) as TotalNO3N",
+                    "sum([Soil].Nutrient.NH4.kgha) as TotalNH4N",
                     "[Wheat].AboveGround.Wt",
-                    "[Wheat].EP",
                     "[LocalMicroClimate].Wind",
-                    "[MicroClimate].ga",
-                    "[MicroClimate].gc",
                     "[Wheat].Leaf.LAI",
-                    "[Wheat].Leaf.CoverGreen",
-                    "[Wheat].height",
-                    "[Wheat].PotentialEP"
+                    "[Wheat].Leaf.CoverGreen"
                   ],
                   "EventNames": [
                     "[Clock].DoReport"
                   ],
+                  "GroupByVariableName": null,
                   "Name": "DailyReport",
                   "Children": [],
                   "IncludeInDocumentation": true,
@@ -1693,6 +1542,7 @@
                   "Latitude": -27.581836,
                   "Longitude": 151.320206,
                   "LocationAccuracy": " +/- 20m",
+                  "YearOfSampling": null,
                   "DataSource": "CSIRO Sustainable Ecosystems, Toowoomba; Characteriesd as part of the GRDC funded project\"Doing it better, doing it smarter, managing soil water in Australian agriculture' 2011",
                   "Comments": "OC, CLL for all crops estimated-based on Bongeen Mywybilla Soil No1",
                   "Name": "Soil",
@@ -1718,6 +1568,10 @@
                         300.0
                       ],
                       "ParticleSizeClay": null,
+                      "ParticleSizeSand": null,
+                      "ParticleSizeSilt": null,
+                      "Rocks": null,
+                      "Texture": null,
                       "BD": [
                         1.01056473311131,
                         1.07145631083388,
@@ -1778,6 +1632,11 @@
                       "DULMetadata": null,
                       "SATMetadata": null,
                       "KSMetadata": null,
+                      "RocksMetadata": null,
+                      "TextureMetadata": null,
+                      "ParticleSizeSandMetadata": null,
+                      "ParticleSizeSiltMetadata": null,
+                      "ParticleSizeClayMetadata": null,
                       "Name": "Physical",
                       "Children": [
                         {
@@ -1824,7 +1683,7 @@
                       "ReadOnly": false
                     },
                     {
-                      "$type": "Models.Soils.SoilWater, Models",
+                      "$type": "Models.WaterModel.WaterBalance, Models",
                       "SummerDate": "1-Nov",
                       "SummerU": 5.0,
                       "SummerCona": 5.0,
@@ -1837,10 +1696,9 @@
                       "CN2Bare": 73.0,
                       "CNRed": 20.0,
                       "CNCov": 0.8,
-                      "slope": "NaN",
-                      "discharge_width": "NaN",
-                      "catchment_area": "NaN",
-                      "max_pond": 0.0,
+                      "Slope": "NaN",
+                      "DischargeWidth": "NaN",
+                      "CatchmentArea": "NaN",
                       "Thickness": [
                         150.0,
                         150.0,
@@ -1849,15 +1707,6 @@
                         300.0,
                         300.0,
                         300.0
-                      ],
-                      "Depth": [
-                        "0-15",
-                        "15-30",
-                        "30-60",
-                        "60-90",
-                        "90-120",
-                        "120-150",
-                        "150-180"
                       ],
                       "SWCON": [
                         0.3,
@@ -1869,90 +1718,8 @@
                         0.3
                       ],
                       "KLAT": null,
-                      "PrecipitationInterception": 0.0,
+                      "ResourceName": "WaterBalance",
                       "Name": "SoilWater",
-                      "Children": [],
-                      "IncludeInDocumentation": true,
-                      "Enabled": true,
-                      "ReadOnly": false
-                    },
-                    {
-                      "$type": "Models.Soils.SoilNitrogen, Models",
-                      "fom_types": [
-                        "default",
-                        "manure",
-                        "mucuna",
-                        "lablab",
-                        "shemp",
-                        "stable"
-                      ],
-                      "fract_carb": [
-                        0.2,
-                        0.3,
-                        0.54,
-                        0.57,
-                        0.45,
-                        0.0
-                      ],
-                      "fract_cell": [
-                        0.7,
-                        0.3,
-                        0.37,
-                        0.37,
-                        0.47,
-                        0.1
-                      ],
-                      "fract_lign": [
-                        0.1,
-                        0.4,
-                        0.09,
-                        0.06,
-                        0.08,
-                        0.9
-                      ],
-                      "Name": "SoilNitrogen",
-                      "Children": [
-                        {
-                          "$type": "Models.Soils.SoilNitrogenNO3, Models",
-                          "Name": "NO3",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenNH4, Models",
-                          "Name": "NH4",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenUrea, Models",
-                          "Name": "Urea",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenPlantAvailableNO3, Models",
-                          "Name": "PlantAvailableNO3",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenPlantAvailableNH4, Models",
-                          "Name": "PlantAvailableNH4",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        }
-                      ],
                       "IncludeInDocumentation": true,
                       "Enabled": true,
                       "ReadOnly": false
@@ -2023,6 +1790,8 @@
                         36.587130828674873,
                         22.1912165985086
                       ],
+                      "CarbonMetadata": null,
+                      "FOMMetadata": null,
                       "Name": "Organic",
                       "Children": [],
                       "IncludeInDocumentation": true,
@@ -2079,6 +1848,10 @@
                       "CL": null,
                       "EC": null,
                       "ESP": null,
+                      "ECMetadata": null,
+                      "CLMetadata": null,
+                      "ESPMetadata": null,
+                      "PHMetadata": null,
                       "Name": "Chemical",
                       "Children": [],
                       "IncludeInDocumentation": true,
@@ -2117,8 +1890,8 @@
                         300.0,
                         300.0
                       ],
-                      "NO3N": null,
-                      "NH4N": null,
+                      "NO3": null,
+                      "NH4": null,
                       "SW": [
                         "NaN",
                         "NaN",
@@ -2184,8 +1957,16 @@
                     },
                     {
                       "$type": "Models.Soils.CERESSoilTemperature, Models",
-                      "Name": "CERESSoilTemperature",
+                      "Name": "Temperature",
                       "Children": [],
+                      "IncludeInDocumentation": true,
+                      "Enabled": true,
+                      "ReadOnly": false
+                    },
+                    {
+                      "$type": "Models.Soils.Nutrients.Nutrient, Models",
+                      "ResourceName": "Nutrient",
+                      "Name": "Nutrient",
                       "IncludeInDocumentation": true,
                       "Enabled": true,
                       "ReadOnly": false
@@ -2197,14 +1978,12 @@
                 },
                 {
                   "$type": "Models.Surface.SurfaceOrganicMatter, Models",
-                  "Canopies": [],
                   "InitialResidueName": "wheat_stubble",
                   "InitialResidueType": "wheat",
                   "InitialResidueMass": 500.0,
                   "InitialStandingFraction": 0.0,
                   "InitialCPR": 0.0,
                   "InitialCNR": 100.0,
-                  "FractionFaecesAdded": 0.5,
                   "ResourceName": "SurfaceOrganicMatter",
                   "Name": "SurfaceOrganicMatter",
                   "IncludeInDocumentation": true,
@@ -2213,9 +1992,6 @@
                 },
                 {
                   "$type": "Models.PMF.Plant, Models",
-                  "CropType": "Wheat",
-                  "IsEnding": false,
-                  "DaysAfterEnding": 0,
                   "ResourceName": "Wheat",
                   "Name": "Wheat",
                   "IncludeInDocumentation": true,
@@ -2230,6 +2006,7 @@
                   "d_interception": 0.0,
                   "soil_albedo": 0.3,
                   "SoilHeatFluxFraction": 0.4,
+                  "MinimumHeightDiffForNewLayer": 0.0,
                   "NightInterceptionFraction": 0.5,
                   "ReferenceHeight": 2.0,
                   "Name": "MicroClimate",
@@ -2268,6 +2045,7 @@
                   "d_interception": 0.0,
                   "soil_albedo": 0.3,
                   "SoilHeatFluxFraction": 0.4,
+                  "MinimumHeightDiffForNewLayer": 0.0,
                   "NightInterceptionFraction": 0.5,
                   "ReferenceHeight": 2.0,
                   "Name": "MicroClimate",
@@ -2277,17 +2055,15 @@
                   "ReadOnly": false
                 },
                 {
-                  "$type": "Models.Report.Report, Models",
+                  "$type": "Models.Report, Models",
                   "VariableNames": [
                     "[Clock].Today",
-                    "[Wheat].Zadok.Stage",
                     "[Wheat].Phenology.CurrentStageName",
                     "[Wheat].AboveGround.Wt",
                     "[Wheat].AboveGround.N",
-                    "[Wheat].Grain.Yield",
                     "[Wheat].Grain.Protein",
                     "[Wheat].Grain.Size",
-                    "[Wheat].Grain.GrainNo",
+                    "[Wheat].Grain.Number",
                     "[Wheat].Grain.Wt",
                     "[Wheat].Grain.N",
                     "[Wheat].Total.Wt",
@@ -2297,6 +2073,7 @@
                   "EventNames": [
                     "[Wheat].Harvesting"
                   ],
+                  "GroupByVariableName": null,
                   "Name": "Report",
                   "Children": [],
                   "IncludeInDocumentation": true,
@@ -2304,25 +2081,21 @@
                   "ReadOnly": false
                 },
                 {
-                  "$type": "Models.Report.Report, Models",
+                  "$type": "Models.Report, Models",
                   "VariableNames": [
                     "[Clock].Today",
                     "sum([Soil].SoilWater.SWmm) as TotalSWmm",
-                    "sum([Soil].SoilNitrogen.NO3.kgha) as TotalNO3N",
-                    "sum([Soil].SoilNitrogen.NH4.kgha) as TotalNH4N",
+                    "sum([Soil].Nutrient.NO3.kgha) as TotalNO3N",
+                    "sum([Soil].Nutrient.NH4.kgha) as TotalNH4N",
                     "[Wheat].AboveGround.Wt",
-                    "[Wheat].EP",
                     "[LocalMicroClimate].Wind",
-                    "[MicroClimate].ga",
-                    "[MicroClimate].gc",
                     "[Wheat].Leaf.LAI",
-                    "[Wheat].Leaf.CoverGreen",
-                    "[Wheat].height",
-                    "[Wheat].PotentialEP"
+                    "[Wheat].Leaf.CoverGreen"
                   ],
                   "EventNames": [
                     "[Clock].DoReport"
                   ],
+                  "GroupByVariableName": null,
                   "Name": "DailyReport",
                   "Children": [],
                   "IncludeInDocumentation": true,
@@ -2354,6 +2127,7 @@
                   "Latitude": -27.581836,
                   "Longitude": 151.320206,
                   "LocationAccuracy": " +/- 20m",
+                  "YearOfSampling": null,
                   "DataSource": "CSIRO Sustainable Ecosystems, Toowoomba; Characteriesd as part of the GRDC funded project\"Doing it better, doing it smarter, managing soil water in Australian agriculture' 2011",
                   "Comments": "OC, CLL for all crops estimated-based on Bongeen Mywybilla Soil No1",
                   "Name": "Soil",
@@ -2379,6 +2153,10 @@
                         300.0
                       ],
                       "ParticleSizeClay": null,
+                      "ParticleSizeSand": null,
+                      "ParticleSizeSilt": null,
+                      "Rocks": null,
+                      "Texture": null,
                       "BD": [
                         1.01056473311131,
                         1.07145631083388,
@@ -2439,6 +2217,11 @@
                       "DULMetadata": null,
                       "SATMetadata": null,
                       "KSMetadata": null,
+                      "RocksMetadata": null,
+                      "TextureMetadata": null,
+                      "ParticleSizeSandMetadata": null,
+                      "ParticleSizeSiltMetadata": null,
+                      "ParticleSizeClayMetadata": null,
                       "Name": "Physical",
                       "Children": [
                         {
@@ -2485,7 +2268,7 @@
                       "ReadOnly": false
                     },
                     {
-                      "$type": "Models.Soils.SoilWater, Models",
+                      "$type": "Models.WaterModel.WaterBalance, Models",
                       "SummerDate": "1-Nov",
                       "SummerU": 5.0,
                       "SummerCona": 5.0,
@@ -2498,10 +2281,9 @@
                       "CN2Bare": 73.0,
                       "CNRed": 20.0,
                       "CNCov": 0.8,
-                      "slope": "NaN",
-                      "discharge_width": "NaN",
-                      "catchment_area": "NaN",
-                      "max_pond": 0.0,
+                      "Slope": "NaN",
+                      "DischargeWidth": "NaN",
+                      "CatchmentArea": "NaN",
                       "Thickness": [
                         150.0,
                         150.0,
@@ -2510,15 +2292,6 @@
                         300.0,
                         300.0,
                         300.0
-                      ],
-                      "Depth": [
-                        "0-15",
-                        "15-30",
-                        "30-60",
-                        "60-90",
-                        "90-120",
-                        "120-150",
-                        "150-180"
                       ],
                       "SWCON": [
                         0.3,
@@ -2530,90 +2303,8 @@
                         0.3
                       ],
                       "KLAT": null,
-                      "PrecipitationInterception": 0.0,
+                      "ResourceName": "WaterBalance",
                       "Name": "SoilWater",
-                      "Children": [],
-                      "IncludeInDocumentation": true,
-                      "Enabled": true,
-                      "ReadOnly": false
-                    },
-                    {
-                      "$type": "Models.Soils.SoilNitrogen, Models",
-                      "fom_types": [
-                        "default",
-                        "manure",
-                        "mucuna",
-                        "lablab",
-                        "shemp",
-                        "stable"
-                      ],
-                      "fract_carb": [
-                        0.2,
-                        0.3,
-                        0.54,
-                        0.57,
-                        0.45,
-                        0.0
-                      ],
-                      "fract_cell": [
-                        0.7,
-                        0.3,
-                        0.37,
-                        0.37,
-                        0.47,
-                        0.1
-                      ],
-                      "fract_lign": [
-                        0.1,
-                        0.4,
-                        0.09,
-                        0.06,
-                        0.08,
-                        0.9
-                      ],
-                      "Name": "SoilNitrogen",
-                      "Children": [
-                        {
-                          "$type": "Models.Soils.SoilNitrogenNO3, Models",
-                          "Name": "NO3",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenNH4, Models",
-                          "Name": "NH4",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenUrea, Models",
-                          "Name": "Urea",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenPlantAvailableNO3, Models",
-                          "Name": "PlantAvailableNO3",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenPlantAvailableNH4, Models",
-                          "Name": "PlantAvailableNH4",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        }
-                      ],
                       "IncludeInDocumentation": true,
                       "Enabled": true,
                       "ReadOnly": false
@@ -2684,6 +2375,8 @@
                         36.587130828674873,
                         22.1912165985086
                       ],
+                      "CarbonMetadata": null,
+                      "FOMMetadata": null,
                       "Name": "Organic",
                       "Children": [],
                       "IncludeInDocumentation": true,
@@ -2740,6 +2433,10 @@
                       "CL": null,
                       "EC": null,
                       "ESP": null,
+                      "ECMetadata": null,
+                      "CLMetadata": null,
+                      "ESPMetadata": null,
+                      "PHMetadata": null,
                       "Name": "Chemical",
                       "Children": [],
                       "IncludeInDocumentation": true,
@@ -2778,8 +2475,8 @@
                         300.0,
                         300.0
                       ],
-                      "NO3N": null,
-                      "NH4N": null,
+                      "NO3": null,
+                      "NH4": null,
                       "SW": [
                         "NaN",
                         "NaN",
@@ -2845,8 +2542,16 @@
                     },
                     {
                       "$type": "Models.Soils.CERESSoilTemperature, Models",
-                      "Name": "CERESSoilTemperature",
+                      "Name": "Temperature",
                       "Children": [],
+                      "IncludeInDocumentation": true,
+                      "Enabled": true,
+                      "ReadOnly": false
+                    },
+                    {
+                      "$type": "Models.Soils.Nutrients.Nutrient, Models",
+                      "ResourceName": "Nutrient",
+                      "Name": "Nutrient",
                       "IncludeInDocumentation": true,
                       "Enabled": true,
                       "ReadOnly": false
@@ -2858,14 +2563,12 @@
                 },
                 {
                   "$type": "Models.Surface.SurfaceOrganicMatter, Models",
-                  "Canopies": [],
                   "InitialResidueName": "wheat_stubble",
                   "InitialResidueType": "wheat",
                   "InitialResidueMass": 500.0,
                   "InitialStandingFraction": 0.0,
                   "InitialCPR": 0.0,
                   "InitialCNR": 100.0,
-                  "FractionFaecesAdded": 0.5,
                   "ResourceName": "SurfaceOrganicMatter",
                   "Name": "SurfaceOrganicMatter",
                   "IncludeInDocumentation": true,
@@ -2874,9 +2577,6 @@
                 },
                 {
                   "$type": "Models.PMF.Plant, Models",
-                  "CropType": "Wheat",
-                  "IsEnding": false,
-                  "DaysAfterEnding": 0,
                   "ResourceName": "Wheat",
                   "Name": "Wheat",
                   "IncludeInDocumentation": true,
@@ -2913,6 +2613,7 @@
                   "d_interception": 0.0,
                   "soil_albedo": 0.3,
                   "SoilHeatFluxFraction": 0.4,
+                  "MinimumHeightDiffForNewLayer": 0.0,
                   "NightInterceptionFraction": 0.5,
                   "ReferenceHeight": 2.0,
                   "Name": "MicroClimate",
@@ -2922,17 +2623,15 @@
                   "ReadOnly": false
                 },
                 {
-                  "$type": "Models.Report.Report, Models",
+                  "$type": "Models.Report, Models",
                   "VariableNames": [
                     "[Clock].Today",
-                    "[Wheat].Zadok.Stage",
                     "[Wheat].Phenology.CurrentStageName",
                     "[Wheat].AboveGround.Wt",
                     "[Wheat].AboveGround.N",
-                    "[Wheat].Grain.Yield",
                     "[Wheat].Grain.Protein",
                     "[Wheat].Grain.Size",
-                    "[Wheat].Grain.GrainNo",
+                    "[Wheat].Grain.Number",
                     "[Wheat].Grain.Wt",
                     "[Wheat].Grain.N",
                     "[Wheat].Total.Wt",
@@ -2942,6 +2641,7 @@
                   "EventNames": [
                     "[Wheat].Harvesting"
                   ],
+                  "GroupByVariableName": null,
                   "Name": "Report",
                   "Children": [],
                   "IncludeInDocumentation": true,
@@ -2949,25 +2649,21 @@
                   "ReadOnly": false
                 },
                 {
-                  "$type": "Models.Report.Report, Models",
+                  "$type": "Models.Report, Models",
                   "VariableNames": [
                     "[Clock].Today",
                     "sum([Soil].SoilWater.SWmm) as TotalSWmm",
-                    "sum([Soil].SoilNitrogen.NO3.kgha) as TotalNO3N",
-                    "sum([Soil].SoilNitrogen.NH4.kgha) as TotalNH4N",
+                    "sum([Soil].Nutrient.NO3.kgha) as TotalNO3N",
+                    "sum([Soil].Nutrient.NH4.kgha) as TotalNH4N",
                     "[Wheat].AboveGround.Wt",
-                    "[Wheat].EP",
                     "[LocalMicroClimate].Wind",
-                    "[MicroClimate].ga",
-                    "[MicroClimate].gc",
                     "[Wheat].Leaf.LAI",
-                    "[Wheat].Leaf.CoverGreen",
-                    "[Wheat].height",
-                    "[Wheat].PotentialEP"
+                    "[Wheat].Leaf.CoverGreen"
                   ],
                   "EventNames": [
                     "[Clock].DoReport"
                   ],
+                  "GroupByVariableName": null,
                   "Name": "DailyReport",
                   "Children": [],
                   "IncludeInDocumentation": true,
@@ -2999,6 +2695,7 @@
                   "Latitude": -27.581836,
                   "Longitude": 151.320206,
                   "LocationAccuracy": " +/- 20m",
+                  "YearOfSampling": null,
                   "DataSource": "CSIRO Sustainable Ecosystems, Toowoomba; Characteriesd as part of the GRDC funded project\"Doing it better, doing it smarter, managing soil water in Australian agriculture' 2011",
                   "Comments": "OC, CLL for all crops estimated-based on Bongeen Mywybilla Soil No1",
                   "Name": "Soil",
@@ -3024,6 +2721,10 @@
                         300.0
                       ],
                       "ParticleSizeClay": null,
+                      "ParticleSizeSand": null,
+                      "ParticleSizeSilt": null,
+                      "Rocks": null,
+                      "Texture": null,
                       "BD": [
                         1.01056473311131,
                         1.07145631083388,
@@ -3084,6 +2785,11 @@
                       "DULMetadata": null,
                       "SATMetadata": null,
                       "KSMetadata": null,
+                      "RocksMetadata": null,
+                      "TextureMetadata": null,
+                      "ParticleSizeSandMetadata": null,
+                      "ParticleSizeSiltMetadata": null,
+                      "ParticleSizeClayMetadata": null,
                       "Name": "Physical",
                       "Children": [
                         {
@@ -3130,7 +2836,7 @@
                       "ReadOnly": false
                     },
                     {
-                      "$type": "Models.Soils.SoilWater, Models",
+                      "$type": "Models.WaterModel.WaterBalance, Models",
                       "SummerDate": "1-Nov",
                       "SummerU": 5.0,
                       "SummerCona": 5.0,
@@ -3143,10 +2849,9 @@
                       "CN2Bare": 73.0,
                       "CNRed": 20.0,
                       "CNCov": 0.8,
-                      "slope": "NaN",
-                      "discharge_width": "NaN",
-                      "catchment_area": "NaN",
-                      "max_pond": 0.0,
+                      "Slope": "NaN",
+                      "DischargeWidth": "NaN",
+                      "CatchmentArea": "NaN",
                       "Thickness": [
                         150.0,
                         150.0,
@@ -3155,15 +2860,6 @@
                         300.0,
                         300.0,
                         300.0
-                      ],
-                      "Depth": [
-                        "0-15",
-                        "15-30",
-                        "30-60",
-                        "60-90",
-                        "90-120",
-                        "120-150",
-                        "150-180"
                       ],
                       "SWCON": [
                         0.3,
@@ -3175,90 +2871,8 @@
                         0.3
                       ],
                       "KLAT": null,
-                      "PrecipitationInterception": 0.0,
+                      "ResourceName": "WaterBalance",
                       "Name": "SoilWater",
-                      "Children": [],
-                      "IncludeInDocumentation": true,
-                      "Enabled": true,
-                      "ReadOnly": false
-                    },
-                    {
-                      "$type": "Models.Soils.SoilNitrogen, Models",
-                      "fom_types": [
-                        "default",
-                        "manure",
-                        "mucuna",
-                        "lablab",
-                        "shemp",
-                        "stable"
-                      ],
-                      "fract_carb": [
-                        0.2,
-                        0.3,
-                        0.54,
-                        0.57,
-                        0.45,
-                        0.0
-                      ],
-                      "fract_cell": [
-                        0.7,
-                        0.3,
-                        0.37,
-                        0.37,
-                        0.47,
-                        0.1
-                      ],
-                      "fract_lign": [
-                        0.1,
-                        0.4,
-                        0.09,
-                        0.06,
-                        0.08,
-                        0.9
-                      ],
-                      "Name": "SoilNitrogen",
-                      "Children": [
-                        {
-                          "$type": "Models.Soils.SoilNitrogenNO3, Models",
-                          "Name": "NO3",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenNH4, Models",
-                          "Name": "NH4",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenUrea, Models",
-                          "Name": "Urea",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenPlantAvailableNO3, Models",
-                          "Name": "PlantAvailableNO3",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        },
-                        {
-                          "$type": "Models.Soils.SoilNitrogenPlantAvailableNH4, Models",
-                          "Name": "PlantAvailableNH4",
-                          "Children": [],
-                          "IncludeInDocumentation": true,
-                          "Enabled": true,
-                          "ReadOnly": false
-                        }
-                      ],
                       "IncludeInDocumentation": true,
                       "Enabled": true,
                       "ReadOnly": false
@@ -3329,6 +2943,8 @@
                         36.587130828674873,
                         22.1912165985086
                       ],
+                      "CarbonMetadata": null,
+                      "FOMMetadata": null,
                       "Name": "Organic",
                       "Children": [],
                       "IncludeInDocumentation": true,
@@ -3385,6 +3001,10 @@
                       "CL": null,
                       "EC": null,
                       "ESP": null,
+                      "ECMetadata": null,
+                      "CLMetadata": null,
+                      "ESPMetadata": null,
+                      "PHMetadata": null,
                       "Name": "Chemical",
                       "Children": [],
                       "IncludeInDocumentation": true,
@@ -3423,8 +3043,8 @@
                         300.0,
                         300.0
                       ],
-                      "NO3N": null,
-                      "NH4N": null,
+                      "NO3": null,
+                      "NH4": null,
                       "SW": [
                         "NaN",
                         "NaN",
@@ -3490,8 +3110,16 @@
                     },
                     {
                       "$type": "Models.Soils.CERESSoilTemperature, Models",
-                      "Name": "CERESSoilTemperature",
+                      "Name": "Temperature",
                       "Children": [],
+                      "IncludeInDocumentation": true,
+                      "Enabled": true,
+                      "ReadOnly": false
+                    },
+                    {
+                      "$type": "Models.Soils.Nutrients.Nutrient, Models",
+                      "ResourceName": "Nutrient",
+                      "Name": "Nutrient",
                       "IncludeInDocumentation": true,
                       "Enabled": true,
                       "ReadOnly": false
@@ -3503,14 +3131,12 @@
                 },
                 {
                   "$type": "Models.Surface.SurfaceOrganicMatter, Models",
-                  "Canopies": [],
                   "InitialResidueName": "wheat_stubble",
                   "InitialResidueType": "wheat",
                   "InitialResidueMass": 500.0,
                   "InitialStandingFraction": 0.0,
                   "InitialCPR": 0.0,
                   "InitialCNR": 100.0,
-                  "FractionFaecesAdded": 0.5,
                   "ResourceName": "SurfaceOrganicMatter",
                   "Name": "SurfaceOrganicMatter",
                   "IncludeInDocumentation": true,
@@ -3519,9 +3145,6 @@
                 },
                 {
                   "$type": "Models.PMF.Plant, Models",
-                  "CropType": "Wheat",
-                  "IsEnding": false,
-                  "DaysAfterEnding": 0,
                   "ResourceName": "Wheat",
                   "Name": "Wheat",
                   "IncludeInDocumentation": true,
@@ -3544,11 +3167,11 @@
       "ReadOnly": false
     },
     {
-      "$type": "Models.Graph.Graph, Models",
+      "$type": "Models.Graph, Models",
       "Caption": null,
       "Axis": [
         {
-          "$type": "Models.Graph.Axis, Models",
+          "$type": "Models.Axis, Models",
           "Type": 3,
           "Title": null,
           "Inverted": false,
@@ -3559,7 +3182,7 @@
           "CrossesAtZero": false
         },
         {
-          "$type": "Models.Graph.Axis, Models",
+          "$type": "Models.Axis, Models",
           "Type": 0,
           "Title": null,
           "Inverted": false,
@@ -3577,7 +3200,7 @@
       "Name": "SoilWater",
       "Children": [
         {
-          "$type": "Models.Graph.Series, Models",
+          "$type": "Models.Series, Models",
           "Type": 1,
           "XAxis": 3,
           "YAxis": 0,
@@ -3589,7 +3212,6 @@
           "MarkerSize": 0,
           "Line": 0,
           "LineThickness": 0,
-          "Checkpoint": "Current",
           "TableName": "DailyReport",
           "XFieldName": "Clock.Today",
           "YFieldName": "TotalSWmm",
@@ -3612,11 +3234,11 @@
       "ReadOnly": false
     },
     {
-      "$type": "Models.Graph.Graph, Models",
+      "$type": "Models.Graph, Models",
       "Caption": null,
       "Axis": [
         {
-          "$type": "Models.Graph.Axis, Models",
+          "$type": "Models.Axis, Models",
           "Type": 3,
           "Title": null,
           "Inverted": false,
@@ -3627,7 +3249,7 @@
           "CrossesAtZero": false
         },
         {
-          "$type": "Models.Graph.Axis, Models",
+          "$type": "Models.Axis, Models",
           "Type": 0,
           "Title": null,
           "Inverted": false,
@@ -3645,7 +3267,7 @@
       "Name": "SoilNO3N",
       "Children": [
         {
-          "$type": "Models.Graph.Series, Models",
+          "$type": "Models.Series, Models",
           "Type": 1,
           "XAxis": 3,
           "YAxis": 0,
@@ -3657,7 +3279,6 @@
           "MarkerSize": 0,
           "Line": 0,
           "LineThickness": 0,
-          "Checkpoint": "Current",
           "TableName": "DailyReport",
           "XFieldName": "Clock.Today",
           "YFieldName": "TotalNO3N",
@@ -3680,11 +3301,11 @@
       "ReadOnly": false
     },
     {
-      "$type": "Models.Graph.Graph, Models",
+      "$type": "Models.Graph, Models",
       "Caption": null,
       "Axis": [
         {
-          "$type": "Models.Graph.Axis, Models",
+          "$type": "Models.Axis, Models",
           "Type": 3,
           "Title": null,
           "Inverted": false,
@@ -3695,7 +3316,7 @@
           "CrossesAtZero": false
         },
         {
-          "$type": "Models.Graph.Axis, Models",
+          "$type": "Models.Axis, Models",
           "Type": 0,
           "Title": null,
           "Inverted": false,
@@ -3713,7 +3334,7 @@
       "Name": "DailyBiomass",
       "Children": [
         {
-          "$type": "Models.Graph.Series, Models",
+          "$type": "Models.Series, Models",
           "Type": 1,
           "XAxis": 3,
           "YAxis": 0,
@@ -3725,7 +3346,6 @@
           "MarkerSize": 0,
           "Line": 0,
           "LineThickness": 0,
-          "Checkpoint": "Current",
           "TableName": "DailyReport",
           "XFieldName": "Clock.Today",
           "YFieldName": "Wheat.AboveGround.Wt",
@@ -3748,11 +3368,11 @@
       "ReadOnly": false
     },
     {
-      "$type": "Models.Graph.Graph, Models",
+      "$type": "Models.Graph, Models",
       "Caption": null,
       "Axis": [
         {
-          "$type": "Models.Graph.Axis, Models",
+          "$type": "Models.Axis, Models",
           "Type": 3,
           "Title": null,
           "Inverted": false,
@@ -3763,7 +3383,7 @@
           "CrossesAtZero": false
         },
         {
-          "$type": "Models.Graph.Axis, Models",
+          "$type": "Models.Axis, Models",
           "Type": 0,
           "Title": null,
           "Inverted": false,
@@ -3781,7 +3401,7 @@
       "Name": "Yield vs Distance",
       "Children": [
         {
-          "$type": "Models.Graph.Series, Models",
+          "$type": "Models.Series, Models",
           "Type": 1,
           "XAxis": 3,
           "YAxis": 0,
@@ -3793,7 +3413,6 @@
           "MarkerSize": 0,
           "Line": 0,
           "LineThickness": 0,
-          "Checkpoint": "Current",
           "TableName": "Report",
           "XFieldName": "Distance",
           "YFieldName": "Wheat.Grain.Wt",

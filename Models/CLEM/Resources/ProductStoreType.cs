@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
 
 namespace Models.CLEM.Resources
 {
@@ -40,6 +40,7 @@ namespace Models.CLEM.Resources
         /// </summary>
         public double Amount { get { return amount; } }
         double amount { get { return roundedAmount; } set { roundedAmount = Math.Round(value, 9); } }
+        [NonSerialized]
         private double roundedAmount;
 
         /// <summary>An event handler to allow us to initialise ourselves.</summary>
@@ -74,7 +75,7 @@ namespace Models.CLEM.Resources
         /// <summary>
         /// Last transaction received
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public ResourceTransaction LastTransaction { get; set; }
 
         /// <summary>
@@ -139,22 +140,25 @@ namespace Models.CLEM.Resources
             this.amount -= amountRemoved;
 
             // send to market if needed
-            if (request.MarketTransactionMultiplier > 0 && equivalentMarketStore != null)
+            if (request.MarketTransactionMultiplier > 0 && EquivalentMarketStore != null)
             {
-                (equivalentMarketStore as ProductStoreType).Add(amountRemoved * request.MarketTransactionMultiplier, request.ActivityModel, "Farm sales");
+                (EquivalentMarketStore as ProductStoreType).Add(amountRemoved * request.MarketTransactionMultiplier, request.ActivityModel, "Farm sales");
             }
 
             request.Provided = amountRemoved;
-            ResourceTransaction details = new ResourceTransaction
+            if (amountRemoved > 0)
             {
-                ResourceType = this,
-                Loss = amountRemoved,
-                Activity = request.ActivityModel,
-                Reason = request.Reason
-            };
-            LastTransaction = details;
-            TransactionEventArgs te = new TransactionEventArgs() { Transaction = details };
-            OnTransactionOccurred(te);
+                ResourceTransaction details = new ResourceTransaction
+                {
+                    ResourceType = this,
+                    Loss = amountRemoved,
+                    Activity = request.ActivityModel,
+                    Reason = request.Reason
+                };
+                LastTransaction = details;
+                TransactionEventArgs te = new TransactionEventArgs() { Transaction = details };
+                OnTransactionOccurred(te);
+            }
         }
 
         /// <summary>
