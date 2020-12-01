@@ -176,7 +176,7 @@
         public virtual object GetValue(int groupNumber)
         {
             if (groupNumber >= groups.Count)
-                groups.Add(new VariableGroup(locator, null, variableName, aggregationFunction));
+                groups.Add(new VariableGroup(locator, null, variableName, aggregationFunction, Name));
 
             if (string.IsNullOrEmpty(aggregationFunction) && string.IsNullOrEmpty(groupByName))
             {
@@ -206,7 +206,7 @@
 
             if (group == null)
             {
-                group = new VariableGroup(locator, value, variableName, aggregationFunction);
+                group = new VariableGroup(locator, value, variableName, aggregationFunction, Name);
                 groups.Add(group);
             }
             group.StoreValue();

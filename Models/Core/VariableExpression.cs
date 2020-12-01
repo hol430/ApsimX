@@ -17,7 +17,7 @@
         /// <summary>
         /// An instance of the expression evaluator once the expression has been parsed.
         /// </summary>
-        private ExpressionEvaluator fn = null;
+        public ExpressionEvaluator Fn = null;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VariableExpression" /> class.
@@ -30,9 +30,9 @@
             this.Object = model;
 
             // Perform initial parsing.
-            this.fn = new ExpressionEvaluator();
-            this.fn.Parse(this.expression.Trim());
-            this.fn.Infix2Postfix();
+            this.Fn = new ExpressionEvaluator();
+            this.Fn.Parse(this.expression.Trim());
+            this.Fn.Infix2Postfix();
         }
 
         /// <summary>
@@ -59,18 +59,18 @@
             get
             {
                 this.FillVariableNames();
-                fn.EvaluatePostfix();
-                if (fn.Error)
+                Fn.EvaluatePostfix();
+                if (Fn.Error)
                 {
-                    throw new Exception(fn.ErrorDescription);
+                    throw new Exception(Fn.ErrorDescription);
                 }
-                if (fn.Results != null)
+                if (Fn.Results != null)
                 {
-                    return fn.Results;
+                    return Fn.Results;
                 }
                 else
                 {
-                    return fn.Result;
+                    return Fn.Result;
                 }
             }
 
@@ -132,7 +132,7 @@
         /// </summary>
         private void FillVariableNames()
         {
-            List<Symbol> variablesToFill = fn.Variables;
+            List<Symbol> variablesToFill = Fn.Variables;
             for (int i = 0; i < variablesToFill.Count; i++)
             {
                 Symbol sym = (Symbol) variablesToFill[i];
@@ -160,7 +160,7 @@
                 }
                 variablesToFill[i] = sym;
             }
-            fn.Variables = variablesToFill;
+            Fn.Variables = variablesToFill;
         }
 
         /// <summary>

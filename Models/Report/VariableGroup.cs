@@ -26,6 +26,8 @@
         /// <summary>The aggregation (e.g. sum) to apply to the values in each group.</summary>
         private readonly string aggregationFunction;
 
+        private string name;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -33,13 +35,15 @@
         /// <param name="valueOfGroupBy">The full name of the group by variable.</param>
         /// <param name="varName">The full name of the variable we are retrieving from APSIM.</param>
         /// <param name="aggFunction">The aggregation (e.g. sum) to apply to the values in each group.</param>
+        /// <param name="name">Name/alias of the variable.</param>
         public VariableGroup(ILocator locatorInstance, object valueOfGroupBy,
-                                string varName, string aggFunction)
+                                string varName, string aggFunction, string name)
         {
             locator = locatorInstance;
             GroupByValue = valueOfGroupBy;
             variableName = varName;
             aggregationFunction = aggFunction;
+            this.name = name;
         }
 
         /// <summary>The value full name of the group by variable.</summary>
@@ -48,7 +52,12 @@
         /// <summary>Stores a value into the values array.</summary>
         public void StoreValue()
         {
-            object value = locator.Get(variableName);
+            IVariable variable = locator.GetObject(variableName);
+            if (variable is VariableExpression expr)
+                foreach (var term in expr.Fn.Variables)
+                    if (term.m_name == name)
+                        throw new Exception($"Recursive reference to variable {term.m_name} in expression {variableName} as {name}");
+            object value = variable.Value;
             if (value is IFunction function)
                 value = function.Value();
             else if (value != null && (value.GetType().IsArray || value.GetType().IsClass))
