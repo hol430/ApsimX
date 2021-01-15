@@ -19,6 +19,8 @@ namespace Models.Core.Run
 
         private int numJobs;
 
+        private int numJobsComplete;
+
         /// <summary>
         /// The time at which job execution commenced.
         /// </summary>
@@ -59,22 +61,14 @@ namespace Models.Core.Run
                 if (jobs.Count == 0)
                     return 1;
 
-                int numCompleted = Math.Max(0, numJobs - (jobs.Count));
-                return (numCompleted + jobs.Keys.Sum(j => j.Progress)) / numJobs;
+                return (numJobsComplete + jobs.Keys.Sum(j => j.Progress)) / numJobs;
             }
         }
 
         /// <summary>
         /// Status of the jobs.
         /// </summary>
-        public string Status
-        {
-            get
-            {
-                int numComplete = Math.Max(0, numJobs - (jobs.Count));
-                return $"{numComplete} of {numJobs} completed";
-            }
-        }
+        public string Status => $"{numJobsComplete} of {numJobs} completed";
 
         /// <summary>
         /// Called after every job is completed.
@@ -114,7 +108,7 @@ namespace Models.Core.Run
             }
 
             if (wait)
-                foreach (Task task in jobs.Keys)
+                foreach (Task task in jobs.Values)
                     task.Wait();
         }
 
@@ -138,7 +132,7 @@ namespace Models.Core.Run
             lock (jobsLock)
             {
                 task = jobs[job];
-                jobs.Remove(job);
+                numJobsComplete++;
             }
 
             var args = new JobCompleteArguments()
