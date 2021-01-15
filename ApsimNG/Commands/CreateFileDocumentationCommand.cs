@@ -8,12 +8,13 @@
     using System.Collections.Generic;
     using System.Drawing;
     using System.IO;
+    using System.Linq;
     using System.Reflection;
 
     /// <summary>
     /// This command creates documentation for a file. e.g. wheat validation or tutorial
     /// </summary>
-    public class CreateFileDocumentationCommand : ICommand
+    public class CreateFileDocumentationCommand
     {
         private ExplorerPresenter explorerPresenter;
 
@@ -38,18 +39,11 @@
         /// <summary>
         /// Perform the command
         /// </summary>
-        public void Do(CommandHistory commandHistory)
+        public void Do()
         {
             CreatePDF(modelNameToDocument);
         }
 
-        /// <summary>
-        /// Undo the command
-        /// </summary>
-        public void Undo(CommandHistory commandHistory)
-        {
-        }
-        
         /// <summary>
         /// Export to PDF
         /// </summary>
@@ -99,8 +93,8 @@
         /// <param name="modelToDocument">The model to document.</param>
         private void DocumentModel(List<AutoDocumentation.ITag> tags, IModel modelToDocument)
         {
-            var childParent = Apsim.Parent(modelToDocument, typeof(Simulation));
-            if (childParent == null || childParent is Simulations)
+            var childParent = modelToDocument.FindAncestor<Simulation>();
+            if (childParent == null)
                 AutoDocumentation.DocumentModel(modelToDocument, tags, headingLevel: 1, indent: 0);
             else
             {
@@ -125,12 +119,11 @@
         /// <param name="tags">Document tags to add to.</param>
         private void AddStatistics(List<AutoDocumentation.ITag> tags)
         {
-            IModel dataStore = Apsim.Child(explorerPresenter.ApsimXFile, "DataStore");
+            IModel dataStore = explorerPresenter.ApsimXFile.FindChild("DataStore");
             if (dataStore != null)
             {
-                List<IModel> tests = Apsim.FindAll(dataStore, typeof(Tests));
-                tests.RemoveAll(m => !m.IncludeInDocumentation);
-                if (tests.Count > 0)
+                IEnumerable<Tests> tests = dataStore.FindAllInScope<Tests>().Where(m => m.IncludeInDocumentation);
+                if (tests.Count() > 0)
                     tags.Add(new AutoDocumentation.Heading("Statistics", 2));
 
                 foreach (Tests test in tests)

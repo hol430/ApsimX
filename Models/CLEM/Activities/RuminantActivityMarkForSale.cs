@@ -1,4 +1,5 @@
-﻿using Models.CLEM.Resources;
+﻿using Models.CLEM.Groupings;
+using Models.CLEM.Resources;
 using Models.Core;
 using Models.Core.Attributes;
 using System;
@@ -51,7 +52,7 @@ namespace Models.CLEM.Activities
         /// </summary>
         /// <param name="requirement">The details of how labour are to be provided</param>
         /// <returns></returns>
-        public override double GetDaysLabourRequired(LabourRequirement requirement)
+        public override GetDaysLabourRequiredReturnArgs GetDaysLabourRequired(LabourRequirement requirement)
         {
             List<Ruminant> herd = CurrentHerd(false);
             int head = herd.Count();
@@ -77,7 +78,7 @@ namespace Models.CLEM.Activities
                 default:
                     throw new Exception(String.Format("LabourUnitType {0} is not supported for {1} in {2}", requirement.UnitType, requirement.Name, this.Name));
             }
-            return daysNeeded;
+            return new GetDaysLabourRequiredReturnArgs(daysNeeded, "Mark", this.PredictedHerdName);
         }
 
         /// <summary>
@@ -123,13 +124,16 @@ namespace Models.CLEM.Activities
                     }
 
                     int cnt = 0;
-                    foreach (var ind in herd)
+                    foreach (RuminantGroup item in FindAllChildren<RuminantGroup>())
                     {
-                        ind.SaleFlag = HerdChangeReason.MarkedSale;
-                        cnt++;
-                        if (cnt > numberToTag)
+                        foreach (Ruminant ind in this.CurrentHerd(false).Filter(item))
                         {
-                            break;
+                            ind.SaleFlag = HerdChangeReason.MarkedSale;
+                            cnt++;
+                            if (cnt > numberToTag)
+                            {
+                                break;
+                            }
                         }
                     }
                 }
@@ -189,6 +193,8 @@ namespace Models.CLEM.Activities
             ActivityPerformed?.Invoke(this, e);
         }
 
+        #region descriptive summary
+
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
         /// </summary>
@@ -200,6 +206,7 @@ namespace Models.CLEM.Activities
             html += "\n<div class=\"activityentry\">Mark individuals in the following groups for sale";
             html += "</div>";
             return html;
-        }
+        } 
+        #endregion
     }
 }

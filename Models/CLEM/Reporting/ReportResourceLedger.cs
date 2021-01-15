@@ -25,6 +25,7 @@ namespace Models.CLEM.Reporting
     [ValidParent(ParentType = typeof(CLEMFolder))]
     [ValidParent(ParentType = typeof(Folder))]
     [Description("This report automatically generates a ledger of all shortfalls in CLEM Resource requests.")]
+    [Version(1, 0, 3, "Now includes Category and RelatesTo fields for grouping in analysis.")]
     [Version(1, 0, 2, "Updated to enable ResourceUnitsConverter to be used.")]
     [Version(1, 0, 1, "")]
     [HelpUri(@"Content/Features/Reporting/Ledgers.htm")]
@@ -68,11 +69,14 @@ namespace Models.CLEM.Reporting
         [EventSubscribe("Commencing")]
         private void OnCommencing(object sender, EventArgs e)
         {
+            // check if running from a CLEM.Market
+            bool market = (FindAncestor<Zone>().GetType() == typeof(Market));
+
             dataToWriteToDb = null;
             // sanitise the variable names and remove duplicates
             List<string> variableNames = new List<string>
             {
-                "[Clock].Today"
+                "[Clock].Today as Date"
             };
             if (VariableNames != null && VariableNames.Count() > 0)
             {
@@ -98,16 +102,16 @@ namespace Models.CLEM.Reporting
                             bool pricingIncluded = false;
                             if (model.GetType() == typeof(RuminantHerd))
                             {
-                                pricingIncluded = Apsim.ChildrenRecursively(model, typeof(AnimalPricing)).Where(a => a.Enabled).Count() > 0;
+                                pricingIncluded = model.FindAllDescendants<AnimalPricing>().Where(a => a.Enabled).Count() > 0;
 
                                 variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ExtraInformation.ID as uID");
                                 variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ExtraInformation.Breed as Breed");
-                                variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ExtraInformation.HerdName as Herd");
                                 variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ExtraInformation.Gender as Sex");
                                 variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ExtraInformation.Age as Age");
                                 variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ExtraInformation.Weight as Weight");
                                 variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ExtraInformation.AdultEquivalent as AE");
-                                variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ExtraInformation.SaleFlag as Reason");
+                                variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ExtraInformation.SaleFlag as Category");
+                                variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ExtraInformation.HerdName as RelatesTo");
                                 variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ExtraInformation.PopulationChangeDirection as Change");
 
                                 // ToDo: add pricing for ruminants including buy and sell pricing
@@ -115,12 +119,12 @@ namespace Models.CLEM.Reporting
                             }
                             else
                             {
-                                pricingIncluded = Apsim.ChildrenRecursively(model, typeof(ResourcePricing)).Where(a => a.Enabled).Count() > 0;
+                                pricingIncluded = model.FindAllDescendants<ResourcePricing>().Where(a => a.Enabled).Count() > 0;
 
                                 variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.Gain as Gain");
                                 variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.Loss * -1.0 as Loss");
                                 // get all converters for this type of resource
-                                var converterList = Apsim.ChildrenRecursively(model, typeof(ResourceUnitsConverter)).Select(a => a.Name).Distinct();
+                                var converterList = model.FindAllDescendants<ResourceUnitsConverter>().Select(a => a.Name).Distinct();
                                 if (converterList!=null)
                                 {
                                     foreach (var item in converterList)
@@ -128,26 +132,29 @@ namespace Models.CLEM.Reporting
                                         variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ConvertTo(" + item + ",\"gain\") as " + item + "_Gain");
                                         variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ConvertTo(" + item + ",\"loss\") as " + item + "_Loss");
                                     }
-
                                 }
 
                                 // add pricing
                                 if (pricingIncluded)
                                 {
-                                    variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ConvertTo(\"$\",\"gain\") as Price_Gain");
-                                    variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ConvertTo(\"$\",\"loss\") as Price_Loss");
+                                    variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ConvertTo(\"$gain\",\"gain\") as Price_Gain");
+                                    variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ConvertTo(\"$loss\",\"loss\") as Price_Loss");
                                 }
 
                                 variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.ResourceType.Name as Resource");
+                                // if this is a multi CLEM model simulation then add a new column with the parent Zone name
+                                if(FindAncestor<Simulation>().FindChild<Market>()!=null)
+                                {
+                                    variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.Activity.CLEMParentName as Source");
+                                }
                                 variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.Activity.Name as Activity");
-                                variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.Reason as Reason");
+                                variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.RelatesToResource as RelatesTo");
+                                variableNames.Add("[Resources]." + this.VariableNames[i] + ".LastTransaction.Category as Category");
                             }
-
                         }
                     }
                 }
                 events.Subscribe("[Resources]." + this.VariableNames[0] + ".TransactionOccurred", DoOutputEvent);
-
             }
             // Tidy up variable/event names.
             VariableNames = variableNames.ToArray();
@@ -171,14 +178,18 @@ namespace Models.CLEM.Reporting
             string from = null;
             string to = null;
             if (!string.IsNullOrEmpty(GroupByVariableName))
+            {
                 FindFromTo(out from, out to);
+            }
 
             foreach (string fullVariableName in this.VariableNames)
             {
                 try
                 {
                     if (!string.IsNullOrEmpty(fullVariableName))
+                    {
                         columns.Add(new ReportColumn(fullVariableName, clock, locator, events, GroupByVariableName, from, to));
+                    }
                 }
                 catch (Exception err)
                 {
@@ -224,7 +235,9 @@ namespace Models.CLEM.Reporting
                 string folderName = null;
                 var folderDescriptor = simulation.Descriptors.Find(d => d.Name == "FolderName");
                 if (folderDescriptor != null)
+                {
                     folderName = folderDescriptor.Value;
+                }
                 dataToWriteToDb = new ReportData()
                 {
                     FolderName = folderName,
@@ -249,14 +262,16 @@ namespace Models.CLEM.Reporting
                     {
                         valuesToWrite.Add(columns[i].GetValue(groupIndex));
                     }
-                    catch// (Exception err)
+                    catch
                     {
                         // Should we include exception message?
                         invalidVariables.Add(columns[i].Name);
                     }
                 }
                 if (invalidVariables != null && invalidVariables.Count > 0)
+                {
                     throw new Exception($"Error in report {Name}: Invalid report variables found:\n{string.Join("\n", invalidVariables)}");
+                }
 
                 // Add row to our table that will be written to the db file
                 dataToWriteToDb.Rows.Add(valuesToWrite);

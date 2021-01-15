@@ -8,7 +8,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
 
 namespace Models.CLEM
 {
@@ -31,14 +31,14 @@ namespace Models.CLEM
         /// <summary>
         /// Identifies the last selected tab for display
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public string SelectedTab { get; set; }
 
         /// <summary>
         /// Warning log for this CLEM model
         /// </summary>
-        [XmlIgnore]
-        public WarningLog Warnings = new WarningLog(50);
+        [JsonIgnore]
+        public WarningLog Warnings = WarningLog.GetInstance(50);
 
         /// <summary>
         /// Allows unique id of activity to be set 
@@ -52,8 +52,20 @@ namespace Models.CLEM
         /// <summary>
         /// Model identifier
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public string UniqueID { get { return id.ToString(); } }
+
+        /// <summary>
+        /// Parent CLEM Zone
+        /// Stored here so rapidly retrieved
+        /// </summary>
+        [JsonIgnore]
+        public String CLEMParentName { get; set; }
+
+        /// <summary>
+        /// return combo name of ParentName.ModelName
+        /// </summary>
+        public string NameWithParent => $"{this.Parent.Name}.{this.Name}";
 
         /// <summary>
         /// Method to set defaults from   
@@ -71,29 +83,36 @@ namespace Models.CLEM
                     {
                         //So lets try to load default value to the property
                         System.ComponentModel.DefaultValueAttribute dv = (System.ComponentModel.DefaultValueAttribute)attr;
-                        try
+                        if (dv != null)
                         {
-                            object result = property.GetValue(this, null);
-                            if (result is null)
+                            if (property.PropertyType.IsEnum)
                             {
-                                //Is it an array?
-                                if (property.PropertyType.IsArray)
-                                {
-                                    property.SetValue(this, dv.Value, null);
-                                }
-                                else
-                                {
-                                    //Use set value for.. not arrays
-                                    property.SetValue(this, dv.Value, null);
-                                }
+                                property.SetValue(this, Enum.Parse(property.PropertyType, dv.Value.ToString()));
+                            }
+                            else
+                            {
+                                property.SetValue(this, dv.Value, null);
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            Summary.WriteWarning(this, ex.Message);
-                        }
+
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Is timing ok for the current model
+        /// </summary>
+        public bool TimingOK
+        {
+            get
+            {
+                int res = this.Children.Where(a => typeof(IActivityTimer).IsAssignableFrom(a.GetType())).Sum(a => (a as IActivityTimer).ActivityDue ? 0 : 1);
+
+                var q = this.Children.Where(a => typeof(IActivityTimer).IsAssignableFrom(a.GetType()));
+                var w = q.Sum(a => (a as IActivityTimer).ActivityDue ? 0 : 1);
+
+                return (res == 0);
             }
         }
 
@@ -111,6 +130,8 @@ namespace Models.CLEM
             var parents = ReflectionUtilities.GetAttributes(this.GetType(), typeof(ValidParentAttribute), false).Cast<ValidParentAttribute>().ToList();
             return (parents.Where(a => a.ParentType.Name == this.Parent.GetType().Name).Count() > 0);
         }
+
+        #region descriptive summary
 
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
@@ -157,7 +178,7 @@ namespace Models.CLEM
         /// <summary>
         /// Styling to use for HTML summary
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public virtual HTMLSummaryStyle ModelSummaryStyle { get; set; }
 
         /// <summary>
@@ -178,9 +199,9 @@ namespace Models.CLEM
             string overall = "activity";
             string extra = "";
 
-            if(this.ModelSummaryStyle == HTMLSummaryStyle.Default)
+            if (this.ModelSummaryStyle == HTMLSummaryStyle.Default)
             {
-                if (this is Relationship || this.GetType().IsSubclassOf(typeof(Relationship)) )
+                if (this is Relationship || this.GetType().IsSubclassOf(typeof(Relationship)))
                 {
                     this.ModelSummaryStyle = HTMLSummaryStyle.Default;
                 }
@@ -232,9 +253,9 @@ namespace Models.CLEM
             }
 
             string html = "";
-            html += "\n<div class=\"holder"+ ((extra == "") ? "main" : "sub") + " " + overall  + "\" style=\"opacity: " + SummaryOpacity(formatForParentControl).ToString() + ";\">";
-            html += "\n<div class=\"clearfix "+overall+"banner"+extra+"\">" + this.ModelSummaryNameTypeHeader() + "</div>";
-            html += "\n<div class=\""+overall+"content"+  ((extra!="")? extra: "")+"\">";
+            html += "\n<div class=\"holder" + ((extra == "") ? "main" : "sub") + " " + overall + "\" style=\"opacity: " + SummaryOpacity(formatForParentControl).ToString() + ";\">";
+            html += "\n<div class=\"clearfix " + overall + "banner" + extra + "\">" + this.ModelSummaryNameTypeHeader() + "</div>";
+            html += "\n<div class=\"" + overall + "content" + ((extra != "") ? extra : "") + "\">";
 
             return html;
         }
@@ -264,7 +285,7 @@ namespace Models.CLEM
                     html += "\n<div class=\"activityentry\">This resource is measured in  ";
                     if (units == null || units == "")
                     {
-                        html += "<span class=\"errorlink\">Not specified</span>";
+                        html += "<span class=\"errorlink\">NOT SET</span>";
                     }
                     else
                     {
@@ -299,7 +320,7 @@ namespace Models.CLEM
         public string ModelSummaryNameTypeHeader()
         {
             string html = "";
-            html += "<div class=\"namediv\">" + this.Name +  ((!this.Enabled)?" - DISABLED!":"")+ "</div>";
+            html += "<div class=\"namediv\">" + this.Name + ((!this.Enabled) ? " - DISABLED!" : "") + "</div>";
             if (this.GetType().IsSubclassOf(typeof(CLEMActivityBase)))
             {
                 html += "<div class=\"partialdiv\"";
@@ -322,5 +343,7 @@ namespace Models.CLEM
             html += "<div class=\"typediv\">" + this.GetType().Name + "</div>";
             return html;
         }
+
+        #endregion    }
     }
 }

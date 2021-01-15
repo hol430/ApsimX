@@ -2,6 +2,7 @@
 {
     using Models.Core;
     using Interfaces;
+    using Models.Core.ApsimFile;
 
     /// <summary>This command deletes a model</summary>
     public class DeleteModelCommand : ICommand
@@ -24,6 +25,12 @@
         /// <summary>The position of the model in the list of child models.</summary>
         private int pos;
 
+        /// <summary>
+        /// The model which was changed by the command. This will be selected
+        /// in the user interface when the command is undone/redone.
+        /// </summary>
+        public IModel AffectedModel => modelToDelete;
+
         /// <summary>The constructor</summary>
         /// <param name="modelToDelete">The model to delete</param>
         /// <param name="explorerView">The explorer view.</param>
@@ -41,9 +48,9 @@
         /// <param name="commandHistory">The command history instance</param>
         public void Do(CommandHistory commandHistory)
         {
-            this.explorerView.Tree.Delete(Apsim.FullPath(this.modelToDelete));
+            this.explorerView.Tree.Delete(this.modelToDelete.FullPath);
             pos = this.parent.Children.IndexOf(this.modelToDelete as Model);
-            modelWasRemoved = Apsim.Delete(this.modelToDelete as Model);
+            modelWasRemoved = Structure.Delete(this.modelToDelete as Model);
         }
 
         /// <summary>Undo the command</summary>
@@ -53,8 +60,8 @@
             if (this.modelWasRemoved)
             {
                 this.parent.Children.Insert(pos, this.modelToDelete as Model);
-                this.explorerView.Tree.AddChild(Apsim.FullPath(this.parent), nodeDescription, pos);
-                Apsim.ClearCache(this.modelToDelete);
+                this.explorerView.Tree.AddChild(this.parent.FullPath, nodeDescription, pos);
+                Apsim.ClearCaches(this.modelToDelete);
             }
         }
     }

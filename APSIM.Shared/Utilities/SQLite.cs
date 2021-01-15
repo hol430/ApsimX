@@ -914,13 +914,14 @@ namespace APSIM.Shared.Utilities
             sql.Append(tableName);
             sql.Append("](");
 
-            foreach (var columnName in columnNames)
+            for (int i = 0; i < columnNames.Count(); i++)
             {
-                if (sql[sql.Length-1] == ']')
+                string columnName = columnNames.ElementAt(i);
+                if (i > 0)
                     sql.Append(',');
-                sql.Append('[');
+                sql.Append('"');
                 sql.Append(columnName);
-                sql.Append(']');
+                sql.Append('"');
             }
             sql.Append(") VALUES (");
 
@@ -1030,6 +1031,8 @@ namespace APSIM.Shared.Utilities
                 return "real";
             else if (type.ToString() == "System.Double")
                 return "real";
+            else if (type.ToString() == "System.Boolean")
+                return "integer";
             else
                 return "text";
         }
@@ -1065,9 +1068,9 @@ namespace APSIM.Shared.Utilities
                 if (sql.Length > 0)
                     sql.Append(',');
 
-                sql.Append("[");
+                sql.Append("\"");
                 sql.Append(colNames[c]);
-                sql.Append("] ");
+                sql.Append("\" ");
                 if (colTypes[c] == null)
                     sql.Append("integer");
                 else
@@ -1078,6 +1081,38 @@ namespace APSIM.Shared.Utilities
             sql.Append(')');
             ExecuteNonQuery(sql.ToString());
         }
+
+        /// <summary>Create a new table</summary>
+        public void CreateTable(DataTable table)
+        {
+            StringBuilder sql = new StringBuilder();
+
+            var columnNames = new List<string>();
+            foreach (DataColumn column in table.Columns)
+            {
+                columnNames.Add(column.ColumnName);
+                if (sql.Length > 0)
+                    sql.Append(',');
+
+                sql.Append("\"");
+                sql.Append(column.ColumnName);
+                sql.Append("\" ");
+                if (column.DataType == null)
+                    sql.Append("integer");
+                else
+                    sql.Append(GetDBDataTypeName(column.DataType));
+            }
+
+            sql.Insert(0, "CREATE TABLE [" + table.TableName + "] (");
+            sql.Append(')');
+            ExecuteNonQuery(sql.ToString());
+
+            List<object[]> rowValues = new List<object[]>();
+            foreach (DataRow row in table.Rows)
+                rowValues.Add(row.ItemArray);
+            InsertRows(table.TableName, columnNames, rowValues);
+        }
+
 
         /// <summary>
         /// Create an index.
@@ -1093,9 +1128,9 @@ namespace APSIM.Shared.Utilities
                 if (columnNamesCSV.Length > 0)
                     columnNamesCSV.Append(',');
 
-                columnNamesCSV.Append("[");
+                columnNamesCSV.Append('"');
                 columnNamesCSV.Append(colNames[c]);
-                columnNamesCSV.Append("] ");
+                columnNamesCSV.Append("\" ");
             }
 
             string uniqueString = null;

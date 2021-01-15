@@ -358,7 +358,8 @@
         /// <param name="y">The y values for the series</param>
         /// <param name="xFieldName">The name of the x variable.</param>
         /// <param name="yFieldName">The name of the y variable.</param>
-        /// <param name="error">The error values for the series</param>
+        /// <param name="xError">The error values for the x series</param>
+        /// <param name="yError">The error values for the y series</param>
         /// <param name="xAxisType">The axis type the x values are related to</param>
         /// <param name="yAxisType">The axis type the y values are related to</param>
         /// <param name="colour">The series color</param>
@@ -374,7 +375,8 @@
              IEnumerable y,
              string xFieldName,
              string yFieldName,
-             IEnumerable error,
+             IEnumerable xError,
+             IEnumerable yError,
              Models.Axis.AxisType xAxisType,
              Models.Axis.AxisType yAxisType,
              Color colour,
@@ -448,13 +450,13 @@
                 }
 
                 this.plot1.Model.Series.Add(series);
-                if (error != null)
+                if (xError != null || yError != null)
                 {
                     ScatterErrorSeries errorSeries = new ScatterErrorSeries();
-                    errorSeries.ItemsSource = this.PopulateErrorPointSeries(x, y, error, xAxisType, yAxisType);
+                    errorSeries.ItemsSource = this.PopulateErrorPointSeries(x, y, xError, yError, xAxisType, yAxisType);
                     errorSeries.XAxisKey = xAxisType.ToString();
                     errorSeries.YAxisKey = yAxisType.ToString();
-                    errorSeries.ErrorBarColor = series.MarkerFill;
+                    errorSeries.ErrorBarColor = OxyColor.FromArgb(colour.A, colour.R, colour.G, colour.B);
                     this.plot1.Model.Series.Add(errorSeries);
                 }
             }
@@ -499,7 +501,7 @@
         {
             if (x != null && y != null)
             {
-                ColumnXYSeries series = new ColumnXYSeries();
+                var series = new Utility.ColumnXYSeries();
                 if (showOnLegend)
                     series.Title = title;
                 series.FillColor = OxyColor.FromArgb(colour.A, colour.R, colour.G, colour.B);
@@ -507,12 +509,14 @@
                 series.ItemsSource = this.PopulateDataPointSeries(x, y, xAxisType, yAxisType);
                 series.XAxisKey = xAxisType.ToString();
                 series.YAxisKey = yAxisType.ToString();
+
+                
                 // By default, clicking on a datapoint (a bar) of a bar graph
                 // will create a pop-up showing the x/y values at the beginning
                 // and end of the bar. We override this here, so that it only
                 // shows the x/y pair at the end of the bar. Perhaps we should
                 // accept the tracker string as an argument to this function?
-                series.TrackerFormatString = "{0}\n{1}: {3}\n{4}: {6}";
+                series.TrackerFormatString = "{0}\n{1}: {2}\n{3}: {4}";
                 this.plot1.Model.Series.Add(series);
             }
         }
@@ -1383,7 +1387,7 @@
         /// </summary>
         /// <param name="x">The x values</param>
         /// <param name="y">The y values</param>
-        /// <param name="error">The error size values</param>
+        /// <param name="yError">The error size values</param>
         /// <param name="xAxisType">The x axis the data is associated with</param>
         /// <param name="yAxisType">The y axis the data is associated with</param>
         /// <returns>A list of 'DataPoint' objects ready to be plotted</returns>
@@ -1391,26 +1395,49 @@
         private List<ScatterErrorPoint> PopulateErrorPointSeries(
             IEnumerable x,
             IEnumerable y,
-            IEnumerable error,
+            IEnumerable xError,
+            IEnumerable yError,
             Models.Axis.AxisType xAxisType,
             Models.Axis.AxisType yAxisType)
         {
             List<ScatterErrorPoint> points = new List<ScatterErrorPoint>();
-            if (x != null && y != null && error != null)
+            if (x != null && y != null && (yError != null || xError != null))
             {
                 // Create a new data point for each x.
                 double[] xValues = GetDataPointValues(x.GetEnumerator(), xAxisType);
                 double[] yValues = GetDataPointValues(y.GetEnumerator(), yAxisType);
-                double[] errorValues = GetDataPointValues(error.GetEnumerator(), yAxisType);
+                double[] xErrorValues = GetDataPointValues(xError?.GetEnumerator(), xAxisType);
+                double[] yErrorValues = GetDataPointValues(yError?.GetEnumerator(), yAxisType);
 
-                if (xValues.Length == yValues.Length && xValues.Length == errorValues.Length)
+                if (xValues.Length == yValues.Length)
                 {
-                    // Create data points
-                    for (int i = 0; i < xValues.Length; i++)
-                        if (!double.IsNaN(xValues[i]) && !double.IsNaN(yValues[i]) && !double.IsNaN(errorValues[i]))
-                            points.Add(new ScatterErrorPoint(xValues[i], yValues[i], 0, errorValues[i], 0));
+                    if (xValues.Length == xErrorValues.Length && xErrorValues.Length == yErrorValues.Length)
+                    {
+                        // We have error data for both x and y series.
+                        for (int i = 0; i < xValues.Length; i++)
+                            if (!double.IsNaN(xValues[i]) && !double.IsNaN(yValues[i]) && !double.IsNaN(yErrorValues[i]) && !double.IsNaN(xErrorValues[i]))
+                                points.Add(new ScatterErrorPoint(xValues[i], yValues[i], xErrorValues[i], yErrorValues[i], 0));
 
-                    return points;
+                        return points;
+                    }
+                    else if (xValues.Length == xErrorValues.Length)
+                    {
+                        // We have error data for the x series.
+                        for (int i = 0; i < xValues.Length; i++)
+                            if (!double.IsNaN(xValues[i]) && !double.IsNaN(yValues[i]) && !double.IsNaN(xErrorValues[i]))
+                                points.Add(new ScatterErrorPoint(xValues[i], yValues[i], xErrorValues[i], 0, 0));
+
+                        return points;
+                    }
+                    else if (yValues.Length == yErrorValues.Length)
+                    {
+                        // We have error data for the y series.
+                        for (int i = 0; i < xValues.Length; i++)
+                            if (!double.IsNaN(xValues[i]) && !double.IsNaN(yValues[i]) && !double.IsNaN(yErrorValues[i]))
+                                points.Add(new ScatterErrorPoint(xValues[i], yValues[i], 0, yErrorValues[i], 0));
+
+                        return points;
+                    }
                 }
             }
             return null;
@@ -1425,8 +1452,8 @@
             List<double> dataPointValues = new List<double>();
             double x; // Used only as an out parameter, to maintain backward
                       // compatibility with older versions VS/C#.
-            if (!enumerator.MoveNext())
-                return null;
+            if (enumerator == null || !enumerator.MoveNext())
+                return new double[0];
             if (enumerator.Current.GetType() == typeof(DateTime))
             {
                 this.EnsureAxisExists(axisType, typeof(DateTime));

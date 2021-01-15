@@ -12,7 +12,7 @@
     /// 
     /// Traditionally, below ground competition has been arbitrated using two approaches.  Firstly, the early approaches [Adiku1995Intercrop; Carberry1996Ley] used an alternating order of uptake calculation each day to ensure that different crops within a simulation did not benefit from precedence in daily orders of calculations.  Soil water simulations using the SWIM3 model [Huth2012SWIM3] arbitrate individual crop uptakes as part of the simulataneous solutions of various soil water fluxes as part of its solution of the Richards' equation [richards1931capillary].
     /// 
-    /// The soil arbitrator operates via a simple integration of daily fluxes into crop root systems via a <a href="https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods">Runge-Kutta</a> calculation. 
+    /// The soil arbitrator operates via a simple integration of daily fluxes into crop root systems via a [Runge-Kutta](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods) calculation. 
     /// 
     /// If Y is any soil resource, such as water or N, and U is the uptake of that resource by one or more plant root systems,  
     /// then
@@ -54,8 +54,8 @@
     [ValidParent(ParentType = typeof(Simulation))]
     public class SoilArbitrator : Model
     {
-        private List<IModel> uptakeModels = null;
-        private List<Zone> zones = null;
+        private IEnumerable<IUptake> uptakeModels = null;
+        private IEnumerable<Zone> zones = null;
         private SoilState InitialSoilState;
 
 
@@ -65,8 +65,8 @@
         [EventSubscribe("StartOfSimulation")]
         private void OnStartOfSimulation(object sender, EventArgs e)
         {
-            uptakeModels = Apsim.ChildrenRecursively(Parent, typeof(IUptake));
-            zones = Apsim.ChildrenRecursively(this.Parent, typeof(Zone)).Cast<Zone>().ToList();
+            uptakeModels = Parent.FindAllDescendants<IUptake>().ToList();
+            zones = Parent.FindAllDescendants<Zone>().ToList();
             InitialSoilState = new SoilState(zones);
             if (!(this.Parent is Simulation))
                 throw new Exception(this.Name + " must be placed directly under the simulation node as it won't work properly anywhere else");

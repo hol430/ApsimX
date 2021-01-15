@@ -35,9 +35,9 @@ namespace Models.CLEM.Activities
         /// <summary>
         /// Month for assessing dry season feed requirements
         /// </summary>
-        [Description("Month for assessing dry season feed requirements (1-12)")]
+        [Description("Month for assessing dry season feed requirements")]
         [Required, Month]
-        public int AssessmentMonth { get; set; }
+        public MonthsOfYear AssessmentMonth { get; set; }
 
         /// <summary>
         /// Number of months to assess
@@ -78,6 +78,8 @@ namespace Models.CLEM.Activities
         /// </summary>
         public double AeShortfall { get {return AeToDestock - AeDestocked; } }
 
+        #region validation
+
         /// <summary>
         /// Validate this model
         /// </summary>
@@ -89,7 +91,7 @@ namespace Models.CLEM.Activities
             var results = new List<ValidationResult>();
             // check that this activity contains at least one RuminantDestockGroups group with filters
             bool destockGroupFound = false;
-            foreach (RuminantDestockGroup item in this.Children.Where(a => a.GetType() == typeof(RuminantDestockGroup)))
+            foreach (RuminantGroup item in this.Children.Where(a => a.GetType() == typeof(RuminantGroup)))
             {
                 foreach (RuminantFilter filter in item.Children.Where(a => a.GetType() == typeof(RuminantFilter)))
                 {
@@ -104,11 +106,12 @@ namespace Models.CLEM.Activities
 
             if (!destockGroupFound)
             {
-                string[] memberNames = new string[] { "Ruminant destocking group" };
-                results.Add(new ValidationResult("At least one RuminantDestockGroup with RuminantFilter must be present under this RuminantActivityPredictiveStocking activity", memberNames));
+                string[] memberNames = new string[] { "Ruminant group" };
+                results.Add(new ValidationResult("At least one RuminantGroup with RuminantFilter must be present under this RuminantActivityPredictiveStocking activity", memberNames));
             }
             return results;
-        }
+        } 
+        #endregion
 
         /// <summary>An event handler to allow us to initialise ourselves.</summary>
         /// <param name="sender">The sender.</param>
@@ -128,12 +131,13 @@ namespace Models.CLEM.Activities
         private void OnCLEMAnimalStock(object sender, EventArgs e)
         {
             // this event happens after management has marked individuals for purchase or sale.
-            if (Clock.Today.Month == AssessmentMonth)
+            if (Clock.Today.Month == (int)AssessmentMonth)
             {
                 this.Status = ActivityStatus.NotNeeded;
                 // calculate dry season pasture available for each managed paddock holding stock not flagged for sale
                 RuminantHerd ruminantHerd = Resources.RuminantHerd();
-                foreach (var paddockGroup in ruminantHerd.Herd.Where(a => a.Location != "").GroupBy(a => a.Location))
+
+                foreach (var paddockGroup in ruminantHerd.Herd.Where(a => (a.Location??"") != "").GroupBy(a => a.Location))
                 {
                     // multiple breeds are currently not supported as we need to work out what to do with diferent AEs
                     if(paddockGroup.GroupBy(a => a.Breed).Count() > 1)
@@ -147,6 +151,7 @@ namespace Models.CLEM.Activities
                     double shortfallAE = 0;
                     // Determine total feed requirements for dry season for all ruminants on the pasture
                     // We assume that all ruminant have the BaseAnimalEquivalent to the specified herd
+
                     GrazeFoodStoreType pasture = Resources.GetResourceItem(this, typeof(GrazeFoodStore), paddockGroup.Key, OnMissingResourceActionTypes.ReportErrorAndStop, OnMissingResourceActionTypes.ReportErrorAndStop) as GrazeFoodStoreType;
                     double pastureBiomass = pasture.Amount;
 
@@ -217,7 +222,7 @@ namespace Models.CLEM.Activities
             ruminantHerd.PurchaseIndividuals.RemoveAll(a => a.Location == paddockName);
 
             // remove individuals to sale as specified by destock groups
-            foreach (RuminantDestockGroup item in this.Children.Where(a => a.GetType() == typeof(RuminantDestockGroup)))
+            foreach (IModel item in FindAllChildren<RuminantDestockGroup>())
             {
                 // works with current filtered herd to obey filtering.
                 List<Ruminant> herd = this.CurrentHerd(false).Where(a => a.Location == paddockName && !a.ReadyForSale).ToList();
@@ -276,7 +281,7 @@ namespace Models.CLEM.Activities
         /// </summary>
         /// <param name="requirement">Labour requirement model</param>
         /// <returns></returns>
-        public override double GetDaysLabourRequired(LabourRequirement requirement)
+        public override GetDaysLabourRequiredReturnArgs GetDaysLabourRequired(LabourRequirement requirement)
         {
             throw new NotImplementedException();
         }
@@ -340,6 +345,8 @@ namespace Models.CLEM.Activities
             ReportStatus?.Invoke(this, e);
         }
 
+        #region descriptive summary
+
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
         /// </summary>
@@ -349,10 +356,10 @@ namespace Models.CLEM.Activities
         {
             string html = "";
             html += "\n<div class=\"activityentry\">Pasture will be assessed in ";
-            if (AssessmentMonth > 0 & AssessmentMonth <= 12)
+            if ((int)AssessmentMonth > 0 & (int)AssessmentMonth <= 12)
             {
                 html += "<span class=\"setvalue\">";
-                html += new DateTime(2000, AssessmentMonth, 1).ToString("MMMM");
+                html += AssessmentMonth.ToString();
             }
             else
             {
@@ -399,12 +406,13 @@ namespace Models.CLEM.Activities
             html += "\n<div class=\"activitygroupsborder\">";
             html += "<div class=\"labournote\">Individuals will be sold in the following order</div>";
 
-            if(Apsim.Children(this, typeof(RuminantDestockGroup)).Count() == 0)
+            if (FindAllChildren<RuminantGroup>().Count() == 0)
             {
                 html += "\n<div class=\"errorlink\">No ruminant filter groups provided</div>";
             }
             return html;
-        }
+        } 
+        #endregion
 
     }
 }

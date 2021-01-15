@@ -94,48 +94,6 @@ namespace Models.CLEM.Activities
         }
 
         /// <summary>
-        /// Validate component
-        /// </summary>
-        /// <param name="validationContext"></param>
-        /// <returns></returns>
-        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-        {
-            var results = new List<ValidationResult>();
-
-            // if finances and not account provided throw error
-            if(SellExcess && Resources.GetResourceGroupByType(typeof(Finance)) != null)
-            {
-                if(bankAccount is null)
-                {
-                    string[] memberNames = new string[] { "AccountName" };
-                    results.Add(new ValidationResult($"A valid bank account must be supplied as sales of excess food is enabled and [r=Finance] resources are available.", memberNames));
-                }
-            }
-
-            if(Resources.FindMarket != null & bankAccount is null)
-            {
-                string[] memberNames = new string[] { "AccountName" };
-                results.Add(new ValidationResult($"A valid bank account must be supplied for purchases of food from the market used by [a="+this.Name+"].", memberNames));
-            }
-
-            // check that at least one target has been provided. 
-            if (Apsim.Children(this, typeof(LabourActivityFeedTarget)).Count() == 0)
-            {
-                string[] memberNames = new string[] { "LabourActivityFeedToTargets" };
-                results.Add(new ValidationResult(String.Format("At least one [LabourActivityFeedTarget] component is required below the feed activity [{0}]", this.Name), memberNames));
-            }
-
-            // check purchases
-            if(Apsim.Children(this, typeof(LabourActivityFeedTargetPurchase)).Cast<LabourActivityFeedTargetPurchase>().Sum(a => a.TargetProportion) != 1)
-            {
-                string[] memberNames = new string[] { "LabourActivityFeedToTargetPurchases" };
-                results.Add(new ValidationResult(String.Format("The sum of all [LabourActivityFeedTargetPurchase] proportions should be 1 for the targeted feed activity [{0}]", this.Name), memberNames));
-            }
-
-            return results;
-        }
-
-        /// <summary>
         /// Method to determine resources required for this activity in the current month
         /// </summary>
         /// <returns>List of required resource requests</returns>
@@ -166,7 +124,7 @@ namespace Models.CLEM.Activities
             double otherIntake = this.DailyIntakeOtherSources * aE * daysInMonth;
             otherIntake += peopleList.Sum(a => a.GetAmountConsumed());
 
-            List<LabourActivityFeedTarget> labourActivityFeedTargets = Apsim.Children(this, typeof(LabourActivityFeedTarget)).Cast<LabourActivityFeedTarget>().ToList();
+            List<LabourActivityFeedTarget> labourActivityFeedTargets = this.FindAllChildren<LabourActivityFeedTarget>().Cast<LabourActivityFeedTarget>().ToList();
 
             // determine targets
             foreach (LabourActivityFeedTarget target in labourActivityFeedTargets)
@@ -193,12 +151,12 @@ namespace Models.CLEM.Activities
             }
 
             // get max months before spoiling of all food stored (will be zero for non perishable food)
-            int maxFoodAge = Apsim.Children(food, typeof(HumanFoodStoreType)).Cast<HumanFoodStoreType>().Max(a => a.Pools.Select(b => a.UseByAge - b.Age).DefaultIfEmpty(0).Max());
+            int maxFoodAge = food.FindAllChildren<HumanFoodStoreType>().Cast<HumanFoodStoreType>().Max(a => a.Pools.Select(b => a.UseByAge - b.Age).DefaultIfEmpty(0).Max());
 
             // create list of all food parcels
             List<HumanFoodParcel> foodParcels = new List<HumanFoodParcel>();
 
-            foreach (HumanFoodStoreType foodStore in Apsim.Children(food, typeof(HumanFoodStoreType)).Cast<HumanFoodStoreType>().ToList())
+            foreach (HumanFoodStoreType foodStore in food.FindAllChildren<HumanFoodStoreType>().Cast<HumanFoodStoreType>().ToList())
             {
                 foreach (HumanFoodStorePool pool in foodStore.Pools)
                 {
@@ -221,26 +179,26 @@ namespace Models.CLEM.Activities
 
             // for each market
             List<HumanFoodParcel> marketFoodParcels = new List<HumanFoodParcel>();
-                ResourcesHolder resources = Resources.FindMarket.Resources;
-                if (resources != null)
+            ResourcesHolder resources = Resources.FoundMarket.Resources;
+            if (resources != null)
+            {
+                HumanFoodStore food = resources.HumanFoodStore();
+                if (food != null)
                 {
-                    HumanFoodStore food = resources.HumanFoodStore();
-                    if (food != null)
+                    foreach (HumanFoodStoreType foodStore in food.FindAllChildren<HumanFoodStoreType>())
                     {
-                        foreach (HumanFoodStoreType foodStore in Apsim.Children(food, typeof(HumanFoodStoreType)).Cast<HumanFoodStoreType>().ToList())
+                        foreach (HumanFoodStorePool pool in foodStore.Pools)
                         {
-                            foreach (HumanFoodStorePool pool in foodStore.Pools)
+                            marketFoodParcels.Add(new HumanFoodParcel()
                             {
-                                marketFoodParcels.Add(new HumanFoodParcel()
-                                {
-                                    FoodStore = foodStore,
-                                    Pool = pool,
-                                    Expires = ((foodStore.UseByAge == 0) ? maxFoodAge + 1 : foodStore.UseByAge - pool.Age)
-                                });
-                            }
+                                FoodStore = foodStore,
+                                Pool = pool,
+                                Expires = ((foodStore.UseByAge == 0) ? maxFoodAge + 1 : foodStore.UseByAge - pool.Age)
+                            });
                         }
                     }
                 }
+            }
             foodParcels.AddRange(marketFoodParcels.OrderBy(a => a.FoodStore.Price(PurchaseOrSalePricingStyleType.Purchase).PricePerPacket));
 
             double fundsAvailable = double.PositiveInfinity;
@@ -340,7 +298,7 @@ namespace Models.CLEM.Activities
                             ActivityModel = this,
                             Required = amount / price.PacketSize * price.PricePerPacket,
                             AllowTransmutation = false,
-                            Reason = "Food purchase",
+                            Category = "Food purchase",
                             MarketTransactionMultiplier = 1
                         };
                         bankAccount.Remove(marketRequest);
@@ -354,7 +312,7 @@ namespace Models.CLEM.Activities
                         Required = amount * financeLimit,
                         ResourceTypeName = item.Key.Name,
                         ActivityModel = this,
-                        Reason = "Consumption"
+                        Category = "Consumption"
                     });
                 }
             }
@@ -369,12 +327,12 @@ namespace Models.CLEM.Activities
                 // if market is present point to market to find the resource
                 if (Market != null)
                 {
-                    resourcesHolder = Apsim.Child(Market, typeof(ResourcesHolder)) as ResourcesHolder;
+                    resourcesHolder = Market.FindChild<ResourcesHolder>();
                 }
 
                 // don't worry about money anymore. The over request will be handled by the transmutation.
                 // move through specified purchase list
-                foreach (LabourActivityFeedTargetPurchase purchase in Apsim.Children(this, typeof(LabourActivityFeedTargetPurchase)).Cast<LabourActivityFeedTargetPurchase>().ToList())
+                foreach (LabourActivityFeedTargetPurchase purchase in this.FindAllChildren<LabourActivityFeedTargetPurchase>().Cast<LabourActivityFeedTargetPurchase>().ToList())
                 {
                     HumanFoodStoreType foodtype = resourcesHolder.GetResourceItem(this, purchase.FoodStoreName, OnMissingResourceActionTypes.Ignore, OnMissingResourceActionTypes.Ignore) as HumanFoodStoreType;
                     if (foodtype != null && (foodtype.TransmutationDefined & intake < intakeLimit))
@@ -407,7 +365,7 @@ namespace Models.CLEM.Activities
                                     Required = amountfood,
                                     ResourceTypeName = purchase.FoodStoreName.Split('.')[1],
                                     ActivityModel = this,
-                                    Reason = "Consumption"
+                                    Category = "Consumption"
                                 });
                             }
                             else
@@ -429,12 +387,12 @@ namespace Models.CLEM.Activities
         /// </summary>
         /// <param name="requirement">The details of how labour are to be provided</param>
         /// <returns></returns>
-        public override double GetDaysLabourRequired(LabourRequirement requirement)
+        public override GetDaysLabourRequiredReturnArgs GetDaysLabourRequired(LabourRequirement requirement)
         {
             List<LabourType> group = Resources.Labour().Items.Where(a => a.Hired != true).ToList();
             int head = 0;
             double adultEquivalents = 0;
-            foreach (Model child in Apsim.Children(this, typeof(LabourFeedGroup)))
+            foreach (Model child in this.FindAllChildren<LabourFeedGroup>())
             {
                 var subgroup = group.Filter(child).ToList();
                 head += subgroup.Count();
@@ -469,7 +427,7 @@ namespace Models.CLEM.Activities
                 default:
                     throw new Exception(String.Format("LabourUnitType {0} is not supported for {1} in {2}", requirement.UnitType, requirement.Name, this.Name));
             }
-            return daysNeeded;
+            return new GetDaysLabourRequiredReturnArgs(daysNeeded, "Feeding", null);
         }
 
         /// <summary>
@@ -522,7 +480,7 @@ namespace Models.CLEM.Activities
                         }
                     }
                 }
-                List<LabourActivityFeedTarget> labourActivityFeedTargets = Apsim.Children(this, typeof(LabourActivityFeedTarget)).Cast<LabourActivityFeedTarget>().ToList();
+                List<LabourActivityFeedTarget> labourActivityFeedTargets = this.FindAllChildren<LabourActivityFeedTarget>().Cast<LabourActivityFeedTarget>().ToList();
                 if (labourActivityFeedTargets.Where(a => !a.TargetMet).Count() > 0)
                 {
                     this.Status = ActivityStatus.Partial;
@@ -554,7 +512,7 @@ namespace Models.CLEM.Activities
                 // determine AEs to be fed - NOTE does not account ofr aging in reserve calcualtion
                 double aE = people.Items.Where(a => IncludeHiredLabour || a.Hired == false).Sum(a => a.AdultEquivalent);
 
-                LabourActivityFeedTarget feedTarget = Apsim.Children(this, typeof(LabourActivityFeedTarget)).FirstOrDefault() as LabourActivityFeedTarget;
+                LabourActivityFeedTarget feedTarget = this.FindAllChildren<LabourActivityFeedTarget>().FirstOrDefault() as LabourActivityFeedTarget;
 
                 for (int i = 1; i <= MonthsStorage; i++)
                 {
@@ -563,7 +521,7 @@ namespace Models.CLEM.Activities
                     target[i] = daysInMonth[i] * aE * feedTarget.TargetValue;
                 }
 
-                foreach (HumanFoodStoreType foodStore in Apsim.Children(food, typeof(HumanFoodStoreType)).Cast<HumanFoodStoreType>().ToList())
+                foreach (HumanFoodStoreType foodStore in food.FindAllChildren<HumanFoodStoreType>().Cast<HumanFoodStoreType>().ToList())
                 {
                     double amountStored = 0;
                     double amountAvailable = foodStore.Pools.Sum(a => a.Amount);
@@ -628,7 +586,8 @@ namespace Models.CLEM.Activities
                                 ActivityModel = this,
                                 Required = units * priceToUse.PacketSize,
                                 AllowTransmutation = false,
-                                Reason = "Sell excess",
+                                Category = "Sell excess",
+                                RelatesToResource = foodStore.NameWithParent,
                                 MarketTransactionMultiplier = this.FarmMultiplier
                             };
                             foodStore.Remove(purchaseRequest);
@@ -641,10 +600,11 @@ namespace Models.CLEM.Activities
                                     ActivityModel = this,
                                     Required = units * priceToUse.PacketSize,
                                     AllowTransmutation = false,
-                                    Reason = $"Sales {foodStore.Name}",
+                                    Category = $"Sales",
+                                    RelatesToResource = foodStore.NameWithParent,
                                     MarketTransactionMultiplier = this.FarmMultiplier
                                 };
-                                bankAccount.Add(purchaseFinance, this, $"Sales {foodStore.Name}");
+                                bankAccount.Add(purchaseFinance, this, foodStore.NameWithParent, "Sales");
                             }
                         } 
                     }
@@ -689,6 +649,53 @@ namespace Models.CLEM.Activities
             ActivityPerformed?.Invoke(this, e);
         }
 
+        #region validation
+
+        /// <summary>
+        /// Validate component
+        /// </summary>
+        /// <param name="validationContext"></param>
+        /// <returns></returns>
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            var results = new List<ValidationResult>();
+
+            // if finances and not account provided throw error
+            if (SellExcess && Resources.GetResourceGroupByType(typeof(Finance)) != null)
+            {
+                if (bankAccount is null)
+                {
+                    string[] memberNames = new string[] { "AccountName" };
+                    results.Add(new ValidationResult($"A valid bank account must be supplied as sales of excess food is enabled and [r=Finance] resources are available.", memberNames));
+                }
+            }
+
+            if (Resources.FoundMarket != null & bankAccount is null)
+            {
+                string[] memberNames = new string[] { "AccountName" };
+                results.Add(new ValidationResult($"A valid bank account must be supplied for purchases of food from the market used by [a=" + this.Name + "].", memberNames));
+            }
+
+            // check that at least one target has been provided. 
+            if (this.FindAllChildren<LabourActivityFeedTarget>().Count() == 0)
+            {
+                string[] memberNames = new string[] { "LabourActivityFeedToTargets" };
+                results.Add(new ValidationResult(String.Format("At least one [LabourActivityFeedTarget] component is required below the feed activity [{0}]", this.Name), memberNames));
+            }
+
+            // check purchases
+            if (this.FindAllChildren<LabourActivityFeedTargetPurchase>().Cast<LabourActivityFeedTargetPurchase>().Sum(a => a.TargetProportion) != 1)
+            {
+                string[] memberNames = new string[] { "LabourActivityFeedToTargetPurchases" };
+                results.Add(new ValidationResult(String.Format("The sum of all [LabourActivityFeedTargetPurchase] proportions should be 1 for the targeted feed activity [{0}]", this.Name), memberNames));
+            }
+
+            return results;
+        } 
+        #endregion
+
+        #region descriptive summary
+
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
         /// </summary>
@@ -699,7 +706,7 @@ namespace Models.CLEM.Activities
             string html = "";
             html += "<div class=\"activityentry\">";
             html += "Each Adult Equivalent is able to consume ";
-            if(DailyIntakeLimit > 0)
+            if (DailyIntakeLimit > 0)
             {
                 html += "<span class=\"setvalue\">";
                 html += DailyIntakeLimit.ToString("#,##0.##");
@@ -709,7 +716,7 @@ namespace Models.CLEM.Activities
                 html += "<span class=\"errorlink\">NOT SET";
             }
             html += "</span> kg per day";
-            if(DailyIntakeOtherSources > 0)
+            if (DailyIntakeOtherSources > 0)
             {
                 html += "with <span class=\"setvalue\">";
                 html += DailyIntakeOtherSources.ToString("#,##0.##");
@@ -721,10 +728,10 @@ namespace Models.CLEM.Activities
             html += "</div>";
 
             // find a market place if present
-            Simulation sim = Apsim.Parent(this, typeof(Simulation)) as Simulation;
+            Simulation sim = FindAncestor<Simulation>();
             if (sim != null)
             {
-                Market marketPlace = Apsim.Child(sim, typeof(Market)) as Market;
+                Market marketPlace = sim.FindChild<Market>();
                 if (marketPlace != null)
                 {
                     html += "<div class=\"activityentry\">";
@@ -756,14 +763,14 @@ namespace Models.CLEM.Activities
             html += "\n<div class=\"croprotationborder\">";
             html += "<div class=\"croprotationlabel\">The following targets and purchases will be used:</div>";
 
-            if (Apsim.Children(this, typeof(LabourActivityFeedTarget)).Count() == 0)
+            if (this.FindAllChildren<LabourActivityFeedTarget>().Count() == 0)
             {
                 html += "\n<div class=\"errorbanner clearfix\">";
                 html += "<div class=\"filtererror\">No Feed To Target component provided</div>";
                 html += "</div>";
             }
 
-            if (Apsim.Children(this, typeof(LabourActivityFeedTargetPurchase)).Count() == 0)
+            if (this.FindAllChildren<LabourActivityFeedTargetPurchase>().Count() == 0)
             {
                 html += "\n<div class=\"errorbanner clearfix\">";
                 html += "<div class=\"filtererror\">No food items will be purchased above what is currently available</div>";
@@ -771,6 +778,7 @@ namespace Models.CLEM.Activities
             }
 
             return html;
-        }
+        } 
+        #endregion
     }
 }

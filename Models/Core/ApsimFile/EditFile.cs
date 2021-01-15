@@ -24,9 +24,13 @@ namespace Models.Core.ApsimFile
         /// </summary>
         /// <param name="apsimxFilePath">Absolute path to the .apsimx file.</param>
         /// <param name="configFilePath">Absolute path to the config file.</param>
-        public static void Do(string apsimxFilePath, string configFilePath)
+        public static Simulations Do(string apsimxFilePath, string configFilePath)
         {
-            ApplyChanges(apsimxFilePath, GetFactors(configFilePath));
+            Simulations file = FileFormat.ReadFromFile<Simulations>(apsimxFilePath, out List<Exception> errors);
+            if (errors != null && errors.Count > 0)
+                throw new Exception($"Error reading file ${apsimxFilePath}: {errors[0].ToString()}");
+
+            return ApplyChanges(file, GetFactors(configFilePath));
         }
 
         /// <summary>
@@ -67,17 +71,13 @@ namespace Models.Core.ApsimFile
         /// <summary>
         /// Edits a single apsimx file according to the changes specified in the config file.
         /// </summary>
-        /// <param name="apsimxFileName">Path to an .apsimx file.</param>
+        /// <param name="file">An .apsimx file.</param>
         /// <param name="factors">Factors to apply to the file.</param>
-        private static void ApplyChanges(string apsimxFileName, List<CompositeFactor> factors)
+        public static Simulations ApplyChanges(Simulations file, IEnumerable<CompositeFactor> factors)
         {
-            Simulations file = FileFormat.ReadFromFile<Simulations>(apsimxFileName, out List<Exception> errors);
-            if (errors != null && errors.Count > 0)
-                throw new Exception($"Error reading file ${apsimxFileName}: {errors[0].ToString()}");
-
             foreach (CompositeFactor factor in factors)
             {
-                IVariable variable = Apsim.GetVariableObject(file, factor.Paths[0]);
+                IVariable variable = file.FindByPath(factor.Paths[0]);
                 if (variable == null)
                     throw new Exception($"Invalid path: {factor.Paths[0]}");
 
@@ -113,7 +113,7 @@ namespace Models.Core.ApsimFile
                 else
                     ChangeVariableValue(variable, value);
             }
-            file.Write(apsimxFileName);
+            return file;
         }
 
         private static void ChangeVariableValue(IVariable variable, string value)
@@ -124,7 +124,7 @@ namespace Models.Core.ApsimFile
                 IModel model = composite.Variables.FirstOrDefault(v => v is VariableObject obj && obj.Value is IModel)?.Value as IModel;
                 if (model != null)
                 {
-                    ModelCollectionFromResource resourceModel = Apsim.Ancestor<ModelCollectionFromResource>(model);
+                    ModelCollectionFromResource resourceModel = model.FindAncestor<ModelCollectionFromResource>();
                     if (resourceModel != null)
                         resourceModel.ResourceName = null;
 
@@ -143,7 +143,7 @@ namespace Models.Core.ApsimFile
         /// <param name="replacementPath">Path to the model in replacementFile which will be used to replace a model in topLevel.</param>
         private static void ReplaceModelFromFile(Simulations topLevel, string modelToReplace, string replacementFile, string replacementPath)
         {
-            IModel toBeReplaced = Apsim.Get(topLevel, modelToReplace) as IModel;
+            IModel toBeReplaced = topLevel.FindByPath(modelToReplace)?.Value as IModel;
             if (toBeReplaced == null)
                 throw new Exception($"Unable to find model which is to be replaced ({modelToReplace}) in file {topLevel.FileName}");
 
@@ -154,13 +154,13 @@ namespace Models.Core.ApsimFile
             IModel replacement;
             if (string.IsNullOrEmpty(replacementPath))
             {
-                replacement = Apsim.ChildrenRecursively(extFile, toBeReplaced.GetType()).FirstOrDefault();
+                replacement = extFile.FindAllDescendants().Where(d => toBeReplaced.GetType().IsAssignableFrom(d.GetType())).FirstOrDefault();
                 if (replacement == null)
                     throw new Exception($"Unable to find replacement model of type {toBeReplaced.GetType().Name} in file {replacementFile}");
             }
             else
             {
-                replacement = Apsim.Get(extFile, replacementPath) as IModel;
+                replacement = extFile.FindByPath(replacementPath)?.Value as IModel;
                 if (replacement == null)
                     throw new Exception($"Unable to find model at path {replacementPath} in file {replacementFile}");
             }

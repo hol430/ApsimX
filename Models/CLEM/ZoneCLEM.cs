@@ -10,7 +10,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
 
 namespace Models.CLEM
 {
@@ -23,7 +23,7 @@ namespace Models.CLEM
     [ValidParent(ParentType = typeof(Simulation))]
     [Description("This represents all CLEM farm resources and activities")]
     [HelpUri(@"Content/Features/CLEMComponent.htm")]
-    [Version(1, 0, 4, "Random numbers and iteration property moved form this component to a stand-alone component\nChanges will be required to your setup")]
+    [Version(1, 0, 4, "Random numbers and iteration property moved from this component to a stand-alone component\nChanges will be required to your setup")]
     [Version(1, 0, 3, "Updated filtering logic to improve performance")]
     [Version(1, 0, 2, "New ResourceUnitConverter functionality added that changes some reporting.\nThis change will cause errors for all previous custom resource ledger reports created using the APSIM Report component.\nTo fix errors add \".Name\" to all LastTransaction.ResourceType and LastTransaction.Activity entries in custom ledgers (i.e. LastTransaction.ResourceType.Name as Resource). The CLEM ReportResourceLedger component has been updated to automatically handle the changes")]
     [Version(1,0,1,"")]
@@ -35,14 +35,12 @@ namespace Models.CLEM
         [Link]
         Clock Clock = null;
         [Link]
-        Simulation Simulation = null;
-        [Link]
         IDataStore DataStore = null;
 
         /// <summary>
         /// Identifies the last selected tab for display
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public string SelectedTab { get; set; }
 
         /// <summary>
@@ -56,7 +54,7 @@ namespace Models.CLEM
         /// <summary>
         /// Index of the simulation Climate Region
         /// </summary>
-        [Description("Climate region index")]
+        [Description("Region id")]
         public int ClimateRegion { get; set; }
 
         /// <summary>
@@ -64,7 +62,7 @@ namespace Models.CLEM
         /// </summary>
         [System.ComponentModel.DefaultValueAttribute(12)]
         [Description("Ecological indicators calculation interval (in months, 1 monthly, 12 annual)")]
-        [XmlIgnore]
+        [JsonIgnore, GreaterThanValue(0)]
         public int EcologicalIndicatorsCalculationInterval { get; set; }
 
         /// <summary>
@@ -73,35 +71,67 @@ namespace Models.CLEM
         [System.ComponentModel.DefaultValueAttribute(7)]
         [Description("End of month to calculate ecological indicators")]
         [Required, Month]
-        public int EcologicalIndicatorsCalculationMonth { get; set; }
+        public MonthsOfYear EcologicalIndicatorsCalculationMonth { get; set; }
 
         /// <summary>
         /// Month this overhead is next due.
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public DateTime EcologicalIndicatorsNextDueDate { get; set; }
 
         // ignore zone base class properties
 
         /// <summary>Area of the zone.</summary>
         /// <value>The area.</value>
-        [XmlIgnore]
+        [JsonIgnore]
         public new double Area { get; set; }
 
         /// <summary>Gets or sets the slope.</summary>
         /// <value>The slope.</value>
-        [XmlIgnore]
+        [JsonIgnore]
         public new double Slope { get; set; }
 
         /// <summary>
         /// not used in CLEM
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public new double AspectAngle { get; set; }
 
         /// <summary>Local altitude (meters above sea level).</summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public new double Altitude { get; set; } = 50;
+
+        /// <summary>An event handler to allow us to initialise ourselves.</summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        [EventSubscribe("Commencing")]
+        private void OnSimulationCommencing(object sender, EventArgs e)
+        {
+            EcologicalIndicatorsCalculationInterval = 12;
+        }
+
+        /// <summary>
+        /// Method to determine if this is the month to calculate ecological indicators
+        /// </summary>
+        /// <returns></returns>
+        public bool IsEcologicalIndicatorsCalculationMonth()
+        {
+            return this.EcologicalIndicatorsNextDueDate.Year == Clock.Today.Year && this.EcologicalIndicatorsNextDueDate.Month == Clock.Today.Month;
+        }
+
+        /// <summary>Data stores to clear at start of month</summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        [EventSubscribe("EndOfMonth")]
+        private void OnEndOfMonth(object sender, EventArgs e)
+        {
+            if (IsEcologicalIndicatorsCalculationMonth())
+            {
+                this.EcologicalIndicatorsNextDueDate = this.EcologicalIndicatorsNextDueDate.AddMonths(this.EcologicalIndicatorsCalculationInterval);
+            }
+        }
+
+        #region validation
 
         /// <summary>
         /// Validate object
@@ -111,7 +141,7 @@ namespace Models.CLEM
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             var results = new List<ValidationResult>();
-            if (Clock.StartDate.ToShortDateString() == "1/01/0001") 
+            if (Clock.StartDate.ToShortDateString() == "1/01/0001")
             {
                 string[] memberNames = new string[] { "Clock.StartDate" };
                 results.Add(new ValidationResult(String.Format("Invalid start date {0}", Clock.StartDate.ToShortDateString()), memberNames));
@@ -162,12 +192,14 @@ namespace Models.CLEM
             // this event fires after Activity and Resource validation so that resources are available to check in the validation.
             // commencing is too early as Summary has not been created for reporting.
             // some values assigned in commencing will not be checked before processing, but will be caught here
-            if (!Validate(Simulation, ""))
+            // each ZoneCLEM and Market will call this validation for all children
+            // CLEM components above ZoneCLEM (e.g. RandomNumberGenerator) needs to validate itself
+            if (!Validate(this, "", this, Summary))
             {
                 string error = "@i:Invalid parameters in model";
 
                 // find IStorageReader of simulation
-                IModel parentSimulation = Apsim.Parent(this, typeof(Simulation));
+                IModel parentSimulation = FindAncestor<Simulation>();
                 IStorageReader ds = DataStore.Reader;
                 if (ds.GetData(simulationName: parentSimulation.Name, tableName: "_Messages") != null)
                 {
@@ -183,10 +215,10 @@ namespace Models.CLEM
 
             if (Clock.StartDate.Year > 1) // avoid checking if clock not set.
             {
-                if (EcologicalIndicatorsCalculationMonth >= Clock.StartDate.Month)
+                if ((int)EcologicalIndicatorsCalculationMonth >= Clock.StartDate.Month)
                 {
                     // go back from start month in intervals until
-                    DateTime trackDate = new DateTime(Clock.StartDate.Year, EcologicalIndicatorsCalculationMonth, Clock.StartDate.Day);
+                    DateTime trackDate = new DateTime(Clock.StartDate.Year, (int)EcologicalIndicatorsCalculationMonth, Clock.StartDate.Day);
                     while (trackDate.AddMonths(-EcologicalIndicatorsCalculationInterval) >= Clock.Today)
                     {
                         trackDate = trackDate.AddMonths(-EcologicalIndicatorsCalculationInterval);
@@ -195,7 +227,7 @@ namespace Models.CLEM
                 }
                 else
                 {
-                    EcologicalIndicatorsNextDueDate = new DateTime(Clock.StartDate.Year, EcologicalIndicatorsCalculationMonth, Clock.StartDate.Day);
+                    EcologicalIndicatorsNextDueDate = new DateTime(Clock.StartDate.Year, (int)EcologicalIndicatorsCalculationMonth, Clock.StartDate.Day);
                     while (Clock.StartDate > EcologicalIndicatorsNextDueDate)
                     {
                         EcologicalIndicatorsNextDueDate = EcologicalIndicatorsNextDueDate.AddMonths(EcologicalIndicatorsCalculationInterval);
@@ -204,22 +236,15 @@ namespace Models.CLEM
             }
         }
 
-        /// <summary>An event handler to allow us to initialise ourselves.</summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        [EventSubscribe("Commencing")]
-        private void OnSimulationCommencing(object sender, EventArgs e)
-        {
-            EcologicalIndicatorsCalculationInterval = 12;
-        }
-
         /// <summary>
         /// Internal method to iterate through all children in CLEM and report any parameter setting errors
         /// </summary>
-        /// <param name="model"></param>
+        /// <param name="model">The model being validated</param>
         /// <param name="modelPath">Pass blank string. Used for tracking model path</param>
+        /// <param name="parentZone">The name of the containing ZoneCLEM or Market for reporting</param>
+        /// <param name="summary">Link to summary for reporting</param>
         /// <returns>Boolean indicating whether validation was successful</returns>
-        private bool Validate(IModel model, string modelPath)
+        public static bool Validate(IModel model, string modelPath, Model parentZone, ISummary summary)
         {
             string starter = "[";
             if(typeof(IResourceType).IsAssignableFrom(model.GetType()))
@@ -255,6 +280,10 @@ namespace Models.CLEM
                 starter = "[f=";
             }
 
+            if (model is CLEMModel)
+            {
+                (model as CLEMModel).CLEMParentName = parentZone.Name;
+            }
             modelPath += starter+model.Name+"]";
             modelPath = modelPath.Replace("][", "]&shy;[");
             bool valid = true;
@@ -291,12 +320,12 @@ namespace Models.CLEM
                         error += String.Format(Environment.NewLine + "DESCRIPTION: " + text );
                     }
                     error += String.Format(Environment.NewLine + "PROBLEM: " + validateError.ErrorMessage + Environment.NewLine);
-                    Summary.WriteWarning(this, error);
+                    summary.WriteWarning(parentZone, error);
                 }
             }
             foreach (var child in model.Children)
             {
-                bool result = Validate(child, modelPath);
+                bool result = Validate(child, modelPath, parentZone, summary);
                 if (valid && !result)
                 {
                     valid = false;
@@ -304,6 +333,9 @@ namespace Models.CLEM
             }
             return valid;
         }
+        #endregion
+
+        #region Descriptive summary
 
         /// <summary>
         /// 
@@ -318,11 +350,11 @@ namespace Models.CLEM
             html += "\n<div class=\"holdermain\" style=\"opacity: " + ((!this.Enabled) ? "0.4" : "1") + "\">";
 
             // get clock
-            IModel parentSim = Apsim.Parent(this, typeof(Simulation));
+            IModel parentSim = FindAncestor<Simulation>();
 
             // find random number generator
-            RandomNumberGenerator rnd = Apsim.Children(parentSim, typeof(RandomNumberGenerator)).FirstOrDefault() as RandomNumberGenerator;
-            if(rnd != null)
+            RandomNumberGenerator rnd = parentSim.FindAllChildren<RandomNumberGenerator>().FirstOrDefault() as RandomNumberGenerator;
+            if (rnd != null)
             {
                 html += "\n<div class=\"clearfix defaultbanner\">";
                 html += "<div class=\"namediv\">" + rnd.Name + "</div>";
@@ -342,7 +374,7 @@ namespace Models.CLEM
                 html += "\n</div>";
             }
 
-            Clock clk = Apsim.Children(parentSim, typeof(Clock)).FirstOrDefault() as Clock;
+            Clock clk = parentSim.FindAllChildren<Clock>().FirstOrDefault() as Clock;
             if (clk != null)
             {
                 html += "\n<div class=\"clearfix defaultbanner\">";
@@ -373,33 +405,13 @@ namespace Models.CLEM
                 html += "\n</div>";
             }
 
-            foreach (CLEMModel cm in Apsim.Children(this, typeof(CLEMModel)).Cast<CLEMModel>())
+            foreach (CLEMModel cm in this.FindAllChildren<CLEMModel>().Cast<CLEMModel>())
             {
                 html += cm.GetFullSummary(cm, true, "");
             }
             return html;
-        }
-
-        /// <summary>
-        /// Method to determine if this is the month to calculate ecological indicators
-        /// </summary>
-        /// <returns></returns>
-        public bool IsEcologicalIndicatorsCalculationMonth()
-        {
-            return this.EcologicalIndicatorsNextDueDate.Year == Clock.Today.Year && this.EcologicalIndicatorsNextDueDate.Month == Clock.Today.Month;
-        }
-
-        /// <summary>Data stores to clear at start of month</summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        [EventSubscribe("EndOfMonth")]
-        private void OnEndOfMonth(object sender, EventArgs e)
-        {
-            if(IsEcologicalIndicatorsCalculationMonth())
-            {
-                this.EcologicalIndicatorsNextDueDate = this.EcologicalIndicatorsNextDueDate.AddMonths(this.EcologicalIndicatorsCalculationInterval);
-            }
-        }
+        } 
+        #endregion
 
     }
 }

@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
 using Models.Core.Attributes;
 
 namespace Models.CLEM.Activities
@@ -86,7 +86,7 @@ namespace Models.CLEM.Activities
                     Required = this.Amount,
                     ResourceTypeName = this.AccountName,
                     ActivityModel = this,
-                    Reason = ((IsOverhead) ? "Overhead" : "Expense")
+                    Category = ((IsOverhead) ? "Overhead" : "Expense")
                 }
             };
             return resourcesNeeded;
@@ -142,7 +142,7 @@ namespace Models.CLEM.Activities
         /// </summary>
         /// <param name="requirement">The details of how labour are to be provided</param>
         /// <returns></returns>
-        public override double GetDaysLabourRequired(LabourRequirement requirement)
+        public override GetDaysLabourRequiredReturnArgs GetDaysLabourRequired(LabourRequirement requirement)
         {
             throw new NotImplementedException();
         }
@@ -154,6 +154,8 @@ namespace Models.CLEM.Activities
         {
             return;
         }
+
+        #region descriptive summary
 
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
@@ -174,13 +176,14 @@ namespace Models.CLEM.Activities
                 html += "<span class=\"resourcelink\">" + AccountName + "</span>";
             }
             html += "</div>";
-            if(IsOverhead)
+            if (IsOverhead)
             {
                 html += "\n<div class=\"activityentry\">This is an overhead</div>";
             }
 
             return html;
-        }
+        } 
+        #endregion
 
     }
 }

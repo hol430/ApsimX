@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
 
 namespace Models.CLEM.Resources
 {
@@ -34,8 +34,14 @@ namespace Models.CLEM.Resources
         /// <summary>
         /// Combined ML ruleset for LINQ expression tree
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public object CombinedRules { get; set; } = null;
+
+        /// <summary>
+        /// Proportion of group to use
+        /// </summary>
+        [JsonIgnore]
+        public double Proportion { get; set; }
 
         /// <summary>
         /// Provide the monthly labour availability
@@ -62,6 +68,8 @@ namespace Models.CLEM.Resources
             base.ModelSummaryStyle = HTMLSummaryStyle.SubResource;
         }
 
+        #region descriptive summary
+
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
         /// </summary>
@@ -72,7 +80,7 @@ namespace Models.CLEM.Resources
             string html = "";
             if (!formatForParentControl)
             {
-                if(MonthlyValues == null)
+                if (MonthlyValues == null)
                 {
                     return "\n<div class=\"activityentry\">No availability provided</div>";
                 }
@@ -91,7 +99,7 @@ namespace Models.CLEM.Resources
                 {
                     html += "<span class=\"errorlink\">" + min.ToString() + "</span>";
                 }
-                else 
+                else
                 {
                     html += "<span class=\"setvalue\">" + min.ToString() + "</span>";
                 }
@@ -148,7 +156,7 @@ namespace Models.CLEM.Resources
             if (formatForParentControl)
             {
                 html += "<tr><td>";
-                if ((Apsim.Children(this, typeof(LabourFilter)).Count() == 0))
+                if ((this.FindAllChildren<LabourFilter>().Count() == 0))
                 {
                     html += "<div class=\"filter\">Any labour</div>";
                 }
@@ -156,7 +164,7 @@ namespace Models.CLEM.Resources
             else
             {
                 html += "\n<div class=\"filterborder clearfix\">";
-                if (!(Apsim.Children(this, typeof(LabourFilter)).Count() >= 1))
+                if (!(this.FindAllChildren<LabourFilter>().Count() >= 1))
                 {
                     html += "<div class=\"filter\">Any labour</div>";
                 }
@@ -182,5 +190,7 @@ namespace Models.CLEM.Resources
             return !formatForParentControl ? base.ModelSummaryOpeningTags(true) : "";
         }
 
+
+        #endregion
     }
 }

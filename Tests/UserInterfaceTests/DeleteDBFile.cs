@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UserInterface;
 using UserInterface.Commands;
@@ -71,11 +71,11 @@ public class Script
         if (presenter == null)
             throw new Exception("Unable to open wheat example.");
 		
-		Clock clock = Apsim.Find(presenter.ApsimXFile, typeof(Clock)) as Clock;
+		Clock clock = presenter.ApsimXFile.FindInScope<Clock>();
 		clock.EndDate = clock.StartDate.AddDays(10);
 		
 		Runner runner = new Runner(presenter.ApsimXFile, runType: Runner.RunTypeEnum.MultiThreaded);
 		RunCommand command = new RunCommand("Simulations", runner, presenter);
-		command.Do(null);
+		command.Do();
 	}
 }

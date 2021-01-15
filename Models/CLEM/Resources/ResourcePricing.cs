@@ -61,28 +61,14 @@ namespace Models.CLEM.Resources
         public PurchaseOrSalePricingStyleType PurchaseOrSale { get; set; }
 
         /// <summary>
-        /// Is the packet currently available
-        /// </summary>
-        public bool TimingOK
-        {
-            get
-            {
-                int res = this.Children.Where(a => typeof(IActivityTimer).IsAssignableFrom(a.GetType())).Sum(a => (a as IActivityTimer).ActivityDue ? 0 : 1);
-
-                var q = this.Children.Where(a => typeof(IActivityTimer).IsAssignableFrom(a.GetType()));
-                var w = q.Sum(a => (a as IActivityTimer).ActivityDue ? 0 : 1);
-
-                return (res==0);
-            }
-        }
-
-        /// <summary>
         /// Constructor
         /// </summary>
         public ResourcePricing()
         {
             base.ModelSummaryStyle = HTMLSummaryStyle.SubResourceLevel2;
         }
+
+        #region descriptive summary
 
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
@@ -144,5 +130,6 @@ namespace Models.CLEM.Resources
             return html;
         }
 
+        #endregion
     }
 }

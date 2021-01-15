@@ -37,17 +37,6 @@ namespace Models.CLEM.Activities
             financesExist = ((Resources.FinanceResource() != null));
         }
 
-        /// <summary>An event handler to allow us to make all payments when needed</summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        [EventSubscribe("CLEMEndOfTimeStep")]
-        private void OnCLEMEndOfTimeStep(object sender, EventArgs e)
-        {
-            // Interest is paid and earned on the last day of the month after all other acitivites have made financial transactions.
-            // Interest payment does not occur in the Activity order.
-
-        }
-
         /// <summary>
         /// Resource shortfall event handler
         /// </summary>
@@ -81,7 +70,7 @@ namespace Models.CLEM.Activities
         /// </summary>
         /// <param name="requirement">The details of how labour are to be provided</param>
         /// <returns></returns>
-        public override double GetDaysLabourRequired(LabourRequirement requirement)
+        public override GetDaysLabourRequiredReturnArgs GetDaysLabourRequired(LabourRequirement requirement)
         {
             throw new NotImplementedException();
         }
@@ -112,13 +101,13 @@ namespace Models.CLEM.Activities
             if (financesExist)
             {
                 // make interest payments on bank accounts
-                foreach (FinanceType accnt in Apsim.Children(Resources.FinanceResource(), typeof(FinanceType)))
+                foreach (FinanceType accnt in Resources.FinanceResource().FindAllChildren<FinanceType>())
                 {
                     if (accnt.Balance > 0)
                     {
                         if (accnt.InterestRatePaid > 0)
                         {
-                            accnt.Add(accnt.Balance * accnt.InterestRatePaid / 1200, this, "Interest earned");
+                            accnt.Add(accnt.Balance * accnt.InterestRatePaid / 1200, this, "", "Interest");
                             SetStatusSuccess();
                         }
                     }
@@ -132,7 +121,7 @@ namespace Models.CLEM.Activities
                                 ActivityModel = this,
                                 Required = interest,
                                 AllowTransmutation = false,
-                                Reason = "Pay interest charged"
+                                Category = "Interest"
                             };
                             accnt.Remove(interestRequest);
 
@@ -140,7 +129,7 @@ namespace Models.CLEM.Activities
                             if (interestRequest.Required > interestRequest.Provided)
                             {
                                 interestRequest.ResourceType = typeof(Finance);
-                                interestRequest.ResourceTypeName = accnt.Name;
+                                interestRequest.ResourceTypeName = accnt.NameWithParent;
                                 interestRequest.Available = accnt.FundsAvailable;
                                 ResourceRequestEventArgs rre = new ResourceRequestEventArgs() { Request = interestRequest };
                                 OnShortfallOccurred(rre);
@@ -178,6 +167,8 @@ namespace Models.CLEM.Activities
             return null;
         }
 
+        #region descriptive summary
+
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
         /// </summary>
@@ -186,12 +177,12 @@ namespace Models.CLEM.Activities
         public override string ModelSummary(bool formatForParentControl)
         {
             string html = "";
-            ZoneCLEM clemParent = Apsim.Parent(this, typeof(ZoneCLEM)) as ZoneCLEM;
+            ZoneCLEM clemParent = FindAncestor<ZoneCLEM>();
             ResourcesHolder resHolder;
             Finance finance = null;
             if (clemParent != null)
             {
-                resHolder = Apsim.Children(clemParent, typeof(ResourcesHolder)).FirstOrDefault() as ResourcesHolder;
+                resHolder = clemParent.FindAllChildren<ResourcesHolder>().FirstOrDefault() as ResourcesHolder;
                 finance = resHolder.FinanceResource();
             }
 
@@ -202,7 +193,7 @@ namespace Models.CLEM.Activities
             else
             {
                 html += "\n<div class=\"activityentry\">Interest rates are set in the <span class=\"resourcelink\">FinanceType</span> component</div>";
-                foreach (FinanceType accnt in Apsim.Children(finance, typeof(FinanceType)))
+                foreach (FinanceType accnt in finance.FindAllChildren<FinanceType>())
                 {
                     if (accnt.InterestRateCharged == 0 & accnt.InterestRatePaid == 0)
                     {
@@ -222,7 +213,8 @@ namespace Models.CLEM.Activities
                 }
             }
             return html;
-        }
+        } 
+        #endregion
 
     }
 }

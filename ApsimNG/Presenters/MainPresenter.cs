@@ -40,11 +40,6 @@
         private List<IPresenter> presenters2 = new List<IPresenter>();
 
         /// <summary>
-        /// View used to convert xml files to a newer version.
-        /// </summary>
-        private IFileConverterView fileConverter = null;
-
-        /// <summary>
         /// View used to show help information.
         /// </summary>
         private HelpView helpView = null;
@@ -114,8 +109,6 @@
             this.view.TabClosing -= this.OnTabClosing;
             this.view.OnError -= OnError;
             this.view.ShowDetailedError -= ShowDetailedErrorMessage;
-            if (fileConverter != null)
-                fileConverter.Convert -= OnConvert;
         }
 
         /// <summary>
@@ -126,20 +119,42 @@
         {
             bool ok = true;
 
-            foreach (ExplorerPresenter presenter in this.Presenters1.OfType<ExplorerPresenter>())
+            for (int i = 0; i < Presenters1.Count; i++)
             {
-                if (presenter.SaveIfChanged())
-                    presenter.Detach();
+                if (Presenters1[i] is ExplorerPresenter presenter)
+                {
+                    if (presenter.SaveIfChanged())
+                    {
+                        CloseTab(i, true);
+                        i--;
+                    }
+                    else
+                        ok = false;
+                }
                 else
-                    ok = false;
+                {
+                    CloseTab(i, true);
+                    i--;
+                }
             }
 
-            foreach (ExplorerPresenter presenter in this.presenters2.OfType<ExplorerPresenter>())
+            for (int i = 0; i < presenters2.Count; i++)
             {
-                if (presenter.SaveIfChanged())
-                    presenter.Detach();
+                if (presenters2[i] is ExplorerPresenter presenter)
+                {
+                    if (presenter.SaveIfChanged())
+                    {
+                        CloseTab(i, false);
+                        i--;
+                    }
+                    else
+                        ok = false;
+                }
                 else
-                    ok = false;
+                {
+                    CloseTab(i, false);
+                    i--;
+                }
             }
 
             return ok;
@@ -567,28 +582,15 @@
 
 #if DEBUG
             startPage.AddButton(
-                                "Convert Files",
+                                "Upgrade Resource Files",
                                 new Gtk.Image(null, "ApsimNG.Resources.MenuImages.Upgrade.png"),
                                 this.OnShowConverter);
 #endif
 
-            // Settings menu
-            startPage.AddButtonWithMenu(
-                                        "Settings",
-                                        new Gtk.Image(null, "ApsimNG.Resources.MenuImages.Settings.png"));
-
-            startPage.AddButtonToMenu(
-                                      "Settings",
-                                      "Change Font",
-                                      new Gtk.Image(null, "ApsimNG.Resources.MenuImages.Upgrade.png"),
-                                      this.OnChooseFont);
-
-            startPage.AddButtonToMenu(
-                                      "Settings",
-                                      "Toggle Theme",
-                                      new Gtk.Image(null, Configuration.Settings.DarkTheme ? "ApsimNG.Resources.MenuImages.Sun.png" : "ApsimNG.Resources.MenuImages.Moon.png"),
-                                      OnToggleTheme);
-
+            startPage.AddButton(
+                                "Settings",
+                                new Gtk.Image(null, "ApsimNG.Resources.MenuImages.Settings.png"),
+                                OnShowSettingsDialog);
             startPage.AddButton(
                             "Help",
                             new Gtk.Image(null, "ApsimNG.Resources.MenuImages.Help.png"),
@@ -597,6 +599,20 @@
             startPage.List.Values = Configuration.Settings.MruList.Select(f => f.FileName).ToArray();
 
             this.PopulatePopup(startPage);
+        }
+
+        private void OnShowSettingsDialog(object sender, EventArgs e)
+        {
+            try
+            {
+                SettingsDialog dialog = new SettingsDialog(((ViewBase)view).MainWidget as Gtk.Window);
+                dialog.ShowAll();
+                dialog.Run();
+            }
+            catch (Exception err)
+            {
+                ShowError(err);
+            }
         }
 
         /// <summary>
@@ -885,7 +901,10 @@
             IPresenter newPresenter;
             try
             {
-                newView = (ViewBase)Assembly.GetExecutingAssembly().CreateInstance(viewName, false, BindingFlags.Default, null, new object[] { this.view }, null, null);
+                if (viewName.Contains(".glade"))
+                    newView = new ViewBase(view as ViewBase, viewName);
+                else
+                    newView = (ViewBase)Assembly.GetExecutingAssembly().CreateInstance(viewName, false, BindingFlags.Default, null, new object[] { this.view }, null, null);
                 newPresenter = (IPresenter)Assembly.GetExecutingAssembly().CreateInstance(presenterName, false, BindingFlags.Default, null, new object[] { this }, null, null);
             }
             catch (InvalidCastException e)
@@ -1109,7 +1128,7 @@
                 // Clear the message window
                 view.ShowMessage(" ", Simulation.ErrorLevel.Information);
                 if (Environment.OSVersion.Platform == PlatformID.Win32NT)
-                    CreateNewTab("View Cloud Jobs", null, onLeftTabControl, "UserInterface.Views.CloudJobView", "UserInterface.Presenters.CloudJobPresenter");
+                    CreateNewTab("View Cloud Jobs", null, onLeftTabControl, "ApsimNG.Resources.Glade.CloudJobView.glade", "UserInterface.Presenters.CloudJobPresenter");
                 else
                     ShowError("Microsoft Azure functionality is currently only available under Windows.");
             }
@@ -1232,37 +1251,14 @@
         {
             try
             {
-                if (fileConverter == null)
-                {
-                    fileConverter = new FileConverterView(view as ViewBase);
-                    fileConverter.Convert += OnConvert;
-                }
-                fileConverter.Visible = true;
-            }
-            catch (Exception err)
-            {
-                ShowError(err);
-            }
-        }
-
-        /// <summary>
-        /// Opens a dialog which allows the user to upgrade an XML file from and to a version of their choice.
-        /// </summary>
-        /// <param name="sender">Sender object.</param>
-        /// <param name="args">Event arguments.</param>
-        private void OnConvert(object sender, EventArgs args)
-        {
-            try
-            {
-                if (fileConverter == null || fileConverter.Files == null)
-                    return;
-
-                // The file converter view has an option to automatically select the latest version.
-                // If the user has enabled this option, we will upgrade the file to the latest version. 
-                // Otherwise, we will upgrade to the version they have specified.
-                int version = fileConverter.LatestVersion ? Models.Core.ApsimFile.Converter.LatestVersion : fileConverter.ToVersion;
+                int version = Models.Core.ApsimFile.Converter.LatestVersion;
                 ClearStatusPanel();
-                foreach (string file in fileConverter.Files)
+                string bin = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                string resources = Path.Combine(bin, "..", "Models", "Resources");
+                if (!Directory.Exists(resources))
+                    throw new Exception("Unable to locate resources directory");
+                IEnumerable<string> files = Directory.EnumerateFiles(resources, "*.json", SearchOption.AllDirectories);
+                foreach (string file in files)
                 {
                     if (!File.Exists(file))
                         throw new FileNotFoundException(string.Format("Unable to upgrade {0}: file does not exist.", file));
@@ -1318,7 +1314,6 @@
             e.AllowClose = this.AllowClose();
             if (e.AllowClose)
             {
-                fileConverter?.Destroy();
                 Configuration.Settings.SplitScreenPosition = view.SplitScreenPosition;
                 Utility.Configuration.Settings.MainFormLocation = this.view.WindowLocation;
                 Utility.Configuration.Settings.MainFormSize = this.view.WindowSize;

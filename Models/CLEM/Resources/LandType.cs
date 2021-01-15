@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
 using Models.Core;
 using System.ComponentModel.DataAnnotations;
 using Models.Core.Attributes;
@@ -60,7 +60,7 @@ namespace Models.CLEM.Resources
         /// <summary>
         /// Area not currently being used (ha)
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public double AreaAvailable { get { return areaAvailable; } }
         private double areaAvailable { get { return roundedAreaAvailable; } set { roundedAreaAvailable = Math.Round(value, 9); } }
         private double roundedAreaAvailable;
@@ -68,13 +68,13 @@ namespace Models.CLEM.Resources
         /// <summary>
         /// The total area available 
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public double UsableArea { get { return Math.Round(this.LandArea * ProportionOfTotalArea, 5); } }
 
         /// <summary>
         /// List of currently allocated land
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public List<LandActivityAllocation> AllocatedActivitiesList;
 
         private CLEMModel ActivityRequestingRemainingLand;
@@ -106,7 +106,7 @@ namespace Models.CLEM.Resources
         {
             if (UsableArea > 0)
             {
-                Add(UsableArea, this, "Initialise");
+                Add(UsableArea, this, this.NameWithParent, "Initialise");
             }
 
             // take away buildings (allows building to change over time. 
@@ -116,7 +116,7 @@ namespace Models.CLEM.Resources
                 {
                     ActivityModel = this,
                     AllowTransmutation = false,
-                    Reason = "Allocate buildings",
+                    Category = "Allocate buildings",
                     Required = UsableArea * PortionBuildings,
                     Resource = this as IResourceType,
                     ResourceTypeName = this.Name,
@@ -130,14 +130,15 @@ namespace Models.CLEM.Resources
         /// <summary>
         /// Add to food store
         /// </summary>
-        /// <param name="resourceAmount"></param>
-        /// <param name="activity"></param>
-        /// <param name="reason"></param>
-        public new void Add(object resourceAmount, CLEMModel activity, string reason)
+        /// <param name="resourceAmount">Object to add. This object can be double or contain additional information (e.g. Nitrogen) of food being added</param>
+        /// <param name="activity">Name of activity adding resource</param>
+        /// <param name="relatesToResource"></param>
+        /// <param name="category"></param>
+        public new void Add(object resourceAmount, CLEMModel activity, string relatesToResource, string category)
         {
             if (resourceAmount.GetType().ToString() != "System.Double")
             {
-                throw new Exception(String.Format("ResourceAmount object of type [{0}] is not supported Add method in [r={1}]", resourceAmount.GetType().ToString(), this.Name));
+                throw new Exception(String.Format("ResourceAmount object of type [{0}] is not supported. Add method in [r={1}]", resourceAmount.GetType().ToString(), this.GetType().ToString()));
             }
             double addAmount = (double)resourceAmount;
             double amountAdded = addAmount;
@@ -156,14 +157,16 @@ namespace Models.CLEM.Resources
             {
                 Gain = amountAdded,
                 Activity = activity,
-                Reason = reason,
+                RelatesToResource = relatesToResource,
+                Category = category,
                 ResourceType = this
             };
+            LastGain = amountAdded;
             LastTransaction = details;
             TransactionEventArgs te = new TransactionEventArgs() { Transaction = details };
             OnTransactionOccurred(te);
 
-            if (reason != "Initialise")
+            if (category != "Initialise")
             {
                 UpdateLandAllocatedList(activity, amountAdded, true);
                 // adjust activity using all remaining land as well.
@@ -189,7 +192,7 @@ namespace Models.CLEM.Resources
             // avoid taking too much
             amountRemoved = Math.Min(this.areaAvailable, amountRemoved);
 
-            if (request.Reason != "Assign unallocated")
+            if (request.Category != "Assign unallocated")
             {
                 this.areaAvailable -= amountRemoved;
             }
@@ -213,7 +216,8 @@ namespace Models.CLEM.Resources
                 ResourceType = this,
                 Loss = amountRemoved,
                 Activity = request.ActivityModel,
-                Reason = request.Reason
+                Category = request.Category,
+                RelatesToResource = request.RelatesToResource
             };
             LastTransaction = details;
             TransactionEventArgs te = new TransactionEventArgs() { Transaction = details };
@@ -287,10 +291,12 @@ namespace Models.CLEM.Resources
         /// <summary>
         /// Last transaction received
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public ResourceTransaction LastTransaction { get; set; }
 
         #endregion
+
+        #region descriptive summary
 
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
@@ -344,6 +350,8 @@ namespace Models.CLEM.Resources
         {
             return "";
         }
+
+        #endregion 
     }
 
     /// <summary>

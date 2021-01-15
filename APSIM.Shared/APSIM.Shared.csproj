@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>APSIM.Shared</RootNamespace>
     <AssemblyName>APSIM.Shared</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -130,9 +130,11 @@
     <Compile Include="APSoil\Soil.cs" />
     <Compile Include="APSoil\SoilCrop.cs" />
     <Compile Include="APSoil\SoilOrganicMatter.cs" />
-    <Compile Include="APSoil\SoilUtilities.cs" />
+    <Compile Include="APSoil\APSoilUtilities.cs" />
     <Compile Include="APSoil\SoilWater.cs" />
     <Compile Include="APSoil\Water.cs" />
+    <Compile Include="Extensions\CollectionExtensions.cs" />
+    <Compile Include="Extensions\TypeExtensions.cs" />
     <Compile Include="JobRunning\AllCompleteArguments.cs" />
     <Compile Include="JobRunning\IRunnable.cs" />
     <Compile Include="JobRunning\IJobManager.cs" />
@@ -164,6 +166,7 @@
     <Compile Include="Utilities\ProcessUtilities.cs" />
     <Compile Include="Utilities\ReflectionUtilities.cs" />
     <Compile Include="Utilities\SocketServer.cs" />
+    <Compile Include="Utilities\SoilUtilities.cs" />
     <Compile Include="Utilities\SQLite.cs" />
     <Compile Include="Utilities\StreamReaderRandomAccess.cs" />
     <Compile Include="Utilities\StringUtilities.cs" />

@@ -178,15 +178,19 @@ namespace Models.CLEM
         /// <summary>
         /// Fixed price
         /// </summary>
-        Fixed,
+        Fixed = 0,
+        /// <summary>
+        /// Amount per unit of land
+        /// </summary>
+        perUnitOfLand = 3,
         /// <summary>
         /// Amount per hectare
         /// </summary>
-        perHa,
+        perHa = 1,
         /// <summary>
         /// Amount per tree
         /// </summary>
-        perTree,
+        perTree = 2,
     }
 
     /// <summary>
@@ -232,7 +236,11 @@ namespace Models.CLEM
         /// <summary>
         /// Amount per hectare
         /// </summary>
-        perHa
+        perHa,
+        /// <summary>
+        /// Amount per unit of land
+        /// </summary>
+        perUnitOfLand
     }
 
     /// <summary>
@@ -243,31 +251,35 @@ namespace Models.CLEM
         /// <summary>
         /// Fixed price
         /// </summary>
-        Fixed,
+        Fixed = 0,
+        /// <summary>
+        /// Labour per unit of land
+        /// </summary>
+        perUnitOfLand = 7,
         /// <summary>
         /// Labour per hectare
         /// </summary>
-        perHa,
+        perHa = 1,
         /// <summary>
         /// Labour per Tree
         /// </summary>
-        perTree,
+        perTree = 2,
         /// <summary>
         /// Labour per head
         /// </summary>
-        perHead,
+        perHead = 3,
         /// <summary>
         /// Labour per adult equivilant
         /// </summary>
-        perAE,
+        perAE = 4,
         /// <summary>
         /// Labour per kg
         /// </summary>
-        perKg,
+        perKg = 5,
         /// <summary>
         /// Labour per unit
         /// </summary>
-        perUnit,
+        perUnit = 6,
     }
 
     /// <summary>
@@ -276,25 +288,29 @@ namespace Models.CLEM
     public enum RuminantFeedActivityTypes
     {
         /// <summary>
-        /// Feed specified amount daily to all individuals
+        /// A specified amount daily to all individuals
         /// </summary>
         SpecifiedDailyAmount,
         /// <summary>
-        /// Feed specified amount daily to each individual
+        /// A specified amount daily to each individual
         /// </summary>
         SpecifiedDailyAmountPerIndividual,
         /// <summary>
-        /// Feed proportion of animal weight in selected months
+        /// The proportion of animal weight in selected months
         /// </summary>
         ProportionOfWeight,
         /// <summary>
-        /// Feed proportion of potential intake
+        /// The proportion of potential intake
         /// </summary>
         ProportionOfPotentialIntake,
         /// <summary>
-        /// Feed proportion of remaining amount required
+        /// The proportion of remaining amount required
         /// </summary>
-        ProportionOfRemainingIntakeRequired
+        ProportionOfRemainingIntakeRequired,
+        /// <summary>
+        /// A proportion of the feed pool available
+        /// </summary>
+        ProportionOfFeedAvailable
     }
 
     /// <summary>
@@ -485,4 +501,32 @@ namespace Models.CLEM
         /// </summary>
         December = 12
     }
+
+    /// <summary>
+    /// Style selling resource
+    /// </summary>
+    public enum ResourceSellStyle
+    {
+        /// <summary>
+        /// Specified amount
+        /// </summary>
+        SpecifiedAmount,
+        /// <summary>
+        /// Proportion of store
+        /// </summary>
+        ProportionOfStore,
+        /// <summary>
+        /// Proportion of last gain transaction
+        /// </summary>
+        ProportionOfLastGain,
+        /// <summary>
+        /// Reserve amount
+        /// </summary>
+        ReserveAmount,
+        /// <summary>
+        /// Reserve proportion
+        /// </summary>
+        ReserveProportion
+    }
+
 }

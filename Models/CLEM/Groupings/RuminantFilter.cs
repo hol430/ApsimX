@@ -18,11 +18,12 @@ namespace Models.CLEM.Groupings
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(RuminantFeedGroupMonthly))]
     [ValidParent(ParentType = typeof(RuminantFeedGroup))]
-    [ValidParent(ParentType = typeof(RuminantFilterGroup))]
+    [ValidParent(ParentType = typeof(RuminantGroup))]
     [ValidParent(ParentType = typeof(RuminantDestockGroup))]
     [ValidParent(ParentType = typeof(AnimalPriceGroup))]
     [Description("This ruminant filter rule is used to define specific individuals from the current ruminant herd. Multiple filters are additive.")]
-    [Version(1, 0, 1, "Supports blank entry for Location to represent 'Not specified - general yards'")]
+    [Version(1, 0, 3, "Now uses IsState() terminology for all state filter properties")]
+    [Version(1, 0, 2, "Supports blank entry for Location to represent 'Not specified - general yards'")]
     [Version(1, 0, 1, "")]
     [HelpUri(@"Content/Features/Filters/RuminantFilter.htm")]
     public class RuminantFilter: CLEMModel, IValidatableObject
@@ -139,6 +140,8 @@ namespace Models.CLEM.Groupings
             return str;
         }
 
+        #region descriptive summary
+
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
         /// </summary>
@@ -147,7 +150,7 @@ namespace Models.CLEM.Groupings
         public override string ModelSummary(bool formatForParentControl)
         {
             string html = "";
-            if(!this.ValidParent())
+            if (!this.ValidParent())
             {
                 html = "<div class=\"errorlink\">Invalid Parent. Ruminant Group type required.</div>";
             }
@@ -180,6 +183,10 @@ namespace Models.CLEM.Groupings
             return "";
         }
 
+        #endregion
+
+        #region validation
+
         /// <summary>
         /// Validate this component
         /// </summary>
@@ -190,18 +197,19 @@ namespace Models.CLEM.Groupings
             var results = new List<ValidationResult>();
 
             // ensure parent is of the right type.
-            if(!this.ValidParent())
+            if (!this.ValidParent())
             {
                 string[] memberNames = new string[] { "RuminantFilter" };
-                results.Add(new ValidationResult("The RuminantFilter named "+this.Name+" does not have a valid RuminantGroup parent component", memberNames));
+                results.Add(new ValidationResult("The RuminantFilter named " + this.Name + " does not have a valid RuminantGroup parent component", memberNames));
             }
-            if((Value==null||Value=="")&&(Parameter.ToString()!="Location"))
+            if ((Value == null || Value == "") && (Parameter.ToString() != "Location"))
             {
                 string[] memberNames = new string[] { "Value" };
                 results.Add(new ValidationResult("Value must be specified", memberNames));
             }
             return results;
-        }
+        } 
+        #endregion
     }
 
     /// <summary>
@@ -220,11 +228,11 @@ namespace Models.CLEM.Groupings
         /// <summary>
         /// Is male breeding sire
         /// </summary>
-        BreedingSire = 15,
+        IsSire = 15,
         /// <summary>
         /// Is male draught individual
         /// </summary>
-        Draught = 14,
+        IsDraught = 14,
         /// <summary>
         /// Gender of individuals
         /// </summary>
@@ -276,10 +284,18 @@ namespace Models.CLEM.Groupings
         /// <summary>
         /// Is individual a weaner (weaned, but less than 12 months)
         /// </summary>
-        Weaner = 10,
+        IsWeaner = 10,
         /// <summary>
         /// Weight of individuals
         /// </summary>
         Weight = 5,
+        /// <summary>
+        /// Is individual a calf (not weaned)
+        /// </summary>
+        IsCalf = 18,
+        /// <summary>
+        /// Is individual castrated
+        /// </summary>
+        IsCastrate = 30,
     }
 }

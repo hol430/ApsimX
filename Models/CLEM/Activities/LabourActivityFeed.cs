@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
 using Models.Core.Attributes;
 
 namespace Models.CLEM.Activities
@@ -48,7 +48,7 @@ namespace Models.CLEM.Activities
         /// <summary>
         /// Feed type
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public HumanFoodStoreType FeedType { get; set; }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace Models.CLEM.Activities
             feedRequired = 0;
 
             // get list from filters
-            foreach (Model child in Apsim.Children(this, typeof(LabourFeedGroup)))
+            foreach (Model child in this.FindAllChildren<LabourFeedGroup>())
             {
                 double value = (child as LabourFeedGroup).Value;
 
@@ -112,7 +112,7 @@ namespace Models.CLEM.Activities
                         ResourceType = typeof(HumanFoodStore),
                         ResourceTypeName = feedItemName,
                         ActivityModel = this,
-                        Reason = "Consumption"
+                        Category = "Consumption"
                     }
                 };
             }
@@ -127,12 +127,12 @@ namespace Models.CLEM.Activities
         /// </summary>
         /// <param name="requirement">The details of how labour are to be provided</param>
         /// <returns></returns>
-        public override double GetDaysLabourRequired(LabourRequirement requirement)
+        public override GetDaysLabourRequiredReturnArgs GetDaysLabourRequired(LabourRequirement requirement)
         {
             List<LabourType> group = Resources.Labour().Items.Where(a => a.Hired != true).ToList();
             int head = 0;
             double adultEquivalents = 0;
-            foreach (Model child in Apsim.Children(this, typeof(LabourFeedGroup)))
+            foreach (Model child in this.FindAllChildren<LabourFeedGroup>())
             {
                 var subgroup = group.Filter(child).ToList();
                 head += subgroup.Count();
@@ -179,7 +179,7 @@ namespace Models.CLEM.Activities
                 default:
                     throw new Exception(String.Format("LabourUnitType {0} is not supported for {1} in {2}", requirement.UnitType, requirement.Name, this.Name));
             }
-            return daysNeeded;
+            return new GetDaysLabourRequiredReturnArgs(daysNeeded, "Feeding", null);
         }
 
         /// <summary>
@@ -222,7 +222,7 @@ namespace Models.CLEM.Activities
                     return;
                 }
 
-                foreach (Model child in Apsim.Children(this, typeof(LabourFeedGroup)))
+                foreach (Model child in this.FindAllChildren<LabourFeedGroup>())
                 {
                     double value = (child as LabourFeedGroup).Value;
 
@@ -298,6 +298,8 @@ namespace Models.CLEM.Activities
             ActivityPerformed?.Invoke(this, e);
         }
 
+        #region descriptive summary
+
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
         /// </summary>
@@ -318,6 +320,7 @@ namespace Models.CLEM.Activities
             html += "</div>";
 
             return html;
-        }
+        } 
+        #endregion
     }
 }

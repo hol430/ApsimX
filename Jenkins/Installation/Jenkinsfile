@@ -11,6 +11,7 @@ pipeline {
 						APSIM_SITE_CREDS = credentials('apsim-site-creds')
 						SOYBEAN_PASSWORD = credentials('soybean-validation-password')
 						GRAPEVINE_PASSWORD = credentials('grapevine-validation-password')
+						NPI_PASSWORD = credentials('npi-archive-password')
 					}
 					steps {
 						bat '''
@@ -109,6 +110,7 @@ pipeline {
 				label "installation"
 			}
 			environment {
+				APSIM_SITE_CREDS = credentials('apsim-site-creds')
 				CHANGE_DB_CREDS = credentials('change-db-creds')
 				NETLIFY_BUILD_HOOK = credentials('netlify-build-hook')
 			}
@@ -121,7 +123,7 @@ pipeline {
 					)
 					cd ApsimX\\Jenkins
 					call cleanup
-					call deploy "%PULL_ID%" "%CHANGE_DB_CREDS_PSW%"
+					call deploy
 				'''
 			}
 		}

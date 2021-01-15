@@ -13,7 +13,7 @@
     /// <summary>
     /// This command exports the specified node and all child nodes as HTML.
     /// </summary>
-    public class CreateParamsInputsOutputsDocCommand : ICommand
+    public class CreateParamsInputsOutputsDocCommand
     {
         /// <summary>The maximum length of a description.</summary>
         private const int maxDescriptionLength = 50;
@@ -62,7 +62,7 @@
         /// <summary>
         /// Perform the command
         /// </summary>
-        public void Do(CommandHistory commandHistory)
+        public void Do()
         {
             if (modelToDocument is ModelCollectionFromResource)
                 parameterNames = (modelToDocument as ModelCollectionFromResource).GetModelParameterNames();
@@ -225,7 +225,7 @@
 
             foreach (var parameterName in parameterNames)
             {
-                var parameter = Apsim.GetVariableObject(objectToDocument as IModel, parameterName);
+                var parameter = (objectToDocument as IModel).FindByPath(parameterName);
                 if (parameter != null)
                     parameters.Add(parameter);
             }
@@ -423,14 +423,6 @@
                 return methods;
             else
                 return null;
-        }
-
-        /// <summary>
-        /// Undo the command
-        /// </summary>
-        public void Undo(CommandHistory commandHistory)
-        {
-
         }
     }
 }

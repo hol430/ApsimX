@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
 using Models.Core.Attributes;
 
 namespace Models.CLEM.Activities
@@ -52,13 +52,13 @@ namespace Models.CLEM.Activities
         /// <summary>
         /// Area of land actually received (maybe less than requested)
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public double Area { get; set; }
 
         /// <summary>
         /// Land item
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public LandType LinkedLandItem { get; set; }
 
         private bool gotLandRequested = false; //was this crop able to get the land it requested ?
@@ -71,23 +71,6 @@ namespace Models.CLEM.Activities
         public CropActivityManageCrop()
         {
             base.ModelSummaryStyle = HTMLSummaryStyle.SubActivityLevel2;
-        }
-
-        /// <summary>
-        /// Validate model
-        /// </summary>
-        /// <param name="validationContext"></param>
-        /// <returns></returns>
-        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-        {
-            var results = new List<ValidationResult>();
-            // check that this activity contains at least one CollectProduct activity
-            if(this.Children.OfType<CropActivityManageProduct>().Count() == 0)
-            {
-                string[] memberNames = new string[] { "Collect product activity" };
-                results.Add(new ValidationResult("At least one [a=CropActivityManageProduct] activity must be present under this manage crop activity", memberNames));
-            }
-            return results;
         }
 
         /// <summary>An event handler to allow us to initialise</summary>
@@ -113,9 +96,9 @@ namespace Models.CLEM.Activities
                     AllowTransmutation = false,
                     Required = UseAreaAvailable ? LinkedLandItem.AreaAvailable : AreaRequested,
                     ResourceType = typeof(Land),
-                    ResourceTypeName = LandItemNameToUse.Split('.').Last(),
+                    ResourceTypeName = LandItemNameToUse,
                     ActivityModel = this,
-                    Reason = UseAreaAvailable ?"Assign unallocated":"Assign",
+                    Category = UseAreaAvailable ?"Assign unallocated":"Assign",
                     FilterDetails = null
                 }
                 };
@@ -265,7 +248,7 @@ namespace Models.CLEM.Activities
         /// </summary>
         /// <param name="requirement">The details of how labour are to be provided</param>
         /// <returns></returns>
-        public override double GetDaysLabourRequired(LabourRequirement requirement)
+        public override GetDaysLabourRequiredReturnArgs GetDaysLabourRequired(LabourRequirement requirement)
         {
             throw new NotImplementedException();
         }
@@ -278,6 +261,28 @@ namespace Models.CLEM.Activities
             return;
         }
 
+        #region validation
+
+        /// <summary>
+        /// Validate model
+        /// </summary>
+        /// <param name="validationContext"></param>
+        /// <returns></returns>
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            var results = new List<ValidationResult>();
+            // check that this activity contains at least one CollectProduct activity
+            if (this.Children.OfType<CropActivityManageProduct>().Count() == 0)
+            {
+                string[] memberNames = new string[] { "Collect product activity" };
+                results.Add(new ValidationResult("At least one [a=CropActivityManageProduct] activity must be present under this manage crop activity", memberNames));
+            }
+            return results;
+        }
+        #endregion
+
+        #region descriptive summary
+
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
         /// </summary>
@@ -289,16 +294,16 @@ namespace Models.CLEM.Activities
             html += "\n<div class=\"activityentry\">This crop uses ";
 
             Land parentLand = null;
-            IModel clemParent = Apsim.Parent(this, typeof(ZoneCLEM));
-            if(LandItemNameToUse != null && LandItemNameToUse != "")
+            IModel clemParent = FindAncestor<ZoneCLEM>();
+            if (LandItemNameToUse != null && LandItemNameToUse != "")
             {
                 if (clemParent != null && clemParent.Enabled)
                 {
-                    parentLand = Apsim.Find(clemParent, LandItemNameToUse.Split('.')[0]) as Land;
+                    parentLand = clemParent.FindInScope(LandItemNameToUse.Split('.')[0]) as Land;
                 }
             }
 
-            if(UseAreaAvailable)
+            if (UseAreaAvailable)
             {
                 html += "the unallocated portion of ";
             }
@@ -332,7 +337,7 @@ namespace Models.CLEM.Activities
         public override string ModelSummaryInnerClosingTags(bool formatForParentControl)
         {
             string html = "";
-            if (Apsim.Children(this, typeof(CropActivityManageProduct)).Count() > 0)
+            if (this.FindAllChildren<CropActivityManageProduct>().Count() > 0)
             {
                 html += "\n</div>";
             }
@@ -347,7 +352,7 @@ namespace Models.CLEM.Activities
         {
             string html = "";
 
-            if (Apsim.Children(this, typeof(CropActivityManageProduct)).Count() == 0)
+            if (this.FindAllChildren<CropActivityManageProduct>().Count() == 0)
             {
                 html += "\n<div class=\"errorbanner clearfix\">";
                 html += "<div class=\"filtererror\">No Crop Activity Manage Product component provided</div>";
@@ -355,7 +360,7 @@ namespace Models.CLEM.Activities
             }
             else
             {
-                bool rotation = Apsim.Children(this, typeof(CropActivityManageProduct)).Count() > 1;
+                bool rotation = this.FindAllChildren<CropActivityManageProduct>().Count() > 1;
                 if (rotation)
                 {
                     html += "\n<div class=\"croprotationlabel\">Rotating through crops</div>";
@@ -363,6 +368,7 @@ namespace Models.CLEM.Activities
                 html += "\n<div class=\"croprotationborder\">";
             }
             return html;
-        }
+        } 
+        #endregion
     }
 }

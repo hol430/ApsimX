@@ -11,7 +11,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>UnitTests</RootNamespace>
     <AssemblyName>UnitTests</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
     <NuGetPackageImportStamp>
@@ -100,13 +100,13 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Bin\gtk-sharp.dll</HintPath>
     </Reference>
-    <Reference Include="MathNet.Numerics, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\MathNet.Numerics.4.0.0\lib\net40\MathNet.Numerics.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Mono.Cairo, Version=4.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\Bin\Mono.Cairo.dll</HintPath>
+    </Reference>
+    <Reference Include="MathNet.Numerics, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\MathNet.Numerics.4.0.0\lib\net40\MathNet.Numerics.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="nunit.framework, Version=3.9.0.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
       <HintPath>..\..\packages\NUnit.3.9.0\lib\net45\nunit.framework.dll</HintPath>
@@ -136,6 +136,7 @@
   <ItemGroup>
     <Compile Include="ApsimNG\Presenters\AddModelPresenterTests.cs" />
     <Compile Include="ApsimNG\Presenters\ProfileGridTests.cs" />
+    <Compile Include="ApsimNG\Presenters\TablePresenterTests.cs" />
     <Compile Include="ApsimNG\UITestsMain.cs" />
     <Compile Include="ApsimNG\Utilities\GtkUtilities.cs" />
     <Compile Include="ApsimNG\Utilities\UITestUtilities.cs" />
@@ -144,9 +145,10 @@
     <Compile Include="APSIMShared\JobRunning\JobManagerTests.cs" />
     <Compile Include="APSIMShared\JobRunning\JobRunnerTests.cs" />
     <Compile Include="APSIMShared\MockJob.cs" />
+    <Compile Include="APSIMShared\ReflectionUtilitiesTests.cs" />
     <Compile Include="CommandLineArgsTests.cs" />
     <Compile Include="Core\ApsimFile\EditFileTests.cs" />
-    <Compile Include="Core\CommandLineOptionsTests.cs" />
+    <Compile Include="Core\ModelTests.cs" />
     <Compile Include="Core\Run\GenerateApsimXFilesTests.cs" />
     <Compile Include="Core\Run\RunnerTests.cs" />
     <Compile Include="Core\Run\SimulationTests.cs" />
@@ -240,6 +242,7 @@
     <EmbeddedResource Include="ApsimNG\Resources\SampleFiles\NullSample.apsimx" />
     <EmbeddedResource Include="bork.apsimx" />
     <EmbeddedResource Include="Factorial\MultiPaddockFactorOverride.apsimx" />
+    <EmbeddedResource Include="Core\Run\MultipleReplacements.apsimx" />
     <None Include="packages.config" />
     <EmbeddedResource Include="Core\ApsimFile\FileFormatTestsReadFromString.json" />
     <EmbeddedResource Include="Core\ApsimFile\FileFormatTestsCheckThatModelsCanThrowExceptionsDuringCreation.json" />
@@ -277,6 +280,8 @@
     <EmbeddedResource Include="Report\ReportOnEvents.apsimx" />
     <EmbeddedResource Include="Resources\WheatModel.apsimx" />
     <EmbeddedResource Include="Stock\AddAnimalCohort.json" />
+    <EmbeddedResource Include="Resources\SimpleExperiment.apsimx" />
+    <EmbeddedResource Include="**\*.Expected.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\APSIM.Shared\APSIM.Shared.csproj">

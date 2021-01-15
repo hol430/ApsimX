@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
 using Models.CLEM.Groupings;
 using Models.Core.Attributes;
 
@@ -54,7 +54,7 @@ namespace Models.CLEM.Activities
         /// <summary>
         /// paddock or pasture to graze
         /// </summary>
-        [XmlIgnore]
+        [JsonIgnore]
         public GrazeFoodStoreType GrazeFoodStoreModel { get; set; }
 
         /// <summary>An event handler to allow us to initialise ourselves.</summary>
@@ -69,7 +69,7 @@ namespace Models.CLEM.Activities
             GrazeFoodStoreModel = Resources.GetResourceItem(this, GrazeFoodStoreTypeName, OnMissingResourceActionTypes.ReportErrorAndStop, OnMissingResourceActionTypes.ReportErrorAndStop) as GrazeFoodStoreType;
 
             //Create list of children by breed
-            foreach (RuminantType herdType in Apsim.Children(Resources.RuminantHerd(), typeof(RuminantType)))
+            foreach (RuminantType herdType in Resources.RuminantHerd().FindAllChildren<RuminantType>())
             {
                 RuminantActivityGrazePastureHerd ragpb = new RuminantActivityGrazePastureHerd
                 {
@@ -143,7 +143,7 @@ namespace Models.CLEM.Activities
         /// </summary>
         /// <param name="requirement">Labour requirement model</param>
         /// <returns></returns>
-        public override double GetDaysLabourRequired(LabourRequirement requirement)
+        public override GetDaysLabourRequiredReturnArgs GetDaysLabourRequired(LabourRequirement requirement)
         {
             List<Ruminant> herd = this.CurrentHerd(false).Where(a => a.Location == GrazeFoodStoreModel.Name).ToList();
             int head = herd.Count();
@@ -174,7 +174,7 @@ namespace Models.CLEM.Activities
                 default:
                     throw new Exception(String.Format("LabourUnitType {0} is not supported for {1} in {2}", requirement.UnitType, requirement.Name, this.Name));
             }
-            return daysNeeded;
+            return new GetDaysLabourRequiredReturnArgs(daysNeeded, "Graze", this.PredictedHerdName);
         }
 
         /// <summary>
@@ -261,6 +261,8 @@ namespace Models.CLEM.Activities
             ActivityPerformed?.Invoke(this, e);
         }
 
+        #region descriptive summary
+
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
         /// </summary>
@@ -291,7 +293,8 @@ namespace Models.CLEM.Activities
             html += "the maximum 8 hours each day</span>";
             html += "</div>";
             return html;
-        }
+        } 
+        #endregion
 
     }
 }

@@ -293,7 +293,7 @@
                 // for a variableName of [3:], columnName = [3]
                 // for a variableName of [:5], columnNamne = [0]
 
-                Regex regex = new Regex("\\[([0-9]):*[0-9]*\\]");
+                Regex regex = new Regex("\\[([0-9]+):*[0-9]*\\]");
 
                 Name = regex.Replace(variableName.Replace("[:", "[1:"), "($1)");
 
@@ -330,8 +330,8 @@
                 // subscribe to the start of day event so that we can determine if we're in the capture window.
                 events.Subscribe("[Clock].DoDailyInitialisation", OnStartOfDay);
 
-                fromVariable = Apsim.GetVariableObject(clock as IModel, fromString);
-                toVariable = Apsim.GetVariableObject(clock as IModel, toString);
+                fromVariable = (clock as IModel).FindByPath(fromString);
+                toVariable = (clock as IModel).FindByPath(toString);
                 if (fromVariable != null)
                 {
                     // A from variable name  was specified.

@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Serialization;
+using Newtonsoft.Json;
 
 namespace Models.CLEM
 {
@@ -18,7 +18,9 @@ namespace Models.CLEM
     [ViewName("UserInterface.Views.GridView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(RuminantActivityTrade))]
+    [ValidParent(ParentType = typeof(PastureActivityManage))]
     [Description("This model component specifies a relationship to be used by supplying a series of x and y values.")]
+    [Version(1, 0, 4, "Default 0,0 now applies")]
     [Version(1, 0, 3, "Graph of relationship displayed in Summary")]
     [Version(1, 0, 2, "Added RelationshipCalculationMethod to allow user to define fixed or linear solver")]
     [Version(1, 0, 1, "")]
@@ -26,16 +28,11 @@ namespace Models.CLEM
     public class Relationship : CLEMModel, IValidatableObject
     {
         /// <summary>
-        /// Current value
-        /// </summary>
-        [XmlIgnore]
-        public double Value { get; set; }
-
-        /// <summary>
         /// X values of relationship
         /// </summary>
         [Description("X values of relationship")]
         [Required]
+        [System.ComponentModel.DefaultValue(new double[] { 0 })]
         public double[] XValues { get; set; }
 
         /// <summary>
@@ -43,6 +40,7 @@ namespace Models.CLEM
         /// </summary>
         [Description("Y values of relationship")]
         [Required]
+        [System.ComponentModel.DefaultValue(new double[] { 0 })]
         public double[] YValues { get; set; }
 
         /// <summary>
@@ -63,6 +61,14 @@ namespace Models.CLEM
         /// </summary>
         [Description("Name of the y variable")]
         public string NameOfYVariable { get; set; }
+
+        /// <summary>
+        /// Constructor
+        /// </summary>
+        public Relationship()
+        {
+            this.SetDefaults();
+        }
 
         /// <summary>
         /// Solve equation for y given x
@@ -101,14 +107,7 @@ namespace Models.CLEM
             }
         }
 
-        /// <summary>An event handler to allow us to initialise ourselves.</summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
-        [EventSubscribe("CLEMInitialiseActivity")]
-        private void OnCLEMInitialiseActivity(object sender, EventArgs e)
-        {
-        }
-
+        #region validation
         /// <summary>
         /// Validate this object
         /// </summary>
@@ -144,7 +143,9 @@ namespace Models.CLEM
             }
             return results;
         }
+        #endregion
 
+        #region descriptive summary
         /// <summary>
         /// Provides the description of the model settings for summary (GetFullSummary)
         /// </summary>
@@ -257,5 +258,6 @@ namespace Models.CLEM
             return html;
         }
 
+        #endregion
     }
 }

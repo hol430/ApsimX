@@ -5,6 +5,7 @@
     using Models.Interfaces;
     using Models.PMF.Interfaces;
     using Models.Soils;
+    using Models.Soils.Nutrients;
     using Models.Surface;
     using StdUnits;
     using System;
@@ -110,7 +111,7 @@
     /// * Mean age (if the animals are less than one year old )
     /// </summary>
     [Serializable]
-    [ViewName("UserInterface.Views.HTMLView")]
+    [ViewName("UserInterface.Views.MarkdownView")]
     [PresenterName("UserInterface.Presenters.GenericPresenter")]
     [ValidParent(ParentType = typeof(Simulation))]
     public class Stock : Model
@@ -3597,7 +3598,7 @@
             randFactory.Initialise(RandSeed);
             StockModel = new StockList(this, systemClock, locWtr, paddocks);
 
-            var childGenotypes = Apsim.Children(this, typeof(Genotype)).Cast<Genotype>().ToList();
+            var childGenotypes = this.FindAllChildren<Genotype>().Cast<Genotype>().ToList();
             if (childGenotypes != null)
                 childGenotypes.ForEach(animalParamSet => Genotypes.Add(animalParamSet));
 

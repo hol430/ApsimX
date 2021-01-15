@@ -252,6 +252,16 @@ namespace Models.Utilities
             string rFileName = Path.ChangeExtension(tempFileName, ".R");
             File.WriteAllText(rFileName, script);
 
+            try
+            {
+                if (!Directory.Exists(PackagesDirectory))
+                    Directory.CreateDirectory(PackagesDirectory);
+            }
+            catch (Exception err)
+            {
+                throw new Exception($"Unable to install R package {package}: {PackagesDirectory} does not exist and cannot be created.", err);
+            }
+
             Run(rFileName, true, package, PackagesDirectory);
             try
             {
@@ -383,7 +393,8 @@ namespace Models.Utilities
                 throw new Exception("Unable to find R entry in Registry - is R installed?.");
             else
             {
-                // Ignore Microsoft R client. 
+                // Ignore Microsoft R client.
+                // When there's multiple versions of R installed, use latest.
                 string latestVersionKeyName = rKey + @"\" + versions.Where(v => !v.Contains("Microsoft R Client")).OrderByDescending(i => i).First();
                 string installDirectory = null; 
                 using (RegistryKey latestVersionKey = Registry.LocalMachine.OpenSubKey(latestVersionKeyName))

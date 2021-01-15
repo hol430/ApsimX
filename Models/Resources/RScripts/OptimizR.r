@@ -3,6 +3,7 @@ library(CroptimizR)
 library(dplyr)
 library(nloptr)
 library(DiceDesign)
+library(stringr)
 
 start_time <- Sys.time()
 
@@ -29,11 +30,29 @@ sim_before_optim=apsimx_wrapper(model_options=model_options)
 # observations
 obs_list <- read_apsimx_output(sim_before_optim$db_file_name,
                                model_options$observed_table_name,
-                               model_options$variable_names,
+                               observed_variable_names,
                                names(sim_before_optim$sim_list))
 
+simulation_names_old <- simulation_names
+simulation_names <- intersect(names(obs_list), simulation_names)
 obs_list=obs_list[simulation_names]
-names(obs_list) <- simulation_names
+
+dropped_sims <- setdiff(simulation_names_old, simulation_names)
+if (length(dropped_sims) > 0) {
+  print(paste('NOTE: dropping simulation', dropped_sims, 'as there is no data for this simulation'))
+}
+
+# Remove "Observed." from the start of any column.
+# This helps when retrieving observed data from PredictedObserved tables,
+# where the observed columns all start with "Observed.", but CroptimizR
+# expects the predicted and observed variables to have the same name.
+for (sim_name in simulation_names) {
+  for (col in names(obs_list[[sim_name]])) {
+    if (startsWith(col, "Observed.")) {
+      names(obs_list[[sim_name]])[names(obs_list[[sim_name]]) == col] <- str_replace(col, "Observed.", "Predicted.")
+    }
+  }
+}
 
 # Run the optimization
 optim_output=estim_param(obs_list=obs_list,

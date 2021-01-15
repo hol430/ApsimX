@@ -8,6 +8,7 @@
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text.RegularExpressions;
     using System.Xml;
 
     /// <summary>
@@ -115,8 +116,16 @@
                 return GetSummary(fullName, 'P');
             else if (member is FieldInfo)
                 return GetSummary(fullName, 'F');
+            else if (member is EventInfo)
+                return GetSummary(fullName, 'E');
+            else if (member is MethodInfo method)
+            {
+                string args = string.Join(",", method.GetParameters().Select(p => p.ParameterType.FullName));
+                args = args.Replace("+", ".");
+                return GetSummary($"{fullName}({args})", 'M');
+            }
             else
-                return GetSummary(fullName, 'M');
+                throw new ArgumentException($"Unknown argument type {member.GetType().Name}");
         }
 
         /// <summary>
@@ -148,8 +157,16 @@
                 return GetRemarks(fullName, 'P');
             else if (member is FieldInfo)
                 return GetRemarks(fullName, 'F');
+            else if (member is EventInfo)
+                return GetRemarks(fullName, 'E');
+            else if (member is MethodInfo method)
+            {
+                string args = string.Join(",", method.GetParameters().Select(p => p.ParameterType.FullName));
+                args = args.Replace("+", ".");
+                return GetRemarks($"{fullName}({args})", 'M');
+            }
             else
-                return GetRemarks(fullName, 'M');
+                throw new ArgumentException($"Unknown argument type {member.GetType().Name}");
         }
 
         /// <summary>
@@ -159,6 +176,9 @@
         /// <param name="typeLetter">Type type letter: 'T' for type, 'F' for field, 'P' for property.</param>
         private static string GetSummary(string path, char typeLetter)
         {
+            if (string.IsNullOrEmpty(path))
+                return path;
+
             if (doc == null)
             {
                 string fileName = Path.ChangeExtension(Assembly.GetExecutingAssembly().Location, ".xml");
@@ -171,7 +191,11 @@
             string nameToFindInSummary = string.Format("members/{0}:{1}/summary", typeLetter, path);
             XmlNode summaryNode = XmlUtilities.Find(doc.DocumentElement, nameToFindInSummary);
             if (summaryNode != null)
-                return summaryNode.InnerXml;
+            {
+                // Need to fix multiline comments - remove newlines and consecutive spaces.
+                string summary = summaryNode.InnerXml.Trim();
+                return Regex.Replace(summary, @"\n\s+", " ");
+            }
             return null;
         }
 
@@ -183,6 +207,9 @@
         /// <returns></returns>
         private static string GetRemarks(string path, char typeLetter)
         {
+            if (string.IsNullOrEmpty(path))
+                return path;
+
             if (doc == null)
             {
                 string fileName = Path.ChangeExtension(Assembly.GetExecutingAssembly().Location, ".xml");
@@ -195,7 +222,11 @@
             string nameToFindInSummary = string.Format("members/{0}:{1}/remarks", typeLetter, path);
             XmlNode summaryNode = XmlUtilities.Find(doc.DocumentElement, nameToFindInSummary);
             if (summaryNode != null)
-                return summaryNode.InnerXml;
+            {
+                // Need to fix multiline remarks - trim newlines and consecutive spaces.
+                string remarks = summaryNode.InnerXml.Trim();
+                return Regex.Replace(remarks, @"\n\s+", " ");
+            }
             return null;
         }
 
@@ -265,7 +296,7 @@
 
                     // Find child
                     string childName = line.Replace("[Document ", "").Replace("]", "");
-                    IModel child = Apsim.Get(model, childName) as IModel;
+                    IModel child = model.FindByPath(childName)?.Value as IModel;
                     if (child == null)
                         paragraphSoFar += "<b>Unknown child name: " + childName + " </b>\r\n";
                     else
@@ -281,7 +312,7 @@
                     // Find children
                     string childTypeName = line.Replace("[DocumentType ", "").Replace("]", "");
                     Type childType = ReflectionUtilities.GetTypeFromUnqualifiedName(childTypeName);
-                    foreach (IModel child in Apsim.Children(model, childType))
+                    foreach (IModel child in model.FindAllChildren().Where(c => childType.IsAssignableFrom(c.GetType())))
                     {
                         DocumentModel(child, tags, targetHeadingLevel + 1, indent);
                         childrenDocumented.Add(child);
@@ -300,7 +331,7 @@
             if (documentAllChildren)
             {
                 // write children.
-                foreach (IModel child in Apsim.Children(model, typeof(IModel)))
+                foreach (IModel child in model.FindAllChildren<IModel>())
                 {
                     if (!childrenDocumented.Contains(child))
                         DocumentModel(child, tags, headingLevel + 1, indent, documentAllChildren);
@@ -321,7 +352,7 @@
                     string macro = line.Substring(posMacro + 1, posEndMacro - posMacro - 1);
                     try
                     {
-                        object value = Apsim.Get(model, macro, true);
+                        object value = model.FindByPath(macro, true)?.Value;
                         if (value != null)
                         {
                             line = line.Remove(posMacro, posEndMacro - posMacro + 1);
@@ -510,17 +541,22 @@
             /// <summary>Max width of each column (in terms of number of characters).</summary>
             public int ColumnWidth { get; private set; }
 
+            /// <summary>Max width of each column (in terms of number of characters).</summary>
+            public string Style { get; private set; } = "Table";
+
             /// <summary>
             /// Initializes a new instance of the <see cref="Table"/> class.
             /// </summary>
             /// <param name="data">The column / row data.</param>
             /// <param name="indent">The indentation.</param>
             /// <param name="width">Max width of each column (in terms of number of characters).</param>
-            public Table(DataTable data, int indent, int width = 50)
+            /// <param name="style">The style to use for the table.</param>
+            public Table(DataTable data, int indent, int width = 50, string style = "Table")
             {
                 this.data = new DataView(data);
                 this.indent = indent;
                 this.ColumnWidth = width;
+                Style = style;
             }
 
             /// <summary>
@@ -529,11 +565,13 @@
             /// <param name="data">The column / row data.</param>
             /// <param name="indent">The indentation.</param>
             /// <param name="width">Max width of each column (in terms of number of characters).</param>
-            public Table(DataView data, int indent, int width = 50)
+            /// <param name="style">The style to use for the table.</param>
+            public Table(DataView data, int indent, int width = 50, string style = "Table")
             {
                 this.data = data;
                 this.indent = indent;
                 this.ColumnWidth = width;
+                Style = style;
             }
         }
 
@@ -550,7 +588,15 @@
         /// <summary>Describes a new page for the tags system.</summary>
         public class NewPage : ITag
         {
+            /// <summary>Is new page portrait?</summary>
+            public bool Portrait { get; set; } = true;
+        }
 
+        /// <summary>Page setup tag.</summary>
+        public class PageSetup : ITag
+        {
+            /// <summary>Is new page portrait?</summary>
+            public bool Portrait { get; set; } = true;
         }
 
         /// <summary>Describes a model view for the tags system.</summary>

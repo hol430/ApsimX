@@ -23,9 +23,13 @@
                             "ModelNameToDocument": "AGPRyegrass"
                         },
                         {
-                            "Name": "PDF",
+                            "Name": "Science documentation",
                             "URL": "https://apsimdev.apsim.info/ApsimX/Documents/AgPastureScience.pdf"
-                        }
+                        },			
+                        {
+                            "Name": "Species parameters",
+                            "FileName": "Tests/Validation/AgPasture/SpeciesTable.apsimx",
+                        }						
                     ]
                 },
                 {
@@ -42,9 +46,13 @@
                             "ModelNameToDocument": "AGPWhiteClover"
                         },
                         {
-                            "Name": "PDF",
+                            "Name": "Science documentation",
                             "URL": "https://apsimdev.apsim.info/ApsimX/Documents/AgPastureScience.pdf"
-                        }
+                        },
+                        {
+                            "Name": "Species parameters",
+                            "FileName": "Tests/Validation/AgPasture/SpeciesTable.apsimx",
+                        }						
                     ]
                 },
                 {
@@ -165,6 +173,10 @@
                             "Name": "PDF",
                             "FileName": "Tests/Validation/MicroClimate/MicroClimate.apsimx",
                             "ModelNameToDocument": "MicroClimate"
+                        },
+                        {
+                            "Name": "Science Documentation",
+                            "URL": "https://www.apsim.info/wp-content/uploads/2019/09/Micromet.pdf"
                         }
                     ]
                 },
@@ -484,7 +496,7 @@
                     "Documents": [
                         {
                             "Name": "Science documentation",
-                            "URL": "http://apsimdev.apsim.info/CLEM/Content/Home.htm"
+                            "URL": "https://www.apsim.info/clem"
                         },
                         {
                             "Name": "Cropping example",
