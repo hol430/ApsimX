@@ -96,6 +96,13 @@ namespace Models
         public string SimulationNameRegex { get; set; }
 
         /// <summary>
+        /// Enable progress reporting.
+        /// </summary>
+        /// <value></value>
+        [Option("show-progress", HelpText = "Enable progress reporting")]
+        public bool ShowProgress { get; set; }
+
+        /// <summary>
         /// Type of runner used to run the simulations.
         /// </summary>
         public Models.Core.Run.Runner.RunTypeEnum RunType

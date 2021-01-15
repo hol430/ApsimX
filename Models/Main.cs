@@ -103,6 +103,8 @@
                         runner.SimulationCompleted += WriteCompleteMessage;
                     if (options.ExportToCsv)
                         runner.SimulationGroupCompleted += OnSimulationGroupCompleted;
+                    if (options.ShowProgress)
+                        runner.SimulationCompleted += OnWriteProgress;
                     runner.AllSimulationsCompleted += OnAllJobsCompleted;
                     runner.Run();
 
@@ -237,6 +239,12 @@
             string duration = e.ElapsedTime.TotalSeconds.ToString("F1");
             message.Append($" has finished. Elapsed time was {duration} seconds.");
             Console.WriteLine(message);
+        }
+
+        private static void OnWriteProgress(object sender, JobCompleteArguments e)
+        {
+            if (sender is Runner runner)
+                Console.Write($"Progress: {(100.0 * runner.Progress):F1}%\r");
         }
     }
 }
