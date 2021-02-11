@@ -146,7 +146,7 @@ namespace Models.Core.Run
 
             bool noJobsRemaining;
             lock (jobsLock)
-                noJobsRemaining = jobs.Count == 0;
+                noJobsRemaining = jobs.Count == numJobsComplete;
             if (noJobsRemaining)
                 AllTasksCompleted();
         }
