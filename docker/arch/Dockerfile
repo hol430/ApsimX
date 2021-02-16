@@ -1,7 +1,12 @@
 FROM archlinux:base-devel
 
-# Install git, mono, .net core sdk
-RUN pacman -Sy --noconfirm git mono mono-tools dotnet-sdk
+# Install git, mono, .net core sdk, and R
+RUN pacman -Syu --noconfirm git mono mono-tools dotnet-sdk r gcc-fortran
+
+# Install R package dependencies
+RUN R -q -e 'install.packages(c("remotes", "sensitivity", "RSQLite", "DBI"), repos = "https://cran.csiro.au/")'
+RUN R -q -e 'remotes::install_github("hol430/ApsimOnR", INSTALL_opts = c("--no-docs", "--no-help", "--no-html"), repos = "https://cran.csiro.au/")'
+RUN R -q -e 'remotes::install_github("SticsRPacks/CroptimizR", INSTALL_opts = c("--no-docs", "--no-help", "--no-html"), repos = "https://cran.csiro.au/")'
 
 # This environment variable is required for the mono builds to work
 ENV FrameworkPathOverride=/usr/lib/mono/4.7.2-api/
