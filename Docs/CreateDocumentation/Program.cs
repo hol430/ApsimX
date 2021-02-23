@@ -81,7 +81,7 @@
                 File.WriteAllText(htmlFileName, htmlBuilder.ToString());
 
                 // Upload to server
-                Upload(destinationFolder, serverFtpFolder);
+                // Upload(destinationFolder, serverFtpFolder);
             }
             catch (Exception err)
             {
@@ -100,20 +100,21 @@
         /// <summary>Get the APSIM version.</summary>
         private static string GetVersion()
         {
-            var pullRequestID = Environment.GetEnvironmentVariable("ghprbPullId");
-            if (string.IsNullOrEmpty(pullRequestID))
-                pullRequestID = Environment.GetEnvironmentVariable("PULL_ID");
+            return "0.0.0.0";
+            // var pullRequestID = Environment.GetEnvironmentVariable("ghprbPullId");
+            // if (string.IsNullOrEmpty(pullRequestID))
+            //     pullRequestID = Environment.GetEnvironmentVariable("PULL_ID");
 
-            var url = string.Format("https://apsimdev.apsim.info/APSIM.Builds.Service/Builds.svc/GetPullRequestDetails?pullRequestID={0}",
-                                    pullRequestID);
-            var versionString = WebUtilities.CallRESTService<string>(url);
+            // var url = string.Format("https://apsimdev.apsim.info/APSIM.Builds.Service/Builds.svc/GetPullRequestDetails?pullRequestID={0}",
+            //                         pullRequestID);
+            // var versionString = WebUtilities.CallRESTService<string>(url);
 
-            var temp = StringUtilities.SplitOffAfterDelimiter(ref versionString, "-");
-            var issueNumber = StringUtilities.SplitOffAfterDelimiter(ref temp, ",");
+            // var temp = StringUtilities.SplitOffAfterDelimiter(ref versionString, "-");
+            // var issueNumber = StringUtilities.SplitOffAfterDelimiter(ref temp, ",");
 
-            Console.WriteLine(versionString + "." + issueNumber);
+            // Console.WriteLine(versionString + "." + issueNumber);
 
-            return versionString + "." + issueNumber;
+            // return versionString + "." + issueNumber;
         }
 
         /// <summary>
