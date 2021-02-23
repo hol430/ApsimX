@@ -11,6 +11,7 @@
     using System.Net;
     using System.Reflection;
     using System.Text;
+    using System.Threading.Tasks;
     using UserInterface.Commands;
     using UserInterface.Presenters;
     using UserInterface.Views;
@@ -56,13 +57,13 @@
                 var exceptions = new List<Exception>();
 
                 // Loop through all "Tables" element in the input json file.
-                foreach (JObject tableInstruction in instructions["Tables"] as JArray)
+                Parallel.ForEach(instructions["Tables"] as JArray, (tableInstruction) =>
                 {
                     // Write html heading for table.
                     htmlBuilder.AppendLine("<h2>" + tableInstruction["Title"].ToString() + "</h2>");
 
                     // Create a data table.
-                    var documentationTable = CreateTable(tableInstruction, apsimDirectory, destinationFolder, serverHttpFolder);
+                    var documentationTable = CreateTable(tableInstruction as JObject, apsimDirectory, destinationFolder, serverHttpFolder);
                     if (documentationTable == null)
                         errorsFound = true;
                     else
@@ -70,7 +71,7 @@
                         // Write table to html.
                         htmlBuilder.AppendLine(DataTableUtilities.ToHTML(documentationTable, writeHeaders: true));
                     }
-                }
+                });
 
                 // Close the open html tags.
                 htmlBuilder.AppendLine("</body>");
