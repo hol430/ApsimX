@@ -24,6 +24,19 @@ RUN R -q -e 'install.packages(c("remotes", "sensitivity", "RSQLite", "DBI"), rep
 RUN R -q -e 'remotes::install_github("hol430/ApsimOnR", INSTALL_opts = c("--no-docs", "--no-help", "--no-html"), repos = "https://cran.csiro.au/")'
 RUN R -q -e 'remotes::install_github("SticsRPacks/CroptimizR", INSTALL_opts = c("--no-docs", "--no-help", "--no-html"), repos = "https://cran.csiro.au/")'
 
+# The nunit-console package on debian is outdated. We need to do a manual install.
+RUN mkdir nunit3-console; \
+    cd nunit3-console; \
+    wget https://github.com/nunit/nunit-console/releases/download/v3.9/NUnit.Console-3.9.0.zip -qO nunit3-console.zip; \
+    unzip -q nunit3-console.zip; \
+    rm nunit3-console.zip; \
+    mkdir -p /usr/lib/nunit3-console; \
+    cp -r -p * /usr/lib/nunit3-console/; \
+    echo '#!/bin/sh' >/usr/bin/nunit3-console; \
+    echo '# Wrapper script for NUnit 3 console runner' >>/usr/bin/nunit3-console; \
+    echo 'exec $(which mono) --debug /usr/lib/nunit3-console.exe "\$@"' >>/usr/bin/nunit3-console; \
+    chmod a+x /usr/bin/nunit3-console;
+
 # This environment variable is required for the mono builds to work
 ENV FrameworkPathOverride=/usr/lib/mono/4.7.2-api/
 
@@ -37,7 +50,7 @@ RUN ln -s /usr/lib/x86_64-linux-gnu/libsqlite3.so.0 /usr/lib/x86_64-linux-gnu/li
 RUN git clone https://github.com/APSIMInitiative/ApsimX.git /opt/ApsimX
 
 # Build apsim
-RUN dotnet build /opt/ApsimX/ApsimX.sln
+RUN dotnet build --nologo -v m /opt/ApsimX/ApsimX.sln
 
 WORKDIR /apsim
 
