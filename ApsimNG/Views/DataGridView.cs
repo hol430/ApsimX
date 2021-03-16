@@ -74,6 +74,7 @@ namespace UserInterface.Views
             }
             set
             {
+                Clear();
                 data = value;
                 Refresh();
             }
@@ -152,9 +153,12 @@ namespace UserInterface.Views
         /// </summary>
         public void Dispose()
         {
-            model.Clear();
-            model.Dispose();
-            model = null;
+            if (model != null)
+            {
+                model.Clear();
+                model.Dispose();
+                model = null;
+            }
         }
 
         /// <summary>
@@ -215,20 +219,7 @@ namespace UserInterface.Views
         /// </summary>
         public void Refresh()
         {
-            // Clear the model if it already contains data.
-            if (model != null)
-            {
-                lock (cancelLoadingData)
-                {
-                    cancelLoadingData.Cancel();
-                    dataToBeAdded.Clear();
-                }
-                tree.Model = null;
-                fixedColView.Model = null;
-                model.Clear();
-                model.Dispose();
-            }
-
+            Clear();
             // Add the new data into the model.
             model = new ListStore(Enumerable.Repeat(typeof(string), data.Columns.Count).ToArray());
             loadData = Task.Run(() =>
@@ -240,14 +231,17 @@ namespace UserInterface.Views
                     {
                         if (cancelLoadingData.IsCancellationRequested)
                             return;
-                        Type dataType = data.Columns[i].DataType;
-                        string result;
-                        if (dataType == typeof(double) && row.ItemArray[i] != DBNull.Value && row.ItemArray[i] != null)
-                            result = ((double)row.ItemArray[i]).ToString(NumericFormat);
-                        else if (dataType == typeof(DateTime) && row.ItemArray[i] != DBNull.Value && row.ItemArray[i] != null)
-                            result = ((DateTime)row.ItemArray[i]).ToShortDateString();
-                        else
-                            result = row.ItemArray[i].ToString();
+                        string result = "";
+                        if (row.ItemArray[i] != null)
+                        {
+                            Type dataType = row.ItemArray[i].GetType();
+                            if (dataType == typeof(double))
+                                result = ((double)row.ItemArray[i]).ToString(NumericFormat);
+                            else if (dataType == typeof(DateTime))
+                                result = ((DateTime)row.ItemArray[i]).ToShortDateString();
+                            else
+                                result = row.ItemArray[i].ToString();
+                        }
                         values[i] = result;
                     }
                     lock (cancelLoadingData)
@@ -275,6 +269,28 @@ namespace UserInterface.Views
                 cell.FixedHeightFromFont = 1;
                 TreeViewColumn column = new TreeViewColumn(title, cell, "text", i);
                 tree.AppendColumn(column);
+            }
+        }
+
+        /// <summary>
+        /// Clear the model if it already contains data.
+        /// </summary>
+        private void Clear()
+        {
+            // Clear the model if it already contains data.
+            if (model != null)
+            {
+                lock (cancelLoadingData)
+                {
+                    cancelLoadingData.Cancel();
+                    dataToBeAdded.Clear();
+                    cancelLoadingData = new CancellationTokenSource();
+                }
+                tree.Model = null;
+                fixedColView.Model = null;
+                model.Clear();
+                model.Dispose();
+                model = null;
             }
         }
 
