@@ -61,6 +61,8 @@ namespace UserInterface.Views
             fixedColView = (Gtk.TreeView)builder.GetObject("fixedcolview");
             tree.RubberBanding = true;
             fixedColView.RubberBanding = true;
+            tree.Selection.Mode = SelectionMode.Multiple;
+            fixedColView.Selection.Mode = SelectionMode.Multiple;
         }
 
         /// <summary>
