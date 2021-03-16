@@ -92,7 +92,7 @@ namespace UserInterface.Presenters
             tableDropDown = view.GetControl<DropDownView>("tableDropDown");
             columnFilterEditBox = view.GetControl<EditView>("columnFilterEditBox");
             rowFilterEditBox = view.GetControl<EditView>("rowFilterEditBox");
-            grid = view.GetControl<GridView>("grid");
+            grid = view.GetControl<Views.DataGridView>("grid");
             maxNumRecordsEditBox = view.GetControl<EditView>("maxNumRecordsEditBox");
 
             base.Attach(model, grid, explorerPresenter);
