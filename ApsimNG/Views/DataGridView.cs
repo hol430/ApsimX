@@ -28,6 +28,16 @@ namespace UserInterface.Views
         private Gtk.TreeView tree;
 
         /// <summary>
+        /// ScrolledWindow for the fixed/frozen columns treeview.
+        /// </summary>
+        private ScrolledWindow fixedColViewScroller;
+
+        /// <summary>
+        /// ScrolledWindow for the main/right-hand treeview.
+        /// </summary>
+        private ScrolledWindow mainTreeScroller;
+
+        /// <summary>
         /// The treemodel which contains the data in <see cref="data" />.
         /// </summary>
         private ListStore model;
@@ -45,6 +55,8 @@ namespace UserInterface.Views
 
         private List<string[]> dataToBeAdded = new List<string[]>();
 
+        private List<int> frozenColumns = new List<int>();
+
         protected override void Initialise(ViewBase ownerView, GLib.Object gtkControl)
         {
             base.Initialise(ownerView, gtkControl);
@@ -58,11 +70,16 @@ namespace UserInterface.Views
             }
             mainWidget = container;
             tree = (Gtk.TreeView)builder.GetObject("gridview");
+            mainTreeScroller = (ScrolledWindow)builder.GetObject("scrolledwindow1");
             fixedColView = (Gtk.TreeView)builder.GetObject("fixedcolview");
+            fixedColViewScroller = (ScrolledWindow)builder.GetObject("scrolledwindow2");
             tree.RubberBanding = true;
             fixedColView.RubberBanding = true;
             tree.Selection.Mode = SelectionMode.Multiple;
             fixedColView.Selection.Mode = SelectionMode.Multiple;
+            fixedColViewScroller.Vadjustment = mainTreeScroller.Vadjustment;
+            fixedColViewScroller.VscrollbarPolicy = mainTreeScroller.VscrollbarPolicy = PolicyType.Automatic;
+            fixedColViewScroller.Hide();
         }
 
         /// <summary>
@@ -213,7 +230,10 @@ namespace UserInterface.Views
         /// <param name="number">Number of columns to freeze.</param>
         public void LockLeftMostColumns(int number)
         {
-            //tbi
+            if (number > 0)
+                frozenColumns.AddRange(Enumerable.Range(0, number));
+            fixedColViewScroller.ShowAll();
+            RefreshTreeViews();
         }
 
         /// <summary>
@@ -256,7 +276,13 @@ namespace UserInterface.Views
             }, cancelLoadingData.Token);
             GLib.Idle.Add(InsertPendingRows);
             tree.Model = model;
+            fixedColView.Model = model;
 
+            RefreshTreeViews();
+        }
+
+        private void RefreshTreeViews()
+        {
             // Clear the tree if it already contains columns.
             ClearColumns(tree);
             ClearColumns(fixedColView);
@@ -270,7 +296,10 @@ namespace UserInterface.Views
                 cell.Editable = false;
                 cell.FixedHeightFromFont = 1;
                 TreeViewColumn column = new TreeViewColumn(title, cell, "text", i);
-                tree.AppendColumn(column);
+                if (frozenColumns.Contains(i))
+                    fixedColView.AppendColumn(column);
+                else
+                    tree.AppendColumn(column);
             }
         }
 
