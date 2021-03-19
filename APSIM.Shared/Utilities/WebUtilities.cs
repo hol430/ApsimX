@@ -7,6 +7,7 @@
     using System.Net.Sockets;
     using System.Text;
     using System.Threading;
+    using System.Threading.Tasks;
     using System.Xml.Serialization;
 
     /// <summary>
@@ -87,18 +88,29 @@
         /// <returns>The return data</returns>
         public static T CallRESTService<T>(string url)
         {
-            WebRequest wrGETURL;
-            wrGETURL = WebRequest.Create(url);
-            wrGETURL.Method = "GET";
-            wrGETURL.ContentType = @"application/xml; charset=utf-8";
-            wrGETURL.ContentLength = 0;
-            using (HttpWebResponse webresponse = wrGETURL.GetResponse() as HttpWebResponse)
+            Task<T> task = CallRESTServiceAsync<T>(url);
+            task.Wait();
+            return task.Result;
+        }
+
+        /// <summary>Call REST web service.</summary>
+        /// <typeparam name="T">The return type</typeparam>
+        /// <param name="url">The URL of the REST service.</param>
+        /// <returns>The return data</returns>
+        public static async Task<T> CallRESTServiceAsync<T>(string url)
+        {
+            WebRequest req;
+            req = WebRequest.Create(url);
+            req.Method = "GET";
+            req.ContentType = @"application/xml; charset=utf-8";
+            req.ContentLength = 0;
+            using (WebResponse resp = await req.GetResponseAsync())
             {
-                Encoding enc = System.Text.Encoding.GetEncoding("utf-8");
+                Encoding enc = Encoding.GetEncoding("utf-8");
                 // read response stream from response object
-                using (StreamReader loResponseStream = new StreamReader(webresponse.GetResponseStream(), enc))
+                using (StreamReader loResponseStream = new StreamReader(resp.GetResponseStream(), enc))
                 {
-                    string st = loResponseStream.ReadToEnd();
+                    string st = await loResponseStream.ReadToEndAsync();
                     if (typeof(T).Name == "Object")
                         return default(T);
 
@@ -109,7 +121,6 @@
                 }
             }
         }
-
 
         /// <summary>
         /// Calls a url and returns the web response in a memory stream

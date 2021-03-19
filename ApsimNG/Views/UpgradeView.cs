@@ -1,4 +1,5 @@
-﻿namespace UserInterface.Views
+﻿#if NETFRAMEWORK
+namespace UserInterface.Views
 {
     using System;
     using System.Diagnostics;
@@ -7,7 +8,8 @@
     using System.Net;
     using System.Reflection;
     using APSIM.Shared.Utilities;
-    using global::UserInterface.Extensions;
+    using Extensions;
+    using Classes;
     using Gtk;
     using Interfaces;
 
@@ -16,15 +18,6 @@
     /// </summary>
     public class UpgradeView : ViewBase
     {
-        public class Upgrade
-        {
-            public DateTime ReleaseDate { get; set; }
-            public int IssueNumber { get; set; }
-            public string IssueTitle { get; set; }
-            public string IssueURL { get; set; }
-            public string ReleaseURL { get; set; }
-        }
-
         /// <summary>
         /// A list of potential upgrades available.
         /// </summary>
@@ -57,7 +50,7 @@
         private Container licenseContainer = null;
         private CheckButton checkbutton1 = null;
         private Gtk.TreeView listview1 = null;
-        private Alignment alignment7 = null;
+        private ScrolledWindow upgradeScroller = null;
         private CheckButton oldVersions = null;
         private ListStore listmodel = new ListStore(typeof(string), typeof(string), typeof(string));
         private MarkdownView licenseView;
@@ -82,7 +75,7 @@
             licenseContainer = (Container)builder.GetObject("licenseContainer");
             checkbutton1 = (CheckButton)builder.GetObject("checkbutton1");
             listview1 = (Gtk.TreeView)builder.GetObject("listview1");
-            alignment7 = (Alignment)builder.GetObject("alignment7");
+            upgradeScroller = (ScrolledWindow)builder.GetObject("scrolledwindow1");
             oldVersions = (CheckButton)builder.GetObject("checkbutton2");
             listview1.Model = listmodel;
 
@@ -119,7 +112,7 @@
             countryBox.AddAttribute(cell, "text", 0);
 
             // Make the tab order a little more sensible than the defaults
-            table1.FocusChain = new Widget[] { alignment7, button1, button2 };
+            table1.FocusChain = new Widget[] { upgradeScroller, button1, button2 };
             table2.FocusChain = new Widget[] { firstNameBox, lastNameBox, emailBox, organisationBox, countryBox };
 
             licenseView = new MarkdownView(owner);
@@ -563,3 +556,4 @@
         }
     }
 }
+#endif

@@ -1292,17 +1292,15 @@
         {
             try
             {
-                // Get the version of the current assembly.
-                Version version = Assembly.GetExecutingAssembly().GetName().Version;
-                if (version.Revision == 0)
-                {
-                    ShowError("You are on a custom build. You cannot upgrade.");
-                }
-
                 if (AllowClose())
                 {
+#if NETFRAMEWORK
                     UpgradeView form = new UpgradeView(view as ViewBase);
                     form.Show();
+#else
+                    UpgradeManager upgrader = new UpgradeManager();
+                    upgrader.Show();
+#endif
                 }
             }
             catch (Exception err)

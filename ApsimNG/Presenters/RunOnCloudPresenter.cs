@@ -10,7 +10,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using UserInterface.Views;
-using static UserInterface.Views.UpgradeView;
+using UserInterface.Classes;
 
 namespace UserInterface.Presenters
 {
