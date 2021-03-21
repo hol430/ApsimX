@@ -161,5 +161,12 @@
             }
         }
 
+        /// <summary>Add a key / value pair to url if not empty</summary>
+        public static string AddToURL(string url, string key, string value)
+        {
+            if (value == null || value == string.Empty)
+                value = "-";
+            return url + "&" + key + "=" + value;
+        }
     }
 }

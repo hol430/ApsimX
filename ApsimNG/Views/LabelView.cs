@@ -15,8 +15,22 @@
         private Label label;
 
         /// <summary>Constructor</summary>
-        public LabelView() : base() { }
-        
+        public LabelView() : base()
+        {
+            label = new Label();
+            mainWidget = label;
+        }
+
+        /// <summary>
+        /// Constructs a LabelView instance with the specified message.
+        /// </summary>
+        /// <param name="text">The message.</param>
+        public LabelView(string text) : this()
+        {
+            if (text != null)
+                label.Text = text;
+        }
+
         /// <summary>Constructor</summary>
         public LabelView(ViewBase owner, Label l) : base(owner)
         {

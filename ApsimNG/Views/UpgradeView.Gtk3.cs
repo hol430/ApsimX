@@ -9,6 +9,7 @@ using APSIM.Shared.Utilities;
 using System.Linq;
 using System.Globalization;
 using System.Reflection;
+using UserInterface.Extensions;
 
 namespace UserInterface.Views
 {
@@ -436,6 +437,7 @@ namespace UserInterface.Views
                         string question = $"Are you sure you want to upgrade to version {version}?";
                         var resp = (ResponseType)ViewBase.MasterView.ShowMsgDialog(question, "Confirm Upgrade", MessageType.Question, ButtonsType.YesNo, window);
                         if (resp == ResponseType.Yes)
+                            // window.GetGdkWindow().Cursor = new Gdk.Cursor(Gdk.CursorType.Watch);
                             DoUpgrade?.Invoke(this, new UpgradeArgs(selection));
                     }
                     else
