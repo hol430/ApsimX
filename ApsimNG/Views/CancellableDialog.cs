@@ -45,6 +45,7 @@ namespace UserInterface.Views
         /// </summary>
         public void Run()
         {
+            dialog.ShowAll();
             ResponseType response = (ResponseType)dialog.Run();
             if (response == ResponseType.Cancel)
                 Cancelled?.Invoke(this, EventArgs.Empty);
