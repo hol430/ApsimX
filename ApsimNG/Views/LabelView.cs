@@ -1,16 +1,18 @@
 ﻿namespace UserInterface.Views
 {
+    using System;
+    using Extensions;
     using Gtk;
 
     /// <summary>An interface for a label.</summary>
-    public interface ILabelView
+    public interface ILabelView : IDisposable
     {
         /// <summary>Gets or sets the text of the label.</summary>
         string Text { get; set; }
     }
 
     /// <summary>A drop down view.</summary>
-    public class LabelView : ViewBase, ILabelView
+    public class LabelView : ViewBase, ILabelView, IDisposable
     {
         private Label label;
 
@@ -52,6 +54,14 @@
 
         /// <summary>Is the label visible?</summary>
         public bool Visible { get { return label.Visible; } set { label.Visible = value; } }
+
+        /// <summary>
+        /// Cleanup any unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            label.Cleanup();
+        }
 
         /// <summary>
         /// A method used when a view is wrapping a gtk control.

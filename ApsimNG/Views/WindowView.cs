@@ -6,7 +6,7 @@ namespace UserInterface.Views
     /// <summary>
     /// Displays another view in a popup window.
     /// </summary>
-    public class WindowView : ViewBase
+    public class WindowView : ViewBase, IDisposable
     {
         /// <summary>
         /// The view to be displayed in the window.
@@ -54,6 +54,11 @@ namespace UserInterface.Views
             {
                 ShowError(err);
             }
+        }
+
+        public void Dispose()
+        {
+            mainWidget.Dispose();
         }
 
         /// <summary>

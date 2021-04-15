@@ -19,6 +19,7 @@ namespace UserInterface.Presenters
     public class UpgradeManager
     {
         private IUpgradeView view = new UpgradeView();
+        private ICancellableDialog downloadProgress;
 
         public UpgradeManager()
         {
@@ -115,30 +116,27 @@ namespace UserInterface.Presenters
 
             try
             {
-                var waitDlg = new Gtk.MessageDialog(window1, Gtk.DialogFlags.Modal,
-                    Gtk.MessageType.Info, Gtk.ButtonsType.Cancel, "Downloading file. Please wait...");
-                waitDlg.Title = "APSIM Upgrade";
-                web.DownloadFileCompleted += Web_DownloadFileCompleted;
+                downloadProgress = new CancellableDialog();
+                downloadProgress.Title = "APSIM Upgrade";
+                downloadProgress.Cancelled += (_, __) => web.CancelAsync();
+                web.DownloadFileCompleted += OnDownloadCompleted;
                 web.DownloadProgressChanged += OnDownloadProgressChanged;
-                web.DownloadFileAsync(new Uri(sourceURL), tempSetupFileName);
-                if (waitDlg.Run() == (int)Gtk.ResponseType.Cancel)
-                    web.CancelAsync();
+                web.DownloadFileAsync(new Uri(sourceURL), tempSetupFileName, (tempSetupFileName, version));
+                downloadProgress.Run();
             }
             catch (Exception err)
             {
-                ViewBase.MasterView.ShowMsgDialog("Cannot download this release. Error message is: \r\n" + err.Message, "Error", MessageType.Error, ButtonsType.Ok, window1);
+                ShowError("Cannot download this release", err);
             }
-            finally
-            {
-                if (waitDlg != null)
-                {
-                    web.DownloadProgressChanged -= OnDownloadProgressChanged;
-                    waitDlg.Cleanup();
-                    waitDlg = null;
-                }
-                if (window1 != null && window1.GetGdkWindow() != null)
-                    window1.GetGdkWindow().Cursor = null;
-            }
+        }
+
+        private void ShowError(string context, Exception err)
+        {
+            Gtk.Application.Invoke((_, __) => ViewBase.MasterView.ShowMsgDialog($"{context}:{Environment.NewLine}{err.Message}",
+                                                                                "Error",
+                                                                                Gtk.MessageType.Error,
+                                                                                Gtk.ButtonsType.Ok,
+                                                                                ((ViewBase)ViewBase.MasterView).MainWidget.Toplevel as Gtk.Window));
         }
 
         /// <summary>
@@ -156,35 +154,35 @@ namespace UserInterface.Presenters
                     try
                     {
                         double progress = 100.0 * e.BytesReceived / e.TotalBytesToReceive;
-                        waitDlg.Text = string.Format("Downloading file: {0:0.}%. Please wait...", progress);
+                        downloadProgress.Text = $"Downloading file: {progress:0.}%. Please wait...";
                     }
                     catch (Exception err)
                     {
-                        ShowError(err);
+                        ShowError("Unable to update download progress", err);
                     }
                 });
             }
             catch (Exception err)
             {
-                err = new Exception("Error updating download progress", err);
-                ShowError(err);
+                ShowError("Unable to update download progress", err);
             }
         }
 
-        private void Web_DownloadFileCompleted(object sender, AsyncCompletedEventArgs e)
+        private void OnDownloadCompleted(object sender, AsyncCompletedEventArgs e)
         {
             try
             {
-                if (waitDlg != null)
+                if (downloadProgress != null)
                 {
-                    waitDlg.Cleanup();
-                    waitDlg = null;
+                    downloadProgress.Dispose();
+                    downloadProgress = null;
                 }
+                (string tempSetupFileName, string versionNumber) = (ValueTuple<string, string>)e.UserState;
                 if (!e.Cancelled && !string.IsNullOrEmpty(tempSetupFileName) && versionNumber != null)
                 {
                     try
                     {
-                        if (e.Error != null) // On Linux, we get to this point even when errors have occurred
+                        if (e.Error != null)
                             throw e.Error;
 
                         if (File.Exists(tempSetupFileName))
@@ -224,26 +222,22 @@ namespace UserInterface.Presenters
                             }
                             info.WorkingDirectory = Path.GetTempPath();
                             Process.Start(info);
-                            window1.GetGdkWindow().Cursor = null;
+                            // window1.GetGdkWindow().Cursor = null;
 
                             // Shutdown the user interface
-                            window1.Cleanup();
-                            tabbedExplorerView.Close();
+                            // window1.Cleanup();
+                            // tabbedExplorerView.Close();
                         }
                     }
                     catch (Exception err)
                     {
-                        window1.GetGdkWindow().Cursor = null;
-                        Application.Invoke(delegate
-                        {
-                            ViewBase.MasterView.ShowMsgDialog(err.Message, "Installation Error", MessageType.Error, ButtonsType.Ok, window1);
-                        });
+                        ShowError("Installation Error", err);
                     }
                 }
             }
             catch (Exception err)
             {
-                ShowError(err);
+                ShowError("Installation error", err);
             }
         }
 
