@@ -17,7 +17,7 @@ namespace Models.CLEM.Resources
     /// Use to define purchases etc.
     /// </summary>
     [Serializable]
-    [ViewName("UserInterface.Views.GridView")]
+    [ViewName("UserInterface.Views.PropertyView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(RuminantActivityPredictiveStockingENSO))]
     [ValidParent(ParentType = typeof(RuminantActivityTrade))]
@@ -26,7 +26,7 @@ namespace Models.CLEM.Resources
     public class SpecifyRuminant : CLEMModel, IValidatableObject
     {
         [Link]
-        ResourcesHolder Resources;
+        ResourcesHolder Resources = null;
 
         /// <summary>
         /// Records if a warning about set weight occurred
@@ -49,6 +49,9 @@ namespace Models.CLEM.Resources
         [Required, GreaterThanValue(0), Proportion]
         public double Proportion { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
         [field: NonSerialized]
         public RuminantTypeCohort Details { get; private set; }
 

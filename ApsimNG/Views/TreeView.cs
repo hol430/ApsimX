@@ -82,6 +82,7 @@ namespace UserInterface.Views
             treeview1.Model = treemodel;
             TreeViewColumn column = new TreeViewColumn();
             CellRendererPixbuf iconRender = new Gtk.CellRendererPixbuf();
+            iconRender.StockSize = (uint)IconSize.LargeToolbar;
             column.PackStart(iconRender, false);
             textRender = new Gtk.CellRendererText();
             textRender.Editable = false;
@@ -272,6 +273,8 @@ namespace UserInterface.Views
         public void Delete(string nodePath)
         {
             TreeIter node = FindNode(nodePath);
+            if (node.Equals(TreeIter.Zero))
+                return;
 
             // We will typically be deleting the currently selected node. If this is the case,
             // Gtk will not automatically move the cursor for us.
@@ -436,7 +439,7 @@ namespace UserInterface.Views
         {
             Gdk.Pixbuf pixbuf = null;
             if (MasterView != null && MasterView.HasResource(description.ResourceNameForImage))
-                pixbuf = new Gdk.Pixbuf(null, description.ResourceNameForImage);
+                pixbuf = new Gdk.Pixbuf(null, description.ResourceNameForImage, 24, 24);
             string tick = description.Checked ? "✓" : "";
             treemodel.SetValues(node, description.Name, pixbuf, description.ToolTip, tick, description.Colour, description.Strikethrough);
 

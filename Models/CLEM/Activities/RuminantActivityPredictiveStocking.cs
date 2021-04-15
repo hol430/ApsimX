@@ -18,7 +18,7 @@ namespace Models.CLEM.Activities
     /// <version>1.0</version>
     /// <updates>1.0 First implementation of this activity using IAT/NABSA processes</updates>
     [Serializable]
-    [ViewName("UserInterface.Views.GridView")]
+    [ViewName("UserInterface.Views.PropertyView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(CLEMActivityBase))]
     [ValidParent(ParentType = typeof(ActivitiesHolder))]
@@ -63,7 +63,6 @@ namespace Models.CLEM.Activities
         /// <summary>
         /// Predicted pasture shortfall at end of assessment period
         /// </summary>
-        [field: NonSerialized]
         public double PastureShortfall { get {return Math.Max(0, FeedLowLimit - PasturePredicted); } }
 
         /// <summary>
@@ -81,7 +80,6 @@ namespace Models.CLEM.Activities
         /// <summary>
         /// AE destock shortfall
         /// </summary>
-        [field: NonSerialized]
         public double AeShortfall { get {return AeToDestock - AeDestocked; } }
 
         #region validation

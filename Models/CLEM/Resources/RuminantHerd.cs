@@ -9,6 +9,7 @@ using Models.Core;
 using Models.Core.Attributes;
 using Models.CLEM.Reporting;
 using System.Globalization;
+using Models.CLEM.Interfaces;
 
 namespace Models.CLEM.Resources
 {
@@ -236,9 +237,13 @@ namespace Models.CLEM.Resources
             Herd.Add(ind);
             LastIndividualChanged = ind;
 
+            // check mandatory attributes
+            ind.BreedParams.CheckMandatoryAttributes(ind, model);
+
             ResourceTransaction details = new ResourceTransaction
             {
-                Gain = 1,
+                Style = TransactionStyle.Gain,
+                Amount = 1,
                 Activity = model as CLEMModel,
                 Category = ind.SaleFlag.ToString(),
                 ResourceType = ind.BreedParams,
@@ -283,7 +288,8 @@ namespace Models.CLEM.Resources
             // report transaction of herd change
             ResourceTransaction details = new ResourceTransaction
             {
-                Loss = 1,
+                Style = TransactionStyle.Loss,
+                Amount = 1,
                 Activity = model as CLEMModel,
                 Category = ind.SaleFlag.ToString(),
                 ResourceType = ind.BreedParams,
