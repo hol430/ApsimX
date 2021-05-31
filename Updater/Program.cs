@@ -4,6 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+#if NETCOREAPP
+using Gtk;
+#endif
 
 namespace Updater
 {
@@ -15,6 +18,9 @@ namespace Updater
         static void Main(string[] args)
         {
             try {
+#if NETCOREAPP
+                Application.Init();
+#endif
                 if (args.Length != 2)
                     throw new Exception("Usage: Updater uninstalldir newinstalldir");
 
@@ -39,8 +45,27 @@ namespace Updater
             }
             catch (Exception err)
             {
-                Console.WriteLine(err);
+                ShowError(err);
             }
+        }
+
+        private static void ShowError(Exception err)
+        {
+#if NETFRAMEWORK
+            Console.WriteLine(err);
+#else
+            using (Dialog dialog = new MessageDialog(null,
+                                                     DialogFlags.Modal,
+                                                     MessageType.Error,
+                                                     ButtonsType.Ok,
+                                                     false,
+                                                     err.ToString()))
+            {
+                dialog.Title = "Upgrade Error";
+                dialog.ShowAll();
+                dialog.Run();
+            }
+#endif
         }
 
         /// <summary>
