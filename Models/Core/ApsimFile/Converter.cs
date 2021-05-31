@@ -7,6 +7,7 @@
     using Models.LifeCycle;
     using Models.PMF;
     using Models.Soils;
+    using Models.WaterModel;
     using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
@@ -23,7 +24,7 @@
     public class Converter
     {
         /// <summary>Gets the latest .apsimx file format version.</summary>
-        public static int LatestVersion { get { return 133; } }
+        public static int LatestVersion { get { return 134; } }
 
         /// <summary>Converts a .apsimx string to the latest version.</summary>
         /// <param name="st">XML or JSON string to convert.</param>
@@ -3474,6 +3475,31 @@
         {
             foreach (JObject pasturSpecies in JsonUtilities.ChildrenRecursively(root, "PastureSpecies"))
                 pasturSpecies.Remove("WaterAvailableMethod");
+        }
+
+        /// <summary>
+        /// Move soil_albedo from MicroClimate to SoilWater.
+        /// </summary>
+        /// <param name="root">Root node.</param>
+        /// <param name="fileName">Path to the .apsimx file.</param>
+        private static void UpgradeToVersion134(JObject root, string fileName)
+        {
+            foreach (JObject microClimate in JsonUtilities.ChildrenRecursively(root, "MicroClimate"))
+            {
+                JObject parent = JsonUtilities.Parent(microClimate) as JObject;
+                if (parent == null)
+                    continue; // This shouldn't happen.
+                double libido = (double)((JValue)microClimate["soil_albedo"]).Value;
+                JObject soilwat = JsonUtilities.DescendantOfType(parent, typeof(WaterBalance));
+                if (soilwat != null)
+                    soilwat["Salb"] = libido;
+                soilwat = JsonUtilities.DescendantOfType(parent, typeof(WEIRDO));
+                if (soilwat != null)
+                    soilwat["Salb"] = libido;
+                soilwat = JsonUtilities.DescendantOfType(parent, typeof(Swim3));
+                if (soilwat != null)
+                    soilwat["Salb"] = libido;
+            }
         }
 
         /// <summary>

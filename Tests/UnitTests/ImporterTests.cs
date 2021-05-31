@@ -9,6 +9,7 @@
     using Models.Soils;
     using Models.Storage;
     using Models.Surface;
+    using Models.WaterModel;
     using NUnit.Framework;
     using System;
     using System.IO;
@@ -328,6 +329,9 @@
             "      <c_interception name=\"c_interception\">0.3</c_interception>" +
             "      <d_interception name=\"d_interception\">0.4</d_interception>" +
             "    </micromet>" +
+            "    <Soil>" +
+            "      <SoilWater />" +
+            "    </Soil>" +
             "  </simulation>" +
             "</folder>";
 
@@ -335,12 +339,14 @@
             Simulations sims = importer.CreateSimulationsFromXml(oldXml);
 
             var m = sims.Children[0].Children[0] as MicroClimate;
+            WaterBalance soilwat = (WaterBalance)sims.Children[0].Children[1].Children[0];
             Assert.IsNotNull(m);
-            Assert.AreEqual(m.soil_albedo, 0.23);
-            Assert.AreEqual(m.a_interception, 0.1);
-            Assert.AreEqual(m.b_interception, 0.2);
-            Assert.AreEqual(m.c_interception, 0.3);
-            Assert.AreEqual(m.d_interception, 0.4);
+            Assert.NotNull(soilwat);
+            Assert.AreEqual(0.23, soilwat.Salb);
+            Assert.AreEqual(0.1, m.a_interception);
+            Assert.AreEqual(0.2, m.b_interception);
+            Assert.AreEqual(0.3, m.c_interception);
+            Assert.AreEqual(0.4, m.d_interception);
         }
 
         /// <summary>
