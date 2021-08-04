@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# Author: APSIM Initiative (www.apsim.info)
+
+# Fail immediately if any single command fails.
+set -euo pipefail
+
+# This function will ask a question to the user with a dialog box.
+# Returns 0 if user clicks "ok" button, returns 1 otherwise.
+# Requires 3 arguments:
+# 1. Title of the dialog box
+# 2. Text to show in the body of the dialog
+# 3. Text to show on the "ok" button.
+ask_question() {
+	usage='ask_question <dialog title> <dialog text> <ok button text>'
+	test -z "$1" && (echo "$usage"; echo "dialog title not set"; return 1)
+	test -z "$2" && (echo "$usage"; echo "dialog text not set"; return 1)
+	test -z "$3" && (echo "$usage"; echo "ok button text not set"; return 1)
+
+	osascript -e "set question to display dialog \"$2\" with title \"$1\" buttons {\"Cancel\", \"$3\"} default button 2" >>"$INSTALL_LOG_FILE" 2>&1
+
+	# If user clicks cancel, exit code of osascript will be 1.
+	return $?
+}
+
+# Get the bundle's MacOS directory full path
+DIR=$(cd "$(dirname "$0")"; pwd)
+LOGS="$HOME/Library/Logs/$APPNAME"
+mkdir -p "$LOGS"
+
+# Create an empty log file.
+INSTALL_LOG_FILE="$LOGS/$APPNAME-install.log"
+echo "Starting ApsimNG..." >"$INSTALL_LOG_FILE"
+
+EXE_PATH="$DIR/../Resources/Bin/ApsimNG.exe"
+PROCESS_NAME=ApsimNG
+APPNAME="ApsimNG"
+
+# ApsimNG requires the .NET Core runtime 3.1 or greater.
+DOTNET_REQUIRED_MAJOR=3
+DOTNET_REQUIRED_MINOR=1
+
+# Check installed .NET version (if any)
+DOTNET_VERSION="$(dotnet --version)"
+DOTNET_VERSION_MAJOR="$(echo $DOTNET_VERSION | cut -f1 -d.)"
+DOTNET_VERSION_MINOR="$(echo $DOTNET_VERSION | cut -f2 -d.)"
+echo "Installed dotnet version=$DOTNET_VERSION" >>"$INSTALL_LOG_FILE"
+if [ -z "$DOTNET_VERSION" ] \
+   || [ $DOTNET_VERSION_MAJOR -lt $DOTNET_REQUIRED_MAJOR ] \
+   || [ $DOTNET_VERSION_MAJOR -eq $DOTNET_REQUIRED_MAJOR -a $DOTNET_VERSION_MINOR -lt $DOTNET_REQUIRED_MINOR ] 
+then
+	# Ask user if they want to have the .net runtime automatically installed. If they
+	# choose no, then exit immediately.
+	DOTNET_INSTALL_DIALOG_TITLE="Cannot launch $APPNAME"
+	DOTNET_INSTALL_DIALOG_MSG="$APPNAME requires the .NET Core runtime version $DOTNET_REQUIRED_MAJOR.$DOTNET_REQUIRED_MINOR or later. Do you wish for this to be automatically downloaded and installed?"
+	ask_question "$DOTNET_INSTALL_DIALOG_TITLE" "$DOTNET_INSTALL_DIALOG_MSG" "Download" && exit 1
+
+	DOTNET_DOWNLOAD_URL="https://dot.net/v1/dotnet-install.sh"
+	curl -sSL "$DOTNET_DOWNLOAD_URL" | bash /dev/stdin --runtime dotnet --channel 3.1 >>"$INSTALL_LOG_FILE" 2>&1
+fi
+
+# Install brew if not installed. (We need brew in order to install gtk.)
+which brew >/dev/null || (
+	BREW_INSTALL_TITLE="Cannot launch $APPNAME"
+	BREW_INSTALL_MSG="$APPNAME requires homebrew to be installed for package management. Do you wish for this to be automatically downloaded and installed?"
+	ask_question "$BREW_INSTALL_TITLE" "$BREW_INSTALL_MSG" "Download" && exit 1
+	bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" >>"$INSTALL_LOG_FILE" 2>&1
+)
+
+# Check gtk version - min required is 3.0
+# Note that the CLI (Models.exe) will run fine without this.
+GTK_REQUIRED_MAJOR=3
+GTK_REQUIRED_MINOR=0
+GTK_VERSION="$(brew ls --versions gtk+3 | cut -d' ' -f2)"
+GTK_VERSION_MAJOR="$(echo $DOTNET_VERSION | cut -f1 -d.)"
+GTK_VERSION_MINOR="$(echo $DOTNET_VERSION | cut -f2 -d.)"
+if [ -z "$GTK_VERSION" ] \
+   || [ $GTK_VERSION_MAJOR -lt $GTK_REQUIRED_MAJOR ] \
+   || [ $GTK_VERSION_MAJOR -eq $GTK_REQUIRED_MAJOR -a $GTK_VERSION_MINOR -lt $GTK_REQUIRED_MINOR ]
+then
+	# gtk+3 package is either not installed by brew or its version is too low.
+	GTK_INSTALL_TITLE="Cannot launch $APPNAME"
+	GTK_INSTALL_MSG="$APPNAME requires gtk+3 to be installed. Do you wish for this to be automatically downloaded and installed?"
+	ask_question "$GTK_INSTALL_TITLE" "$GTK_INSTALL_MSG" "Download" && exit 1
+	brew install gtk+3 >>"$INSTALL_LOG_FILE" 2>&1
+fi
+
+# Check if gtksourceview4 package is installed.
+# (Most of the UI will run without this.)
+GTKSOURCE_VERSION=$(brew ls --versions gtksourceview4 | cut -d' ' -f2)
+if [ -z "$GTKSOURCE_VERSION" ]; then
+	GTKSOURCE_INSTALL_TITLE="Cannot launch $APPNAME"
+	GTKSOURCE_INSTALL_MSG="$APPNAME requires gtksourceview4 to be installed. Do you wish for this to be automatically downloaded and installed?"
+	ask_question "$GTKSOURCE_INSTALL_TITLE" "$GTKSOURCE_INSTALL_MSG" "Download" && exit 1
+	brew install gtksourceview4 >>"$INSTALL_LOG_FILE" 2>&1
+fi
+
+# Run the apsim gui.
+DOTNET_EXEC="exec dotnet"
+
+# Create log file directory if it doesn't exist
+APSIM_LOG_FILE="$LOGS/$APPNAME.log"
+mkdir -p "`dirname \"$APSIM_LOG_FILE\"`"
+
+# Run app using dotnet
+echo $DOTNET_EXEC "$EXE_PATH" $*
+echo $DOTNET_EXEC "$EXE_PATH" $* >>"$INSTALL_LOG_FILE" 2>&1
+$DOTNET_EXEC "$EXE_PATH" $* 2>&1 1> "$APSIM_LOG_FILE"

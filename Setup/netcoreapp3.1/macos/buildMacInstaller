@@ -36,7 +36,7 @@ sed -i -e "s/@Version/$version/g" "$plist"
 test -d MacBundle && rm -rf MacBundle
 
 appdir=MacBundle/APSIM$version.app/Contents
-template="$apsimx/Setup/osx/Template"
+template="$apsimx/Setup/netcoreapp3.1/macos/Template"
 copy() {  rsync -aq --mkpath --exclude='*.db' --exclude='*.db-wal' --exclude='*.db-shm' $@; }
 copy $template/Contents/MacOS/ApsimNG $appdir/MacOS/
 copy $template/Contents/Resources/ApsimNG.icns $appdir/Resources/
