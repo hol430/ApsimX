@@ -104,6 +104,16 @@
         private string constantsFile;
 
         /// <summary>
+        /// Allows a custom latitude to be set, e.g. from ClimateController.
+        /// </summary>
+        private double? customLatitude;
+
+        /// <summary>
+        /// Allows a custom longitude to be set, e.g. from ClimateController.
+        /// </summary>
+        private double? customLongitude;
+
+        /// <summary>
         /// Allows to specify a second file which contains constants such as lat, long,
         /// tav, amp, etc. Really only used when the actual met data is in a .csv file.
         /// </summary>
@@ -359,10 +369,16 @@
         {
             get
             {
+                if (customLatitude != null)
+                    return (double)customLatitude;
                 if (this.reader == null && !this.OpenDataFile())
                     return 0;
 
                 return this.reader.ConstantAsDouble("Latitude");
+            }
+            set
+            {
+                customLatitude = value;
             }
         }
 
@@ -373,10 +389,16 @@
         {
             get
             {
+                if (customLongitude != null)
+                    return (double)customLongitude;
                 if (this.reader == null || this.reader.Constant("Longitude") == null)
                     return 0;
                 else
                     return this.reader.ConstantAsDouble("Longitude");
+            }
+            set
+            {
+                customLongitude = value;
             }
         }
 
