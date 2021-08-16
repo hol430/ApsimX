@@ -288,7 +288,7 @@
             {
                 foreach (string simulationName in storage.Reader.SimulationNames)
                 {
-                    Summary.WriteReport(storage, simulationName, report, null, outtype: Summary.OutputType.html, darkTheme : darkTheme);
+                    Summary.WriteReport(storage, simulationName, report, outtype: Summary.OutputType.html, darkTheme : darkTheme);
                     report.WriteLine();
                     report.WriteLine();
                     report.WriteLine("############################################################################");
@@ -302,14 +302,12 @@
         /// <param name="storage">The data store to query</param>
         /// <param name="simulationName">The simulation name to produce a summary report for</param>
         /// <param name="writer">Text writer to write to</param>
-        /// <param name="apsimSummaryImageFileName">The file name for the logo. Can be null</param>
         /// <param name="outtype">Indicates the format to be produced</param>
         /// <param name="darkTheme">Whether or not the dark theme should be used.</param>
         public static void WriteReport(
             IDataStore storage,
             string simulationName,
             TextWriter writer,
-            string apsimSummaryImageFileName,
             OutputType outtype,
             bool darkTheme)
         {

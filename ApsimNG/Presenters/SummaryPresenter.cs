@@ -109,7 +109,7 @@
         {
             using (StringWriter writer = new StringWriter())
             {
-                Summary.WriteReport(dataStore, summaryView.SimulationDropDown.SelectedValue, writer, Configuration.Settings.SummaryPngFileName, outtype: Summary.OutputType.Markdown, darkTheme : Configuration.Settings.DarkTheme);
+                Summary.WriteReport(dataStore, summaryView.SimulationDropDown.SelectedValue, writer, outtype: Summary.OutputType.Markdown, darkTheme : Configuration.Settings.DarkTheme);
                 summaryView.SummaryDisplay.Text = writer.ToString();
             }
         }

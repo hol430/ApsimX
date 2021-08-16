@@ -106,30 +106,6 @@ namespace Utility
         [Tooltip("This will mostly eliminate the pause when closing a file, but it may cause apsim to fail to prompt to save the file in some cases.")]
         public bool UseFastFileClose { get; set; }
 
-        /// <summary>Return the name of the summary file JPG.</summary>
-        public string SummaryPngFileName
-        {
-            get
-            {
-                // Make sure the summary JPG exists in the configuration folder.
-                string summaryJpg = Path.Combine(ConfigurationFolder, "ApsimSummary.png");
-                if (!File.Exists(summaryJpg))
-                {
-                    try
-                    {
-                        Bitmap b = ApsimNG.Properties.Resources.ResourceManager.GetObject("ApsimSummary") as Bitmap;
-                        b.Save(summaryJpg);
-                    }
-                    catch
-                    {
-
-                    }
-
-                }
-                return summaryJpg;
-            }
-        }
-
         /// <summary>
         /// Version number of the configuration settings.
         /// </summary>
