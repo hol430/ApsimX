@@ -110,6 +110,11 @@
                 CreateInitialConditionsTable();
         }
 
+        private string GetPathForSummary(IModel model)
+        {
+            return model.FullPath.Replace($"{simulation.FullPath}.", "");
+        }
+
         /// <summary>Initialise the summary messages table.</summary>
         private void Initialise()
         {
@@ -139,23 +144,7 @@
         public void WriteMessage(IModel model, string message)
         {
             if (CaptureSummaryText)
-            {
-                Initialise();
-
-                if (storage == null)
-                    throw new ApsimXException(model, "No datastore is available!");
-                string modelPath = model.FullPath;
-                string relativeModelPath = modelPath.Replace(simulation.FullPath + ".", string.Empty);
-
-                var newRow = messages.NewRow();
-                newRow[0] = simulation.Name;
-                newRow[1] = relativeModelPath;
-                newRow[2] = clock.Today;
-                newRow[3] = message;
-                newRow[4] = Convert.ToInt32(Simulation.ErrorLevel.Information);
-                messages.Rows.Add(newRow);
-                storage.Writer.WriteTable(messages.Copy(), false);
-            }
+                Write(model, message, Simulation.ErrorLevel.Information);
         }
 
         /// <summary>Write a warning message to the summary</summary>
@@ -164,23 +153,7 @@
         public void WriteWarning(IModel model, string message)
         {
             if (CaptureWarnings)
-            {
-                Initialise();
-
-                if (storage == null)
-                    throw new ApsimXException(model, "No datastore is available!");
-                string modelPath = model.FullPath;
-                string relativeModelPath = modelPath.Replace(simulation.FullPath + ".", string.Empty);
-
-                var newRow = messages.NewRow();
-                newRow[0] = simulation.Name;
-                newRow[1] = relativeModelPath;
-                newRow[2] = clock.Today;
-                newRow[3] = message;
-                newRow[4] = Convert.ToInt32(Simulation.ErrorLevel.Warning, CultureInfo.InvariantCulture);
-                messages.Rows.Add(newRow);
-                storage.Writer.WriteTable(messages.Copy(), false);
-            }
+                Write(model, message, Simulation.ErrorLevel.Warning);
         }
 
         /// <summary>Write an error message to the summary</summary>
@@ -189,23 +162,31 @@
         public void WriteError(IModel model, string message)
         {
             if (CaptureErrors)
-            {
-                Initialise();
+                Write(model, message, Simulation.ErrorLevel.Error);
+        }
 
-                if (storage == null)
-                    throw new ApsimXException(model, "No datastore is available!");
-                string modelPath = model.FullPath;
-                string relativeModelPath = modelPath.Replace(simulation.FullPath + ".", string.Empty);
+        /// <summary>
+        /// Write a message to the storage manager.
+        /// </summary>
+        /// <param name="model">Model source of the message.</param>
+        /// <param name="message">The message to be written.</param>
+        /// <param name="messageType">Type of message (info, warning, error, ...).</param>
+        private void Write(IModel model, string message, Simulation.ErrorLevel messageType)
+        {
+            Initialise();
 
-                var newRow = messages.NewRow();
-                newRow[0] = simulation.Name;
-                newRow[1] = relativeModelPath;
-                newRow[2] = clock.Today;
-                newRow[3] = message;
-                newRow[4] = Convert.ToInt32(Simulation.ErrorLevel.Error, CultureInfo.InvariantCulture);
-                messages.Rows.Add(newRow);
-                storage.Writer.WriteTable(messages.Copy(), false);
-            }
+            if (storage == null)
+                throw new ApsimXException(model, "No datastore is available!");
+
+            string relativeModelPath = GetPathForSummary(model);
+            DataRow newRow = messages.NewRow();
+            newRow[0] = simulation.Name;
+            newRow[1] = relativeModelPath;
+            newRow[2] = clock.Today;
+            newRow[3] = message;
+            newRow[4] = Convert.ToInt32(messageType, CultureInfo.InvariantCulture);
+            messages.Rows.Add(newRow);
+            storage.Writer.WriteTable(messages.Copy(), false);
         }
 
         /// <summary>
