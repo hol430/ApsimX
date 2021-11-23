@@ -18,6 +18,8 @@
     <EmbeddedResource Include="**\*.apsimx" />
     <EmbeddedResource Include="Weather\WeatherTestsExcelFile.xlsx" />
     <EmbeddedResource Include="**\*.Expected.txt" />
+    <EmbeddedResource Include="Resources/*.cs" />
+    <Compile Remove="Resources/**" />
   </ItemGroup>
 
   <ItemGroup>

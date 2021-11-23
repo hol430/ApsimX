@@ -178,5 +178,36 @@ namespace UnitTests.ManagerTests
             double[] expected = new double[] { 2 };
             Assert.AreNotEqual(expected, actual);
         }
+
+        /// <summary>
+        /// Ensure that manager parameters are serialized iff they have
+        /// a description attribute.
+        /// 
+        /// This reproduces bug #6937:
+        /// https://github.com/APSIMInitiative/ApsimX/issues/6937
+        /// </summary>
+        [Test]
+        public void TestParameterSerialization()
+        {
+            Manager manager = new Manager();
+            manager.OnCreated();
+
+            // Inject script compiler instance into the manager.
+            ReflectionUtilities.SetValueOfFieldOrProperty("scriptCompiler", manager, new ScriptCompiler());
+
+            // Set the manager code - this script contains a single property with a description attribute.
+            manager.Code = ReflectionUtilities.GetResourceAsString("UnitTests.Resources.ManagerCodeWithInputProperty.cs");
+
+            // Manager should have 1 input parameter.
+            manager.GetParametersFromScriptModel();
+            Assert.AreEqual(1, manager.Parameters.Count);
+
+            // Set the manager code - this script contains a single property without a description attribute.
+            manager.Code = ReflectionUtilities.GetResourceAsString("UnitTests.Resources.ManagerCodeWithoutInputProperty.cs");
+
+            // Manager should have 0 parameters.
+            manager.GetParametersFromScriptModel();
+            Assert.AreEqual(0, manager.Parameters.Count);
+        }
     }
 }
