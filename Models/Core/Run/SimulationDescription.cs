@@ -33,6 +33,11 @@
         public Simulation SimulationToRun { get; private set; } = null;
 
         /// <summary>
+        /// A collection of replacements that will be applied when simulation is run.
+        /// </summary>
+        public IEnumerable<IReplacement> Replacements => replacementsToApply;
+
+        /// <summary>
         /// Returns the job's progress as a real number in range [0, 1].
         /// </summary>
         public double Progress
@@ -215,7 +220,7 @@
         }
 
         /// <summary>Add any replacements to all simulation descriptions.</summary>
-        private void AddReplacements()
+        public void AddReplacements()
         {
             if (topLevelModel != null)
             {

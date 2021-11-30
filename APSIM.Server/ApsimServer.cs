@@ -32,6 +32,8 @@ namespace APSIM.Server
         private Runner runner;
         private ServerJobRunner jobRunner;
 
+        private IConnectionManager internalConnectionManager;
+
         /// <summary>
         /// Create an <see cref="ApsimServer" /> instance.
         /// </summary>
@@ -45,6 +47,28 @@ namespace APSIM.Server
             jobRunner = new ServerJobRunner();
             runner.Use(jobRunner);
         }
+
+        /// <summary>
+        /// Create an <see cref="ApsimServer" /> instance.
+        /// </summary>
+        /// <param name="simulations">Simulations to be run.</param>
+        /// <param name="commands">The commands to run.</param>
+        /// <param name="onCompleted">The optional callback invoked when a command completes.</param>
+        public ApsimServer(Simulations simulations, IEnumerable<ICommand> commands, Action<ICommand, Exception> onCompleted = null)
+        {
+            this.options = new GlobalServerOptions()
+            {
+                KeepAlive = false,
+                Verbose = false
+            };
+            internalConnectionManager = new CommandListConnectionManager(commands, onCompleted);
+            sims = simulations;
+            sims.FindChild<Models.Storage.DataStore>().UseInMemoryDB = true;
+            runner = new Runner(sims);
+            jobRunner = new ServerJobRunner();
+            runner.Use(jobRunner);
+        }
+
 
         protected ApsimServer() { }
 
@@ -123,6 +147,9 @@ namespace APSIM.Server
         /// </summary>
         private IConnectionManager CreateConnection()
         {
+            if (internalConnectionManager != null)
+                return internalConnectionManager;
+
             Protocol protocol = GetProtocol();
             if (options.LocalMode)
                 return new LocalSocketConnection(options.SocketName, options.Verbose, protocol);
