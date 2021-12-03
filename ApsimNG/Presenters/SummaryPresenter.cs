@@ -116,7 +116,7 @@
 
             if (scopedParent is Experiment experiment)
             {
-                string[] simulationNames = experiment.GenerateSimulationDescriptions().Select(s => s.Name).ToArray();
+                string[] simulationNames = experiment.GetSimulationNames().ToArray();
                 summaryView.SimulationDropDown.Values = simulationNames;
                 if (simulationNames != null && simulationNames.Count() > 0)
                     summaryView.SimulationDropDown.SelectedValue = simulationNames.First();

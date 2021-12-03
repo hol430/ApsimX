@@ -149,7 +149,7 @@
                 if (ExperimentFilter != null)
                 {
                     // fixme: this makes some serious assumptions about how the query is generated in the data store layer...
-                    simulationNames = ExperimentFilter.GenerateSimulationDescriptions().Select(s => s.Name);
+                    simulationNames = ExperimentFilter.GetSimulationNames();
                 }
                 else if (SimulationFilter == null)
                     simulationNames = null;

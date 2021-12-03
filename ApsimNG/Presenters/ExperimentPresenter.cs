@@ -26,7 +26,7 @@
         private ExplorerPresenter explorerPresenter;
 
         /// <summary>List of all experiment simulations.</summary>
-        private IEnumerable<SimulationDescription> simulationDescriptions;
+        private IEnumerable<SimulationDesc> simulationDescriptions;
 
         /// <summary>By default, only display this many simulations (for performance reasons).</summary>
         private const int DefaultMaxSims = 50;
@@ -132,7 +132,7 @@
         {
             List<string> savedDisabledSimulationNames = experiment.DisabledSimNames;
             experiment.DisabledSimNames = null;
-            simulationDescriptions = experiment.GetSimulationDescriptions();
+            simulationDescriptions = experiment.GetSimulationDescription();
             experiment.DisabledSimNames = savedDisabledSimulationNames;
         }
 

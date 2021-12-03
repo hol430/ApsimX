@@ -2,6 +2,7 @@
 {
     using Models.Storage;
     using System;
+    using System.Collections.Generic;
     using System.Linq;
 
     /// <summary>
@@ -19,6 +20,9 @@
         /// <summary>The value to Model path to use to find the model to replace.</summary>
         private IModel replacement;
 
+        /// <summary>A list of existing model and its replacement model for all replacements made.</summary>
+        private List<(IModel, IModel)> replacements = new List<(IModel, IModel)>();
+
         /// <summary>Constructor</summary>
         /// <param name="pathOfModel">Model path to use to find the model to replace. If null, then multiple replacements are made using the model name for matching.</param>
         /// <param name="modelReplacement">The value to Model path to use to find the model to replace.</param>
@@ -34,6 +38,7 @@
         {
             if (path == null)
             {
+                // Path will be null when a Replacements node has models under it.
                 // Temporarily remove DataStore because we don't want to do any
                 // replacements under DataStore.
                 DataStore dataStore = simulation.FindChild<DataStore>();
@@ -42,7 +47,11 @@
 
                 // Do replacements.
                 foreach (IModel match in simulation.FindAllDescendants(replacement.Name).ToList())
-                    ReplaceModel(match);
+                {
+                    var replacementModel = Apsim.Clone(replacement);
+                    replacements.Add((match, replacementModel));
+                    ReplaceModel(match, replacementModel);
+                }
 
                 // Reinstate DataStore.
                 if (dataStore != null)
@@ -53,7 +62,9 @@
                 IModel match = simulation.FindByPath(path)?.Value as IModel;
                 if (match == null)
                     throw new Exception("Cannot find a model on path: " + path);
-                ReplaceModel(match);
+                var replacementModel = Apsim.Clone(replacement);
+                replacements.Add((match, replacementModel));
+                ReplaceModel(match, replacementModel);
 
                 // In a multi-paddock context, we want to attempt to
                 // replace the model in all paddocks.
@@ -61,21 +72,34 @@
                 {
                     match = paddock.FindByPath(path)?.Value as IModel;
                     if (match != null)
-                        ReplaceModel(match);
+                    {
+                        replacementModel = Apsim.Clone(replacement);
+                        replacements.Add((match, replacementModel));
+                        ReplaceModel(match, replacementModel);
+                    }
                 }
             }
         }
 
+        /// <summary>
+        /// Under the previous replacement.
+        /// </summary>
+        public void Undo()
+        {
+            foreach (var replacement in replacements)
+                ReplaceModel(replacement.Item2, replacement.Item1);
+        }
+
+
         /// <summary>Perform the actual replacement.</summary>
-        private void ReplaceModel(IModel match)
+        private void ReplaceModel(IModel existingModel, IModel newModel)
         {
             // Fixme - this code should be in Structure.cs.
-            IModel newModel = Apsim.Clone(replacement);
-            int index = match.Parent.Children.IndexOf(match as Model);
-            match.Parent.Children.Insert(index, newModel as Model);
-            newModel.Parent = match.Parent;
-            newModel.Name = match.Name;
-            newModel.Enabled = match.Enabled;
+            int index = existingModel.Parent.Children.IndexOf(existingModel as Model);
+            existingModel.Parent.Children.Insert(index, newModel as Model);
+            newModel.Parent = existingModel.Parent;
+            newModel.Name = existingModel.Name;
+            newModel.Enabled = existingModel.Enabled;
 
             // If a resource model (e.g. maize) is copied into replacements, and its
             // property values changed, these changed values will be overriden with the
@@ -86,8 +110,8 @@
             if (newModel is ModelCollectionFromResource resourceModel)
                 resourceModel.ResourceName = null;
 
-            match.Parent.Children.Remove(match as Model);
-            Apsim.ClearCaches(match);
+            existingModel.Parent.Children.Remove(existingModel as Model);
+            Apsim.ClearCaches(existingModel);
 
             // Don't call newModel.Parent.OnCreated(), because if we're replacing
             // a child of a resource model, the resource model's OnCreated event

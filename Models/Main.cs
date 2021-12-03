@@ -248,7 +248,7 @@
             if (e.Job == null)
                 return;
 
-            var message = new StringBuilder(e.Job.Name);
+            var message = new StringBuilder();
             if (e.Job is SimulationDescription sim && !string.IsNullOrEmpty(sim.SimulationToRun?.FileName))
                 message.Append($" ({sim.SimulationToRun.FileName})");
             string duration = e.ElapsedTime.TotalSeconds.ToString("F1");

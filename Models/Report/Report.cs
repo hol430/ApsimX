@@ -101,8 +101,8 @@ namespace Models
         /// </summary>
         /// <param name="sender">Sender object..</param>
         /// <param name="args">Event data.</param>
-        [EventSubscribe("SubscribeToEvents")]
-        private void OnConnectToEvents(object sender, EventArgs args)
+        [EventSubscribe("Commencing")]
+        private void OnComencing(object sender, EventArgs args)
         {
             SubscribeToEvents();
         }
@@ -215,7 +215,7 @@ namespace Models
             if (dataToWriteToDb == null)
             {
                 string folderName = null;
-                var folderDescriptor = simulation.Descriptors?.Find(d => d.Name == "FolderName");
+                var folderDescriptor = simulation.Descriptors?.FirstOrDefault(d => d.Name == "FolderName");
                 if (folderDescriptor != null)
                     folderName = folderDescriptor.Value;
                 dataToWriteToDb = new ReportData()
@@ -387,9 +387,9 @@ namespace Models
                 table.Columns.Add("FactorName", typeof(string));
                 table.Columns.Add("FactorValue", typeof(string));
 
-                var experimentDescriptor = simulation.Descriptors.Find(d => d.Name == "Experiment");
-                var simulationDescriptor = simulation.Descriptors.Find(d => d.Name == "SimulationName");
-                var folderDescriptor = simulation.Descriptors.Find(d => d.Name == "FolderName");
+                var experimentDescriptor = simulation.Descriptors.FirstOrDefault(d => d.Name == "Experiment");
+                var simulationDescriptor = simulation.Descriptors.FirstOrDefault(d => d.Name == "SimulationName");
+                var folderDescriptor = simulation.Descriptors.FirstOrDefault(d => d.Name == "FolderName");
 
                 foreach (var descriptor in simulation.Descriptors)
                 {

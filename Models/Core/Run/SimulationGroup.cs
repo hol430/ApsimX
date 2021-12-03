@@ -116,7 +116,8 @@
         /// <returns></returns>
         public List<string> FindAllSimulationNames(IModel model, IEnumerable<string> simulationNamesToRun)
         {
-            return FindListOfSimulationsToRun(model, simulationNamesToRun).Select(j => j.Name).ToList();
+            throw new NotImplementedException();
+            //return FindListOfSimulationsToRun(model, simulationNamesToRun).Select(j => j.Name).ToList();
         }
 
         /// <summary>Find and return a list of duplicate simulation names.</summary>
@@ -263,26 +264,27 @@
         /// <param name="simulationNamesToRun">Only run these simulations.</param>
         private IEnumerable<IRunnable> FindListOfSimulationsToRun(IModel relativeTo, IEnumerable<string> simulationNamesToRun)
         {
-            if (relativeTo is Simulation sim)
-            {
-                if (SimulationNameIsMatched(relativeTo.Name))
-                    yield return sim.GenerateSimulationDescriptions().FirstOrDefault();
-            }
-            else if (relativeTo is ISimulationDescriptionGenerator)
-            {
-                foreach (var description in (relativeTo as ISimulationDescriptionGenerator).GenerateSimulationDescriptions())
-                    if (SimulationNameIsMatched(description.Name))
-                        yield return description;
-            }
-            else if (relativeTo is Folder || relativeTo is Simulations)
-            {
-                // Get a list of all models we're going to run.
-                foreach (var child in relativeTo.Children)
-                    foreach (IRunnable job in FindListOfSimulationsToRun(child, simulationNamesToRun))
-                        yield return job;
-            }
-            else if (relativeTo is IRunnable runnable)
-                yield return runnable;
+            throw new NotImplementedException();
+            //if (relativeTo is Simulation sim)
+            //{
+            //    if (SimulationNameIsMatched(relativeTo.Name))
+            //        yield return sim.GenerateSimulationDescriptors().FirstOrDefault();
+            //}
+            //else if (relativeTo is ISimulationDescriptionGenerator)
+            //{
+            //    foreach (var description in (relativeTo as ISimulationDescriptionGenerator).GenerateSimulationDescriptions())
+            //        if (SimulationNameIsMatched(description.Name))
+            //            yield return description;
+            //}
+            //else if (relativeTo is Folder || relativeTo is Simulations)
+            //{
+            //    // Get a list of all models we're going to run.
+            //    foreach (var child in relativeTo.Children)
+            //        foreach (IRunnable job in FindListOfSimulationsToRun(child, simulationNamesToRun))
+            //            yield return job;
+            //}
+            //else if (relativeTo is IRunnable runnable)
+            //    yield return runnable;
         }
 
         /// <summary>Return true if simulation name is a match.</summary>
@@ -339,7 +341,7 @@
             storage?.Writer.WaitForIdle();
             storage?.Reader.Refresh();
 
-            List<object> services;
+            IEnumerable<object> services;
             if (relativeTo is Simulations)
                 services = (relativeTo as Simulations).GetServices();
             else
@@ -351,9 +353,10 @@
                     services = (relativeTo as Simulation).Services;
                 else
                 {
-                    services = new List<object>();
+                    var servicesList = new List<object>();
                     if (storage != null)
-                        services.Add(storage);
+                        servicesList.Add(storage);
+                    services = servicesList;
                 }
             }
 

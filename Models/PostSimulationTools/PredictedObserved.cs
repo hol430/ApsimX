@@ -166,7 +166,7 @@ namespace Models.PostSimulationTools
                     List<string> simulationNames = new List<string>();
                     foreach (Experiment experiment in this.FindAllInScope<Experiment>())
                     {
-                        var names = experiment.GenerateSimulationDescriptions().Select(s => s.Name);
+                        var names = experiment.GetSimulationNames();
                         simulationNames.AddRange(names);
                     }
 

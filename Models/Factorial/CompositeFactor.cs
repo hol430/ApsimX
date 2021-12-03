@@ -63,11 +63,8 @@
         /// <summary>Gets all values.</summary>
         public List<object> Values { get; set; }
 
-        /// <summary>
-        /// Apply this CompositeFactor to the specified simulation
-        /// </summary>
-        /// <param name="simulationDescription">A description of a simulation.</param>
-        public void ApplyToSimulation(SimulationDescription simulationDescription)
+        /// <summary>Get a list of replacements for this factor.</summary>
+        public IEnumerable<IReplacement> GetReplacements()
         {
             ParseAllSpecifications(out List<string> allPaths, out List<object> allValues);
 
@@ -75,14 +72,26 @@
                 throw new Exception("The number of factor paths does not match the number of factor values");
 
             // Add a simulation override for each path / value combination.
+            var replacements = new List<IReplacement>();
             for (int i = 0; i != allPaths.Count; i++)
             {
                 if (allValues[i] is IModel)
-                    simulationDescription.AddOverride(new ModelReplacement(allPaths[i], allValues[i] as IModel));
+                    replacements.Add(new ModelReplacement(allPaths[i], allValues[i] as IModel));
                 else
-                    simulationDescription.AddOverride(new PropertyReplacement(allPaths[i], allValues[i]));
+                    replacements.Add(new PropertyReplacement(allPaths[i], allValues[i]));
             }
+            return replacements;
+        }
 
+        /// <summary>Get a list of descriptors for this factor.</summary>
+        public IEnumerable<SimulationDescription.Descriptor> GetDescriptors()
+        {
+            ParseAllSpecifications(out List<string> allPaths, out List<object> allValues);
+
+            if (allPaths.Count > 1 && allPaths.Count != allValues.Count)
+                throw new Exception("The number of factor paths does not match the number of factor values");
+
+            var factors = new List<SimulationDescription.Descriptor>();
             if (!(Parent is Factors))
             {
                 // Set descriptors in simulation.
@@ -92,16 +101,26 @@
                 if (Specifications != null && Specifications.Count > 0)
                 {
                     // compound factor value ie. one that has multiple specifications. 
-                    simulationDescription.Descriptors.Add(new SimulationDescription.Descriptor(descriptorName, Name));
+                    factors.Add(new SimulationDescription.Descriptor(descriptorName, Name));
                 }
                 else
                 {
                     if (allValues[0] is IModel)
-                        simulationDescription.Descriptors.Add(new SimulationDescription.Descriptor(descriptorName, (allValues[0] as IModel).Name));
+                        factors.Add(new SimulationDescription.Descriptor(descriptorName, (allValues[0] as IModel).Name));
                     else
-                        simulationDescription.Descriptors.Add(new SimulationDescription.Descriptor(descriptorName, allValues[0].ToString()));
+                        factors.Add(new SimulationDescription.Descriptor(descriptorName, allValues[0].ToString()));
                 }
             }
+            return factors;
+        }
+
+        /// <summary>
+        /// Apply this CompositeFactor to the specified simulation
+        /// </summary>
+        /// <param name="simulationDescription">A description of a simulation.</param>
+        public void ApplyToSimulation(SimulationDescription simulationDescription)
+        {
+            throw new NotImplementedException();
         }
 
         private void ParseAllSpecifications(out List<string> paths, out List<object> values)

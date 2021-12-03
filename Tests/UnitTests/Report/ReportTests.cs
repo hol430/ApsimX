@@ -380,14 +380,15 @@
         {
             // When report gets an oncommencing it should write a _Factors table to storage.
             var sim = new Simulation();
-            sim.Descriptors = new List<SimulationDescription.Descriptor>();
-            sim.Descriptors.Add(new SimulationDescription.Descriptor("Experiment", "exp1"));
-            sim.Descriptors.Add(new SimulationDescription.Descriptor("SimulationName", "sim1"));
-            sim.Descriptors.Add(new SimulationDescription.Descriptor("FolderName", "F"));
-            sim.Descriptors.Add(new SimulationDescription.Descriptor("Zone", "z"));
-            sim.Descriptors.Add(new SimulationDescription.Descriptor("Cultivar", "cult1"));
-            sim.Descriptors.Add(new SimulationDescription.Descriptor("N", "0"));
-
+            sim.Descriptors = new List<SimulationDescription.Descriptor>()
+            {
+                new SimulationDescription.Descriptor("Experiment", "exp1"),
+                new SimulationDescription.Descriptor("SimulationName", "sim1"),
+                new SimulationDescription.Descriptor("FolderName", "F"),
+                new SimulationDescription.Descriptor("Zone", "z"),
+                new SimulationDescription.Descriptor("Cultivar", "cult1"),
+                new SimulationDescription.Descriptor("N", "0")
+            };
             var report = new Report()
             {
                 VariableNames = new string[0],

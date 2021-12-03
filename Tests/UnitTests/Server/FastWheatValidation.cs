@@ -43,7 +43,7 @@ namespace UnitTests.Server
 
             var dbReader = new ReadCommand("Report", new string[] { "Wheat.Grain.Wt" });
 
-            var commands = GetReplacementsForEachSimulation(simulations);
+            //var commands = GetReplacementsForEachSimulation(simulations);
 
             // Find the first simulation
             var simulation = simulations.FindDescendant<Simulation>();
@@ -54,22 +54,14 @@ namespace UnitTests.Server
 
             var stopWatch = Stopwatch.StartNew();
 
+            var jobManager = new JobManager();
+
+            foreach (var experiment in simulations.FindAllDescendants<Experiment>())
+                jobManager.Add(new SimulationRunner(experiment.BaseSimulation, experiment.GetSimulationDescription()));
+
             var jobRunner = new JobRunner();
-            jobRunner.Add(new FastRun(simulation, dataStore, commands));
+            jobRunner.Add(jobManager);
             jobRunner.Run(wait: true);
-
-            //List<Task> tasks = new List<Task>();
-            //var chunk = commands.DequeueChunk(500);
-            //while (chunk.Any())
-            //{
-            //    var server = new ApsimServer(harness.Clone(), chunk,
-            //                                 (command, err) => { if (err != null) throw err; });
-
-            //    tasks.Add(Task.Run(() => { server.Run(); }));
-            //    chunk = commands.DequeueChunk(500);
-            //}
-
-            //Task.WaitAll(tasks.ToArray());
 
             File.WriteAllText(@"C:\Users\hol353\Temp\Timing.txt", stopWatch.Elapsed.TotalSeconds.ToString());
         }
@@ -146,7 +138,7 @@ namespace UnitTests.Server
             }
         }
 
-
+/*
         private IEnumerable<IEnumerable<IReplacement>> GetReplacementsForEachSimulation(Simulations simulations)
         {
             //var replacementsNode = simulations.FindChild<Replacements>();
@@ -156,7 +148,7 @@ namespace UnitTests.Server
             List<IEnumerable<IReplacement>> commands = new List<IEnumerable<IReplacement>>();
             foreach (var experiment in experiments)
             {
-                var simulationDescriptions = experiment.GenerateSimulationDescriptions();
+                var simulationDescriptions = experiment.GenerateSimulationNames();
                 foreach (var simulationDescription in simulationDescriptions)
                 {
                     simulationDescription.AddReplacements();
@@ -166,7 +158,7 @@ namespace UnitTests.Server
 
             return commands;
         }
-
+*/
         [Test]
         public void RunAcrossGrid2()
         {

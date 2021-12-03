@@ -1,6 +1,7 @@
 ﻿namespace Models.Core.Run
 {
     using System;
+    using System.Collections.Generic;
 
     /// <summary>
     /// This class encapsulates an instruction to replace a property value.
@@ -16,6 +17,9 @@
 
         /// <summary>The value to Model path to use to find the model to replace.</summary>
         private object replacement;
+
+        /// <summary>The variable and previous value for all replacements made.</summary>
+        private List<(IVariable, object)> replacements = new List<(IVariable, object)>();
 
         /// <summary>Constructor</summary>
         /// <param name="pathOfModel">Model path to use to find the model to replace. If null, then multiple replacements are made using the model name for matching.</param>
@@ -33,9 +37,10 @@
             if (path == null)
                 throw new Exception("No path specified for property replacement.");
 
-            IVariable variable = simulation.FindByPath(path);
+            var variable = simulation.FindByPath(path);
             if (variable == null)
                 throw new Exception($"Unable to apply property replacement: Unable to resolve path '{path}'.");
+            replacements.Add((variable, variable.Value));
             variable.Value = replacement;
 
             // In a multi-paddock context, we want to attempt to
@@ -44,8 +49,20 @@
             {
                 variable = paddock.FindByPath(path);
                 if (variable != null)
+                {
+                    replacements.Add((variable, variable.Value));
                     variable.Value = replacement;
+                }
             }
+        }
+
+        /// <summary>
+        /// Under the previous replacement.
+        /// </summary>
+        public void Undo()
+        {
+            foreach (var replacement in replacements)
+                replacement.Item1.Value = replacement.Item2;
         }
 
         /// <summary>

@@ -8,10 +8,10 @@
         /// </summary>
         double Progress { get; }
 
-        /// <summary>
-        /// Name of the job.
-        /// </summary>
-        string Name { get; }
+        ///// <summary>
+        ///// Name of the job.
+        ///// </summary>
+        ////string Name { get; }
 
         /// <summary>
         /// Prepare to run.
