@@ -207,6 +207,10 @@ namespace Models
             if (dataToWriteToDb != null)
                 storage.Writer.WriteTable(dataToWriteToDb);
             dataToWriteToDb = null;
+
+            // Unsubscribe to events.
+            foreach (string eventName in EventNames)
+                events.Unsubscribe(eventName, DoOutputEvent);
         }
 
         /// <summary>A method that can be called by other models to perform a line of output.</summary>
