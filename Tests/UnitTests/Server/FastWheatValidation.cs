@@ -57,7 +57,7 @@ namespace UnitTests.Server
             var jobManager = new JobManager();
 
             foreach (var experiment in simulations.FindAllDescendants<Experiment>())
-                jobManager.Add(new SimulationRunner(experiment.BaseSimulation, experiment.GetSimulationDescription()));
+                jobManager.Add(new SimulationRunnable(experiment.BaseSimulation, experiment.GetSimulationDescription()));
 
             var jobRunner = new JobRunner();
             jobRunner.Add(jobManager);

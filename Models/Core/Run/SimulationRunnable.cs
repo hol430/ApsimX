@@ -9,11 +9,14 @@ using System.Threading;
 namespace Models.Core.Run
 {
     /// <summary>
-    /// Encapsulates a collection of simulations (defined by a set of descriptions) and 
-    /// provides methods for preparing and running the set of simulations. It prepares
-    /// the simulation once and runs it once for each description.
+    /// Encapsulates the running of a simulation or a collection of simulations 
+    /// (defined by a set of descriptions that are applied to a base simulation) and 
+    /// provides methods for preparing and running the simulations. When running a set
+    /// of simulatoins it prepares a simulation once and for each description it applies 
+    /// the description to the simulation, runs the simulation and unapplies the description 
+    /// in readiness for the next run.
     /// </summary>
-    public class SimulationRunner : IRunnable
+    public class SimulationRunnable : IRunnable
     {
         /// <summary>The base simulation to run.</summary>
         private IModel rootModel;
@@ -29,7 +32,7 @@ namespace Models.Core.Run
         /// </summary>
         /// <param name="simulation">The base simulation to run.</param>
         /// <param name="simulationDescriptions">A collection of descriptions of simulations to run.</param>
-        public SimulationRunner(Simulation simulation, IEnumerable<SimulationDesc> simulationDescriptions)
+        public SimulationRunnable(Simulation simulation, IEnumerable<SimulationDesc> simulationDescriptions)
         {
             simulationToRun = Apsim.Clone(simulation);
             this.simulationDescriptions = simulationDescriptions;
@@ -39,8 +42,6 @@ namespace Models.Core.Run
             while (rootModel.Parent != null)
                 rootModel = rootModel.Parent;
         }
-
-        //public IEnumerable<SimulationDescription> Descriptions;
 
         /// <summary>Get run progress.</summary>
         public double Progress => throw new NotImplementedException();
@@ -176,15 +177,15 @@ namespace Models.Core.Run
                 {
                     // Signal that the simulation is complete.
                     simulationToRun.End();
+
+                    // Undo the replacements.
+                    foreach (var replacement in description.Replacements)
+                        replacement.Undo();
                 }
                 catch (Exception error)
                 {
                     // Exception was thrown during simulation cleanup.
                     var cleanupError = new SimulationException($"Error while performing simulation cleanup", error, simulationToRun.Name, simulationToRun.FileName);
-
-                    // Undo the replacements.
-                    foreach (var replacement in description.Replacements)
-                        replacement.Undo();
 
                     // Throw either the exception that was thrown during the simulation or the one that was thrown
                     // during simulation cleanup.
@@ -252,7 +253,5 @@ namespace Models.Core.Run
 
             return replacementsToApply;
         }
-
-
     }
 }

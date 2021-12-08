@@ -17,23 +17,11 @@ namespace ConsoleApp1
                                                        (err) => { throw err; },
                                                        false);
 
-            //var dbReader = new ReadCommand("Report", new string[] { "Wheat.Grain.Wt" });
-
-            //var commands = GetReplacementsForEachSimulation(simulations);
-
-            // Find the first simulation
-            var simulation = simulations.FindDescendant<Simulation>();
-            var dataStore = new DataStore()
-            {
-                UseInMemoryDB = true
-            };
-
             var stopWatch = Stopwatch.StartNew();
 
             var jobManager = new JobManager();
-
             foreach (var experiment in simulations.FindAllDescendants<Experiment>())
-                jobManager.Add(new SimulationRunner(experiment.BaseSimulation, experiment.GetSimulationDescription()));
+                jobManager.Add(new SimulationRunnable(experiment.BaseSimulation, experiment.GetSimulationDescription()));
 
             var jobRunner = new JobRunner();
             jobRunner.Add(jobManager);
