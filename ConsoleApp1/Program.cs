@@ -3,8 +3,10 @@ using Models.Core;
 using Models.Core.ApsimFile;
 using Models.Core.Run;
 using Models.Factorial;
+using Models.PostSimulationTools;
 using Models.Storage;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace ConsoleApp1
@@ -19,13 +21,12 @@ namespace ConsoleApp1
 
             var stopWatch = Stopwatch.StartNew();
 
-            var jobManager = new JobManager();
+            var thingsToRun = new List<IApsimRunnable>();
             foreach (var experiment in simulations.FindAllDescendants<Experiment>())
-                jobManager.Add(new SimulationRunnable(experiment.BaseSimulation, experiment.GetSimulationDescription()));
+                thingsToRun.Add(new SimulationRunnable(experiment.BaseSimulation, experiment.GetSimulationDescription()));
 
-            var jobRunner = new JobRunner();
-            jobRunner.Add(jobManager);
-            jobRunner.Run(wait: true);
+            Parallel.Run(thingsToRun);
+
             Console.WriteLine($"Elapsed time {stopWatch.Elapsed.TotalSeconds} seconds");
         }
     }

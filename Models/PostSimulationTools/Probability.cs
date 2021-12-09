@@ -16,8 +16,8 @@
     [ViewName("UserInterface.Views.PropertyView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType=typeof(DataStore))]
-    [ValidParent(typeof(ParallelPostSimulationTool))]
-    [ValidParent(typeof(SerialPostSimulationTool))]
+    [ValidParent(typeof(Parallel))]
+    [ValidParent(typeof(Serial))]
     [Serializable]
     public class Probability : Model, IPostSimulationTool
     {

@@ -14,8 +14,8 @@
     [ViewName("UserInterface.Views.PropertyView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(DataStore))]
-    [ValidParent(ParentType = typeof(ParallelPostSimulationTool))]
-    [ValidParent(ParentType = typeof(SerialPostSimulationTool))]
+    [ValidParent(ParentType = typeof(Parallel))]
+    [ValidParent(ParentType = typeof(Serial))]
     [Serializable]
     public class Filter : Model, IPostSimulationTool
     {

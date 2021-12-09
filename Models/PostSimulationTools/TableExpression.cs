@@ -26,8 +26,8 @@
     [ViewName("UserInterface.Views.PropertyView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType = typeof(DataStore))]
-    [ValidParent(typeof(ParallelPostSimulationTool))]
-    [ValidParent(ParentType = typeof(SerialPostSimulationTool))]
+    [ValidParent(typeof(Parallel))]
+    [ValidParent(ParentType = typeof(Serial))]
     [Serializable]
     public class TableExpression : Model, IPostSimulationTool
     {

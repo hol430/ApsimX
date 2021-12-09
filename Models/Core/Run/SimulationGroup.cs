@@ -317,7 +317,8 @@
                         Status = $"Running post-simulation tool {(tool as IModel).Name}";
                         if (rootModel is Simulations)
                             (rootModel as Simulations).Links.Resolve(tool as IModel);
-                        tool.Run();
+                        throw new NotImplementedException();
+                        //tool.Run();
                     }
                 }
                 catch (Exception err)
@@ -330,9 +331,10 @@
 
         private IEnumerable<IPostSimulationTool> FindPostSimulationTools()
         {
-            return relativeTo.FindAllInScope<IPostSimulationTool>()
-                            .Where(t => t.FindAllAncestors()
-                                         .All(a => !(a is ParallelPostSimulationTool || a is SerialPostSimulationTool)));
+            throw new NotImplementedException();
+            //return relativeTo.FindAllInScope<IPostSimulationTool>()
+            //                .Where(t => t.FindAllAncestors()
+            //                             .All(a => !(a is ParallelPostSimulationTool || a is SerialPostSimulationTool)));
         }
 
         /// <summary>Run all tests.</summary>

@@ -24,8 +24,8 @@
     [ViewName("UserInterface.Views.InputView")]
     [PresenterName("UserInterface.Presenters.InputPresenter")]
     [ValidParent(ParentType=typeof(DataStore))]
-    [ValidParent(ParentType=typeof(ParallelPostSimulationTool))]
-    [ValidParent(ParentType = typeof(SerialPostSimulationTool))]
+    [ValidParent(ParentType=typeof(Parallel))]
+    [ValidParent(ParentType = typeof(Serial))]
     public class Input : Model, IPostSimulationTool, IReferenceExternalFiles
     {
         /// <summary>

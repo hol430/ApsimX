@@ -16,7 +16,7 @@ namespace Models.Core.Run
     /// the description to the simulation, runs the simulation and unapplies the description 
     /// in readiness for the next run.
     /// </summary>
-    public class SimulationRunnable : IRunnable
+    public class SimulationRunnable : IApsimRunnable
     {
         /// <summary>The base simulation to run.</summary>
         private IModel rootModel;
@@ -49,9 +49,22 @@ namespace Models.Core.Run
         //public void SetRunMask(Func<bool, string> mask)
 
         /// <summary>
+        /// Run the simulation once for each simulation description.
+        /// </summary>
+        /// <param name="cancelToken">The cancelation token.</param>
+        public void Run(CancellationTokenSource cancelToken = null)
+        {
+            Prepare();
+
+            // Now run simulation for each simulation description.
+            foreach (SimulationDesc description in simulationDescriptions)
+                cancelToken = Run(description, cancelToken);
+        }
+
+        /// <summary>
         /// Prepare the simulation for running.
         /// </summary>
-        public void Prepare()
+        private void Prepare()
         {
             try
             {
@@ -116,17 +129,6 @@ namespace Models.Core.Run
             {
                 throw new Exception($"Error preparing simulation {simulationToRun.Name} in file {simulationToRun.FileName}", err);
             }
-        }
-
-        /// <summary>
-        /// Run the simulation once for each simulation description.
-        /// </summary>
-        /// <param name="cancelToken">The cancelation token.</param>
-        public void Run(CancellationTokenSource cancelToken)
-        {
-            // Now run simulation for each simulation description.
-            foreach (SimulationDesc description in simulationDescriptions)
-                cancelToken = Run(description, cancelToken);
         }
 
         /// <summary>
