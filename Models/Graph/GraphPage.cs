@@ -9,7 +9,6 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Threading.Tasks;
 
     /// <summary>Descibes a page of graphs for the tags system.</summary>
     public class GraphPage : AutoDocumentation.ITag
@@ -167,12 +166,19 @@
                 IEnumerable<string> simulationNames = fieldsThatExist.Contains("SimulationID") || fieldsThatExist.Contains("SimulationName") ? inScopeSimulationNames : null;
                 foreach (var checkpointName in checkpointNames)
                 {
-                    var table = storage.GetData(tableName, checkpointName, simulationNames, fieldNames);
+                    try
+                    {
+                        var table = storage.GetData(tableName, checkpointName, simulationNames, fieldNames);
 
-                    // Tell each series definition to read its data.
-                    var definitions = definitionsToProcess.Where(d => d.Series.TableName == tableName && d.CheckpointName == checkpointName);
-                    System.Threading.Tasks.Parallel.ForEach(definitions, (definition) =>
-                        definition.ReadData(table, simulationDescriptions, storage));
+                        // Tell each series definition to read its data.
+                        var definitions = definitionsToProcess.Where(d => d.Series.TableName == tableName && d.CheckpointName == checkpointName);
+                        System.Threading.Tasks.Parallel.ForEach(definitions, (definition) =>
+                            definition.ReadData(table, simulationDescriptions, storage));
+                    }
+                    catch (Exception error)
+                    {
+                        throw new Exception($"Failed to fetch data for checkpoint {checkpointName}", error);
+                    }
                 }
             }
         }
