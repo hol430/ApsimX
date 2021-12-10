@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 
 namespace Models.Core.Run
 {
@@ -9,6 +10,8 @@ namespace Models.Core.Run
     {
         /// <summary>The run method.</summary>
         /// <param name="cancel">An optional cancellation token.</param>
-        void Run(CancellationTokenSource cancel = null);
+        /// <param name="status">A callback for reporting status messages.</param>
+        void Run(CancellationTokenSource cancel = null,
+                 Action<string, MessageType> status = null);
     }
 }

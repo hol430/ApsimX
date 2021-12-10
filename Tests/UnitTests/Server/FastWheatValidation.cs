@@ -33,7 +33,7 @@ namespace UnitTests.Server
     {
 
         [Test]
-        public void RunAcrossGrid()
+        public void RunExperiments()
         {
             var simulations = FileFormat.ReadFromFile<Simulations>(@"C:\Users\hol353\Repos\ApsimX\Tests\Validation\Wheat\WheatNPI.apsimx",
                                                                    (err) => { throw err; },

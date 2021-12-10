@@ -19,7 +19,7 @@
     [PresenterName("UserInterface.Presenters.ExperimentPresenter")]
     [ValidParent(ParentType = typeof(Simulations))]
     [ScopedModel]
-    public class Experiment : Model, ICanBeRun
+    public class Experiment : Model, ISimulationsRunnable
     {
         /// <summary>
         /// List of names of the disabled simulations. Any simulation name not in this list is assumed to be enabled.

@@ -1,5 +1,5 @@
-using Models.Core.Run;
 using Models.Storage;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -38,7 +38,8 @@ namespace Models.Core.Run
         /// </summary>
         /// <param name="tasks">A collection of tasks to run.</param>
         /// <param name="cancel">A cancellation token.</param>
-        public static void Run(IEnumerable<IApsimRunnable> tasks, CancellationTokenSource cancel = null)
+        public static void Run(IEnumerable<IApsimRunnable> tasks, 
+                               CancellationTokenSource cancel = null)
         {
             var serial = new Serial(tasks);
             serial.Run(cancel);
@@ -47,10 +48,22 @@ namespace Models.Core.Run
         /// <summary>
         /// Run the post-simulation tool.
         /// </summary>
-        public void Run(CancellationTokenSource cancel = null)
+        /// <param name="cancelToken">The cancelation token.</param>
+        /// <param name="status">A callback for reporting status messages.</param>
+        public void Run(CancellationTokenSource cancelToken = null,
+                        Action<string, MessageType> status = null)
         {
             foreach (var task in tasks)
-                task.Run(cancel);
+            {
+                try
+                {
+                    task.Run(cancelToken);
+                }
+                catch (Exception ex)
+                {
+                    status(ex.ToString(), MessageType.Error);
+                }
+            }
         }
     }
 }

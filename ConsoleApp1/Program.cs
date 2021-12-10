@@ -21,11 +21,7 @@ namespace ConsoleApp1
 
             var stopWatch = Stopwatch.StartNew();
 
-            var thingsToRun = new List<IApsimRunnable>();
-            foreach (var experiment in simulations.FindAllDescendants<Experiment>())
-                thingsToRun.Add(new SimulationRunnable(experiment.BaseSimulation, experiment.GetSimulationDescription()));
-
-            Parallel.Run(thingsToRun);
+            simulations.Run();
 
             Console.WriteLine($"Elapsed time {stopWatch.Elapsed.TotalSeconds} seconds");
         }

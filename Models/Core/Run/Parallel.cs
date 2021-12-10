@@ -1,5 +1,5 @@
-using Models.Core.Run;
 using Models.Storage;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -47,9 +47,24 @@ namespace Models.Core.Run
         /// <summary>
         /// Run the post-simulation tool.
         /// </summary>
-        public void Run(CancellationTokenSource cancel = null)
+        /// <param name="cancelToken">The cancelation token.</param>
+        /// <param name="status">A callback for reporting status messages.</param>
+        public void Run(CancellationTokenSource cancelToken = null,
+                        Action<string, MessageType> status = null)
         {
-            System.Threading.Tasks.Parallel.ForEach(tasks, task => task.Run(cancel));
+            var lockInstance = new object();
+            System.Threading.Tasks.Parallel.ForEach(tasks, task =>
+            {
+                try
+                { 
+                    task.Run(cancelToken);
+                }
+                catch (Exception ex)
+                {
+                    lock (lockInstance)
+                        status(ex.ToString(), MessageType.Error);
+                }
+            });
         }
     }
 }

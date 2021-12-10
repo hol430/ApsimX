@@ -52,7 +52,8 @@ namespace Models.Core.Run
         /// Run the simulation once for each simulation description.
         /// </summary>
         /// <param name="cancelToken">The cancelation token.</param>
-        public void Run(CancellationTokenSource cancelToken = null)
+        /// <param name="status">A callback for reporting status messages.</param>
+        public void Run(CancellationTokenSource cancelToken = null, Action<string, MessageType> status = null)
         {
             Prepare();
 
