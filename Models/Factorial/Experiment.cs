@@ -51,7 +51,7 @@
         public Simulation BaseSimulation => FindChild<Simulation>();
 
         /// <summary>Gets a IRunnable instance that will run this experiment.</summary>
-        public IEnumerable<SimulationDesc> GetSimulationDescription()
+        public IEnumerable<FactorLevel> GetSimulationDescription()
         {
             // Calculate all combinations.
             var allCombinations = CalculateAllCombinations();
@@ -86,7 +86,7 @@
                         replacements.AddRange(c.GetReplacements());
 
                     // Add simulation description to the return list of descriptions
-                    yield return new SimulationDesc(simulationName, descriptors, replacements);
+                    yield return new FactorLevel(simulationName, descriptors, replacements);
                 }
             }
         }

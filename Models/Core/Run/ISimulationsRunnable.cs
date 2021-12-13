@@ -10,6 +10,6 @@ namespace Models.Core.Run
         Simulation BaseSimulation { get; }
 
         /// <summary>Gets simulation description.</summary>
-        IEnumerable<SimulationDesc> GetSimulationDescription();
+        IEnumerable<FactorLevel> GetSimulationDescription();
     }
 }

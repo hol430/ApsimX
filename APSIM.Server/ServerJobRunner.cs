@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Models.Core.Run;
 using System.Linq;
+using IRunnable = APSIM.Shared.JobRunning.IRunnable;
 
 namespace APSIM.Server
 {
@@ -29,20 +30,20 @@ namespace APSIM.Server
         public override void Add(IJobManager jobManager)
         {
             base.Add(jobManager);
-            foreach (IRunnable job in jobManager.GetJobs())
+            foreach (Shared.JobRunning.IRunnable job in jobManager.GetJobs())
             {
                 job.Prepare();
-                jobs.Add((job, jobManager));
+                jobs.Add(((Shared.JobRunning.IRunnable, IJobManager))(job:(Shared.JobRunning.IRunnable)job, jobManager:(IJobManager)jobManager));
             }
         }
 
-        protected override void Prepare(IRunnable job)
+        protected override void Prepare(Shared.JobRunning.IRunnable job)
         {
             // Do nothing - jobs are already prepared at this point.
             // todo: should we call base.Prepare if job is not a simulation?
         }
 
-        protected override void Run(IRunnable job)
+        protected override void Run(Shared.JobRunning.IRunnable job)
         {
             if (job is SimulationDescription sim)
             {

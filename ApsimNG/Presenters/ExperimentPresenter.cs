@@ -26,7 +26,7 @@
         private ExplorerPresenter explorerPresenter;
 
         /// <summary>List of all experiment simulations.</summary>
-        private IEnumerable<SimulationDesc> simulationDescriptions;
+        private IEnumerable<FactorLevel> simulationDescriptions;
 
         /// <summary>By default, only display this many simulations (for performance reasons).</summary>
         private const int DefaultMaxSims = 50;

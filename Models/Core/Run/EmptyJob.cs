@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Models.Core.Run
 {
     [Serializable]
-    class EmptyJob : IRunnable
+    class EmptyJob : APSIM.Shared.JobRunning.IRunnable
     {
         /// <summary>
         /// Prepare the job for running.

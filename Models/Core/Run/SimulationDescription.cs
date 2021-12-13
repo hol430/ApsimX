@@ -12,7 +12,7 @@
     /// and the associated metadata describing a simulation.
     /// </summary>
     [Serializable]
-    public class SimulationDescription : IRunnable, IReportsStatus
+    public class SimulationDescription : APSIM.Shared.JobRunning.IRunnable, IReportsStatus
     {
         /// <summary>The top level simulations instance.</summary>
         private IModel topLevelModel;

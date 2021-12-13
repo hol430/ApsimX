@@ -41,9 +41,9 @@ namespace UnitTests.Server
 
             var stopWatch = Stopwatch.StartNew();
 
-            var thingsToRun = new List<IApsimRunnable>();
+            var thingsToRun = new List<Models.Core.Run.IRunnable>();
             foreach (var experiment in simulations.FindAllDescendants<Experiment>())
-                thingsToRun.Add(new SimulationRunnable(experiment.BaseSimulation, experiment.GetSimulationDescription()));
+                thingsToRun.Add(new Models.Core.Run.Factorial(experiment.BaseSimulation, experiment.GetSimulationDescription()));
 
             Parallel.Run(thingsToRun);
 

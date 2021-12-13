@@ -241,7 +241,7 @@
                             }
                             storage.Writer.Clean(names, false);
                         }
-                        foreach (IRunnable job in jobs)
+                        foreach (APSIM.Shared.JobRunning.IRunnable job in jobs)
                             Add(job);
                     }
                     
@@ -262,7 +262,7 @@
         /// <summary>Determine the list of jobs to run</summary>
         /// <param name="relativeTo">The model to use to search for simulations to run.</param>
         /// <param name="simulationNamesToRun">Only run these simulations.</param>
-        private IEnumerable<IRunnable> FindListOfSimulationsToRun(IModel relativeTo, IEnumerable<string> simulationNamesToRun)
+        private IEnumerable<APSIM.Shared.JobRunning.IRunnable> FindListOfSimulationsToRun(IModel relativeTo, IEnumerable<string> simulationNamesToRun)
         {
             throw new NotImplementedException();
             //if (relativeTo is Simulation sim)

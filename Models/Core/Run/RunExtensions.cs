@@ -26,7 +26,7 @@ namespace Models.Core.Run
                                CancellationTokenSource cancel = null,
                                Action<string, MessageType> status = null)
         {
-            var task = new Serial(new IApsimRunnable[]
+            var task = new Serial(new IRunnable[]
             {
                 new Parallel(FindSimulations(parent)),
                 new Serial(FindPostSimulationTools<IPostSimulationTool>(parent)),
@@ -41,10 +41,10 @@ namespace Models.Core.Run
         /// </summary>
         /// <param name="parent">The parent model to look under for simulations.</param>
         /// <returns>A collection of runnable simulations.</returns>
-        private static IEnumerable<IApsimRunnable> FindSimulations(IModel parent)
+        private static IEnumerable<IRunnable> FindSimulations(IModel parent)
         {
             foreach (var runnableModel in parent.FindAllDescendants<ISimulationsRunnable>())
-                yield return new SimulationRunnable(runnableModel.BaseSimulation, runnableModel.GetSimulationDescription());
+                yield return new Factorial(runnableModel.BaseSimulation, runnableModel.GetSimulationDescription());
         }
 
         /// <summary>
@@ -53,7 +53,7 @@ namespace Models.Core.Run
         /// <typeparam name="T">The type of tool to find.</typeparam>
         /// <param name="parent">The parent model to look under for simulations.</param>
         /// <returns></returns>
-        private static IEnumerable<IApsimRunnable> FindPostSimulationTools<T>(IModel parent) where T : IModel
+        private static IEnumerable<IRunnable> FindPostSimulationTools<T>(IModel parent) where T : IModel
         {
             var storage = parent.FindInScope<DataStore>();
             var simulations = parent.FindInScope<Simulations>();
@@ -69,7 +69,7 @@ namespace Models.Core.Run
         /// <summary>
         /// A class to encapsulate the running of a post simulation tool.
         /// </summary>
-        private class PostSimulationToolRunner : IApsimRunnable
+        private class PostSimulationToolRunner : IRunnable
         {
             private readonly IPostSimulationTool tool;
             private readonly Simulations simulations;
@@ -88,12 +88,13 @@ namespace Models.Core.Run
                 this.storage = storage;
             }
 
-            /// <summary>
-            /// Run the tool.
-            /// </summary>
-            /// <param name="cancelToken">The cancelation token.</param>
-            /// <param name="status">A callback for reporting status messages.</param>
-            public void Run(CancellationTokenSource cancelToken = null, Action<string, MessageType> status = null)
+            /// <summary>The run method.</summary>
+            /// <param name="status">A status callback.</param>
+            /// <param name="progressCallback">A status callback.</param>
+            /// <param name="errorCallback">A status callback.</param>
+            /// <param name="cancelToken">An optional cancellation token.</param>
+            public void Run(Action<string> status, Action<double> progressCallback,
+                Action<Exception> errorCallback, CancellationTokenSource cancelToken = null)
             {
                 storage?.Writer.WaitForIdle();
                 storage?.Reader.Refresh();
@@ -104,7 +105,7 @@ namespace Models.Core.Run
                 // manager's name instead.
                 string toolName = tool.Parent is Manager ? tool.Parent.Name : tool.Name;
 
-                status($"Running {toolName}", MessageType.Information);
+                status($"Running {toolName}");
                 simulations?.Links.Resolve(tool as IModel);
                 tool.Run();
             }

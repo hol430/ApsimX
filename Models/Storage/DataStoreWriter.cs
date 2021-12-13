@@ -21,10 +21,10 @@
 
         /// <summary>A list of all write commands.</summary>
         /// <remarks>NEVER modify this without first acquiring a lock on <see cref="lockObject" />.</remarks>
-        private List<IRunnable> commands = new List<IRunnable>();
+        private List<APSIM.Shared.JobRunning.IRunnable> commands = new List<APSIM.Shared.JobRunning.IRunnable>();
 
         /// <summary>A sleep job to stop the job runner from exiting.</summary>
-        private IRunnable sleepJob = new EmptyJob();
+        private APSIM.Shared.JobRunning.IRunnable sleepJob = new EmptyJob();
 
         /// <summary>The runner used to run commands on a worker thread.</summary>
         private JobRunner commandRunner;
@@ -241,13 +241,13 @@
         public void AllCompleted() { }
 
         /// <summary>Return an enumeration of jobs that need running.</summary>
-        public IEnumerable<IRunnable> GetJobs()
+        public IEnumerable<APSIM.Shared.JobRunning.IRunnable> GetJobs()
         {
             // NOTE: This is called from the job runner worker thread.
 
             while (!stopping)
             {
-                IRunnable command = null;
+                APSIM.Shared.JobRunning.IRunnable command = null;
                 lock (lockObject)
                 {
                     if (commands.Count > 0)
@@ -475,7 +475,7 @@
         /// Create a db clean command.
         /// </summary>
         /// <param name="names">A list of simulation names that are about to run.</param>
-        public IRunnable Clean(IEnumerable<string> names)
+        public APSIM.Shared.JobRunning.IRunnable Clean(IEnumerable<string> names)
         {
             var ids = new List<int>();
             if (simulationIDs.Count == 0)

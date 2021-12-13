@@ -2,9 +2,11 @@
 namespace Models.Core.Run
 {
     /// <summary>
-    /// Describes a single simulation in terms of its descriptors and replacements against a base simulation.
+    /// Describes a factor level of an experiment. In other words, a single
+    /// simulation in terms of its descriptors and replacements against a
+    /// base simulation.
     /// </summary>
-    public class SimulationDesc
+    public class FactorLevel
     {
         /// <summary>
         /// Constructor.
@@ -12,7 +14,7 @@ namespace Models.Core.Run
         /// <param name="simulationName">Name of simulation.</param>
         /// <param name="descriptors">Simulation descriptors.</param>
         /// <param name="replacements">Simulation replacements to apply to a base simulation.</param>
-        public SimulationDesc(string simulationName, IEnumerable<SimulationDescription.Descriptor> descriptors, IEnumerable<IReplacement> replacements)
+        public FactorLevel(string simulationName, IEnumerable<SimulationDescription.Descriptor> descriptors, IEnumerable<IReplacement> replacements)
         {
             Name = simulationName;
             Replacements = replacements;

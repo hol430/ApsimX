@@ -16,7 +16,7 @@ namespace Models.Core.Run
     /// the description to the simulation, runs the simulation and unapplies the description 
     /// in readiness for the next run.
     /// </summary>
-    public class SimulationRunnable : IApsimRunnable
+    public class Factorial : IRunnable
     {
         /// <summary>The base simulation to run.</summary>
         private IModel rootModel;
@@ -25,16 +25,16 @@ namespace Models.Core.Run
         private Simulation simulationToRun;
 
         /// <summary>Multiple replacements for multiple simulation runs.</summary>
-        private IEnumerable<SimulationDesc> simulationDescriptions;
+        private IEnumerable<FactorLevel> simulationDescriptions;
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="simulation">The base simulation to run.</param>
         /// <param name="simulationDescriptions">A collection of descriptions of simulations to run.</param>
-        public SimulationRunnable(Simulation simulation, IEnumerable<SimulationDesc> simulationDescriptions)
+        public Factorial(Simulation simulation, IEnumerable<FactorLevel> simulationDescriptions)
         {
-            simulationToRun = Apsim.Clone(simulation);
+            simulationToRun = simulation;
             this.simulationDescriptions = simulationDescriptions;
 
             // Find the root (top level) model.
@@ -43,22 +43,18 @@ namespace Models.Core.Run
                 rootModel = rootModel.Parent;
         }
 
-        /// <summary>Get run progress.</summary>
-        public double Progress => throw new NotImplementedException();
-
-        //public void SetRunMask(Func<bool, string> mask)
-
-        /// <summary>
-        /// Run the simulation once for each simulation description.
-        /// </summary>
-        /// <param name="cancelToken">The cancelation token.</param>
-        /// <param name="status">A callback for reporting status messages.</param>
-        public void Run(CancellationTokenSource cancelToken = null, Action<string, MessageType> status = null)
+        /// <summary>The run method.</summary>
+        /// <param name="status">A status callback.</param>
+        /// <param name="progressCallback">A status callback.</param>
+        /// <param name="errorCallback">A status callback.</param>
+        /// <param name="cancelToken">An optional cancellation token.</param>
+        public void Run(Action<string> status, Action<double> progressCallback,
+            Action<Exception> errorCallback, CancellationTokenSource cancelToken = null)
         {
             Prepare();
 
             // Now run simulation for each simulation description.
-            foreach (SimulationDesc description in simulationDescriptions)
+            foreach (FactorLevel description in simulationDescriptions)
                 cancelToken = Run(description, cancelToken);
         }
 
@@ -69,6 +65,8 @@ namespace Models.Core.Run
         {
             try
             {
+                simulationToRun = Apsim.Clone(simulationToRun);
+
                 // After a binary clone, we need to force all managers to
                 // recompile their scripts. This is to work around an issue
                 // where scripts will change during deserialization. See issue
@@ -138,7 +136,7 @@ namespace Models.Core.Run
         /// <param name="cancelToken">The cancelation token.</param>
         /// <param name="description">The description of the simulation to run.</param>
         /// <returns></returns>
-        private CancellationTokenSource Run(SimulationDesc description, CancellationTokenSource cancelToken)
+        private CancellationTokenSource Run(FactorLevel description, CancellationTokenSource cancelToken)
         {
             // Give descriptors to the simulation.
             if (description.Descriptors.Any())

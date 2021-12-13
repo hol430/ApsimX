@@ -55,7 +55,7 @@ namespace Models.Optimisation
     [ViewName("UserInterface.Views.PropertyAndGridView")]
     [PresenterName("UserInterface.Presenters.PropertyAndTablePresenter")]
     [ValidParent(ParentType = typeof(Simulations))]
-    public class CroptimizR : Model, IModelAsTable, IRunnable, IReportsStatus
+    public class CroptimizR : Model, IModelAsTable, APSIM.Shared.JobRunning.IRunnable, IReportsStatus
     {
         /// <summary>
         /// File name of the generated csv file containing croptimizR

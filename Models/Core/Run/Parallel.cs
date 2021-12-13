@@ -12,23 +12,23 @@ namespace Models.Core.Run
     [ValidParent(typeof(IDataStore))]
     [ValidParent(typeof(Parallel))]
     [ValidParent(typeof(Serial))]
-    public class Parallel : Model, IApsimRunnable
+    public class Parallel : Model, IRunnable
     {
-        private IEnumerable<IApsimRunnable> tasks;
+        private IEnumerable<IRunnable> tasks;
 
         /// <summary>
         /// Default constructor - runs all child models asynchronously.
         /// </summary>
         public Parallel()
         {
-            tasks = FindAllChildren<IApsimRunnable>();
+            tasks = FindAllChildren<IRunnable>();
         }
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="tasks">A collection of tasks to run.</param>
-        public Parallel(IEnumerable<IApsimRunnable> tasks)
+        public Parallel(IEnumerable<IRunnable> tasks)
         {
             this.tasks = tasks;
         }
@@ -38,31 +38,31 @@ namespace Models.Core.Run
         /// </summary>
         /// <param name="tasks">A collection of tasks to run.</param>
         /// <param name="cancel">A cancellation token.</param>
-        public static void Run(IEnumerable<IApsimRunnable> tasks, CancellationTokenSource cancel = null)
+        public static void Run(IEnumerable<IRunnable> tasks, CancellationTokenSource cancel = null)
         {
             var parallel = new Parallel(tasks);
             parallel.Run(cancel);
         }
 
-        /// <summary>
-        /// Run the post-simulation tool.
-        /// </summary>
-        /// <param name="cancelToken">The cancelation token.</param>
-        /// <param name="status">A callback for reporting status messages.</param>
-        public void Run(CancellationTokenSource cancelToken = null,
-                        Action<string, MessageType> status = null)
+        /// <summary>The run method.</summary>
+        /// <param name="status">A status callback.</param>
+        /// <param name="progressCallback">A status callback.</param>
+        /// <param name="errorCallback">A status callback.</param>
+        /// <param name="cancelToken">An optional cancellation token.</param>
+        public void Run(Action<string> status, Action<double> progressCallback,
+            Action<Exception> errorCallback, CancellationTokenSource cancelToken = null)
         {
             var lockInstance = new object();
             System.Threading.Tasks.Parallel.ForEach(tasks, task =>
             {
                 try
                 { 
-                    task.Run(cancelToken);
+                    task.Run(status, progressCallback, errorCallback, cancelToken);
                 }
                 catch (Exception ex)
                 {
                     lock (lockInstance)
-                        status(ex.ToString(), MessageType.Error);
+                        errorCallback(ex);
                 }
             });
         }

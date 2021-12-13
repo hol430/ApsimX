@@ -21,7 +21,7 @@ namespace Models.Core
     [ValidParent(ParentType = typeof(Sobol))]
     [Serializable]
     [ScopedModel]
-    public class Simulation : Model, IRunnable, IReportsStatus
+    public class Simulation : Model, APSIM.Shared.JobRunning.IRunnable, IReportsStatus
     {
         [NonSerialized]
         private ScopingRules scope = null;
