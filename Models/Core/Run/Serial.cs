@@ -15,14 +15,31 @@ namespace Models.Core.Run
     [ValidParent(typeof(Serial))]
     public class Serial : Model, IRunnable
     {
-        private IEnumerable<IRunnable> tasks;
+        /// <summary>
+        /// The task list.
+        /// </summary>
+        private IReadOnlyList<IRunnable> tasks;
+
+        /// <summary>
+        /// Aggregated progress of all tasks.
+        /// </summary>
+        public double Progress
+        {
+            get
+            {
+                    IReadOnlyList<double> progresses = tasks.Select(t => t.Progress)
+                                                            .Where(p => !double.IsNaN(p))
+                                                            .ToList();
+                return progresses.Sum() / progresses.Count;
+            }
+        }
 
         /// <summary>
         /// Default constructor - runs all child models serially.
         /// </summary>
         public Serial()
         {
-            tasks = FindAllChildren<IRunnable>();
+            tasks = FindAllChildren<IRunnable>().ToList();
         }
 
         /// <summary>
@@ -31,7 +48,7 @@ namespace Models.Core.Run
         /// <param name="tasks">A collection of tasks to run.</param>
         public Serial(IEnumerable<IRunnable> tasks)
         {
-            this.tasks = tasks;
+            this.tasks = tasks.ToList();
         }
 
         /// <summary>
@@ -39,36 +56,30 @@ namespace Models.Core.Run
         /// </summary>
         /// <param name="tasks">A collection of tasks to run.</param>
         /// <param name="statusCallback">A callback to handle a status message update.</param>
-        /// <param name="progressCallback">A callback to handle a progress update.</param>
         /// <param name="errorCallback">A callback to handle an error.</param>
         /// <param name="cancel">A cancellation token.</param>
         public static void Run(IEnumerable<IRunnable> tasks,
                                Action<string> statusCallback,
-                               Action<double> progressCallback,
                                Action<Exception> errorCallback,
                                CancellationTokenSource cancel = null)
         {
             var serial = new Serial(tasks);
-            serial.Run(statusCallback, progressCallback, errorCallback, cancel);
+            serial.Run(statusCallback, errorCallback, cancel);
         }
 
         /// <summary>The run method.</summary>
         /// <param name="statusCallback">A status callback.</param>
-        /// <param name="progressCallback">A status callback.</param>
         /// <param name="errorCallback">A status callback.</param>
         /// <param name="cancelToken">An optional cancellation token.</param>
-        public void Run(Action<string> statusCallback, Action<double> progressCallback,
-            Action<Exception> errorCallback, CancellationTokenSource cancelToken = null)
+        public void Run(Action<string> statusCallback, Action<Exception> errorCallback,
+            CancellationTokenSource cancelToken = null)
         {
-            int numComplete = 0;
-            IReadOnlyList<IRunnable> taskList = tasks.ToList();
-
-            Action<double> taskProgressCallback = p => progressCallback( (numComplete + p) / taskList.Count);
-            foreach (IRunnable task in taskList)
+            int numCompleted = 0;
+            foreach (IRunnable task in tasks)
             {
                 try
                 {
-                    task.Run(statusCallback, taskProgressCallback, errorCallback, cancelToken);
+                    task.Run(statusCallback, errorCallback, cancelToken);
                 }
                 catch (Exception ex)
                 {
@@ -76,7 +87,7 @@ namespace Models.Core.Run
                 }
                 finally
                 {
-                    numComplete++;
+                    numCompleted++;
                 }
             }
         }

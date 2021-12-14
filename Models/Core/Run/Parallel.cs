@@ -15,14 +15,20 @@ namespace Models.Core.Run
     [ValidParent(typeof(Serial))]
     public class Parallel : Model, IRunnable
     {
-        private IEnumerable<IRunnable> tasks;
+        /// <summary>
+        /// The internal task list.
+        /// </summary>
+        private IReadOnlyList<IRunnable> tasks;
+
+        /// <inheritdoc />
+        public double Progress => tasks.Sum(t => t.Progress) / tasks.Count;
 
         /// <summary>
         /// Default constructor - runs all child models asynchronously.
         /// </summary>
         public Parallel()
         {
-            tasks = FindAllChildren<IRunnable>();
+            tasks = FindAllChildren<IRunnable>().ToList();
         }
 
         /// <summary>
@@ -31,7 +37,7 @@ namespace Models.Core.Run
         /// <param name="tasks">A collection of tasks to run.</param>
         public Parallel(IEnumerable<IRunnable> tasks)
         {
-            this.tasks = tasks;
+            this.tasks = tasks.ToList();
         }
 
         /// <summary>
@@ -39,39 +45,33 @@ namespace Models.Core.Run
         /// </summary>
         /// <param name="tasks">A collection of tasks to run.</param>
         /// <param name="statusHandler">Callback for status reporting.</param>
-        /// <param name="progressHandler">Callback for progress reporting.</param>
         /// <param name="errorHandler">Callback for errors.</param>
         /// <param name="cancel">A cancellation token.</param>
         public static void Run(IEnumerable<IRunnable> tasks, Action<string> statusHandler,
-                               Action<double> progressHandler,
-                               Action<Exception> errorHandler,
-                               CancellationTokenSource cancel = null)
+                               Action<Exception> errorHandler, CancellationTokenSource cancel = null)
         {
             var parallel = new Parallel(tasks);
-            parallel.Run(statusHandler, progressHandler, errorHandler, cancel);
+            parallel.Run(statusHandler, errorHandler, cancel);
         }
 
         /// <summary>The run method.</summary>
         /// <param name="statusCallback">A status callback.</param>
-        /// <param name="progressCallback">A status callback.</param>
         /// <param name="errorCallback">A status callback.</param>
         /// <param name="cancelToken">An optional cancellation token.</param>
-        public void Run(Action<string> statusCallback, Action<double> progressCallback,
-            Action<Exception> errorCallback, CancellationTokenSource cancelToken = null)
+        public void Run(Action<string> statusCallback, Action<Exception> errorCallback,
+            CancellationTokenSource cancelToken = null)
         {
             var lockInstance = new object();
-            int numComplete = 0;
-            IReadOnlyList<IRunnable> taskList = tasks.ToList();
-            Action<double> taskProgressCallback = p =>
-            {
-                lock (lockInstance)
-                    progressCallback( (numComplete + p) / taskList.Count );
-            };
-            System.Threading.Tasks.Parallel.ForEach(taskList, task =>
+            int numCompleted = 0;
+            statusCallback($"{numCompleted} of {tasks.Count} complete");
+            System.Threading.Tasks.Parallel.ForEach(tasks, task =>
             {
                 try
-                { 
-                    task.Run(statusCallback, taskProgressCallback, errorCallback, cancelToken);
+                {
+                    // fixme: for now don't allow the subtasks to update the status
+                    // message. This would require the callback be threadsafe, or
+                    // that we wrap the callback in a lock.
+                    task.Run(_ => { }, errorCallback, cancelToken);
                 }
                 catch (Exception ex)
                 {
@@ -80,7 +80,11 @@ namespace Models.Core.Run
                 }
                 finally
                 {
-                    numComplete++;
+                    lock (lockInstance)
+                    {
+                        numCompleted++;
+                        statusCallback($"{numCompleted} of {tasks.Count} complete");
+                    }
                 }
             });
         }

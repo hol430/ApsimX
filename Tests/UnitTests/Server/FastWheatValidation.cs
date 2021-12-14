@@ -46,9 +46,8 @@ namespace UnitTests.Server
                 thingsToRun.Add(new Models.Core.Run.Factorial(experiment.BaseSimulation, experiment.GetSimulationDescription()));
 
             Action<string> statusCallback = s => { };
-            Action<double> progressCallback = p => { };
             Action<Exception> errorCallback = e => { };
-            Parallel.Run(thingsToRun, statusCallback, progressCallback, errorCallback);
+            Parallel.Run(thingsToRun, statusCallback, errorCallback);
 
             File.WriteAllText(@"C:\Users\hol353\Temp\Timing.txt", stopWatch.Elapsed.TotalSeconds.ToString());
         }

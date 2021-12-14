@@ -21,7 +21,7 @@ namespace ConsoleApp1
 
             var stopWatch = Stopwatch.StartNew();
 
-            simulations.Run(Console.WriteLine, _ => { }, Console.Error.WriteLine);
+            simulations.Run(Console.WriteLine, Console.Error.WriteLine);
 
             Console.WriteLine($"Elapsed time {stopWatch.Elapsed.TotalSeconds} seconds");
         }

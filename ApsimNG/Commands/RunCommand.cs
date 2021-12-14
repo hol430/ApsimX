@@ -37,6 +37,11 @@
         private Task runTask;
 
         /// <summary>
+        /// The task used to regularly update the progress bar in the GUI.
+        /// </summary>
+        private Task progressUpdater;
+
+        /// <summary>
         /// The cancellation token.
         /// </summary>
         private CancellationTokenSource cts;
@@ -74,10 +79,31 @@
 
             cts = new CancellationTokenSource();
             startTime = DateTime.Now;
-            runTask = Task.Run(() => job.Run(OnUpdateStatus, OnUpdateProgress, OnException, cts))
+            explorerPresenter.MainPresenter.AddStopHandler(OnStopSimulation);
+            runTask = Task.Run(() => job.Run(OnUpdateStatus, OnException, cts))
                           .ContinueWith(OnAllJobsCompleted)
                           .ContinueWith(_ => onCompleted);
-            explorerPresenter.MainPresenter.AddStopHandler(OnStopSimulation);
+            progressUpdater = ProgressUpdater(cts.Token);
+        }
+
+        private Task ProgressUpdater(CancellationToken cancelToken)
+        {
+            return Task.Run(async () =>
+            {
+                try
+                {
+                    while (!cancelToken.IsCancellationRequested)
+                    {
+                        OnUpdateProgress(job.Progress);
+                        int delay = 1_000; // ms
+                        await Task.Delay(delay, cancelToken);
+                    }
+                }
+                catch (TaskCanceledException)
+                {
+                    // Ignore task cancellation exceptions.
+                }
+            });
         }
 
         /// <summary>
@@ -111,6 +137,15 @@
         /// <summary>All jobs have completed</summary>
         private void OnAllJobsCompleted(Task completedTask)
         {
+            explorerPresenter.MainPresenter.RemoveStopHandler(OnStopSimulation);
+            if (cts.IsCancellationRequested)
+                return;
+
+            // Kill the progress reporting.
+            cts.Cancel();
+            progressUpdater.Wait();
+            explorerPresenter.MainPresenter.HideProgressBar();
+
             if (errors.Count == 0)
             {
                 TimeSpan duration = DateTime.Now - startTime;
@@ -150,9 +185,10 @@
         {
             cts.Cancel();
             runTask.Wait();
+            progressUpdater.Wait();
 
+            explorerPresenter.MainPresenter.ShowProgressMessage(null);
             explorerPresenter.MainPresenter.HideProgressBar();
-            this.explorerPresenter.MainPresenter.RemoveStopHandler(OnStopSimulation);
 
             // Any error messages will already be onscreen, as they are
             // rendered as they occur.

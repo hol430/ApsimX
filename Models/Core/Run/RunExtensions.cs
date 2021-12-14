@@ -21,16 +21,14 @@ namespace Models.Core.Run
         /// </remarks>
         /// <param name="parent">The parent model instance.</param>
         /// <param name="statusHandler">A callback for reporting status messages.</param>
-        /// <param name="progressHandler">A callback for reporting progress updates.</param>
         /// <param name="errorHandler">A callback for reporting error.</param>
         /// <param name="cancel">An optional cancellation token.</param>
         public static void Run(this IModel parent,
                                Action<string> statusHandler,
-                               Action<double> progressHandler,
                                Action<Exception> errorHandler,
                                CancellationTokenSource cancel = null)
         {
-            parent.CreateRunnable().Run(statusHandler, progressHandler, errorHandler, cancel);
+            parent.CreateRunnable().Run(statusHandler, errorHandler, cancel);
         }
 
         /// <summary>
@@ -112,6 +110,8 @@ namespace Models.Core.Run
             private readonly Simulations simulations;
             private readonly DataStore storage;
 
+            public double Progress { get; private set; }
+
             /// <summary>
             /// Constructor.
             /// </summary>
@@ -127,11 +127,10 @@ namespace Models.Core.Run
 
             /// <summary>The run method.</summary>
             /// <param name="status">A status callback.</param>
-            /// <param name="progressCallback">A status callback.</param>
             /// <param name="errorCallback">A status callback.</param>
             /// <param name="cancelToken">An optional cancellation token.</param>
-            public void Run(Action<string> status, Action<double> progressCallback,
-                Action<Exception> errorCallback, CancellationTokenSource cancelToken = null)
+            public void Run(Action<string> status, Action<Exception> errorCallback,
+                CancellationTokenSource cancelToken = null)
             {
                 storage?.Writer.WaitForIdle();
                 storage?.Reader.Refresh();
@@ -142,9 +141,12 @@ namespace Models.Core.Run
                 // manager's name instead.
                 string toolName = tool.Parent is Manager ? tool.Parent.Name : tool.Name;
 
-                status($"Running {toolName}");
+                status($"Resolving links for {toolName}");
                 simulations?.Links.Resolve(tool as IModel);
-                tool.Run(status, progressCallback, errorCallback, cancelToken);
+                status($"Running {toolName}");
+                tool.Run(status, errorCallback, cancelToken);
+                status($"{toolName} completed");
+                Progress = 1;
             }
         }
     }

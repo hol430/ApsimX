@@ -27,6 +27,9 @@ namespace Models.Core.Run
         /// <summary>Multiple replacements for multiple simulation runs.</summary>
         private IEnumerable<FactorLevel> simulationDescriptions;
 
+        /// <inheritdoc />
+        public double Progress => simulationToRun.FindChild<IClock>().FractionComplete;
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -45,11 +48,10 @@ namespace Models.Core.Run
 
         /// <summary>The run method.</summary>
         /// <param name="status">A status callback.</param>
-        /// <param name="progressCallback">A status callback.</param>
         /// <param name="errorCallback">A status callback.</param>
         /// <param name="cancelToken">An optional cancellation token.</param>
-        public void Run(Action<string> status, Action<double> progressCallback,
-            Action<Exception> errorCallback, CancellationTokenSource cancelToken = null)
+        public void Run(Action<string> status, Action<Exception> errorCallback,
+            CancellationTokenSource cancelToken = null)
         {
             Prepare();
 
