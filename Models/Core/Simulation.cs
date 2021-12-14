@@ -21,7 +21,7 @@ namespace Models.Core
     [ValidParent(ParentType = typeof(Sobol))]
     [Serializable]
     [ScopedModel]
-    public class Simulation : Model, APSIM.Shared.JobRunning.IRunnable, IReportsStatus
+    public class Simulation : Model, APSIM.Shared.JobRunning.IRunnable, IReportsStatus, ISimulationsRunnable
     {
         [NonSerialized]
         private ScopingRules scope = null;
@@ -162,6 +162,11 @@ namespace Models.Core
         public string Status => FindAllDescendants<IReportsStatus>().FirstOrDefault(s => !string.IsNullOrEmpty(s.Status))?.Status;
 
         /// <summary>
+        /// Return the base simulation object. This is part of the <see cref="ISimulationsRunnable"/> interface.
+        /// </summary>
+        public Simulation BaseSimulation => this;
+
+        /// <summary>
         /// Simulation has completed. Clear scope and locator
         /// </summary>
         /// <param name="sender">The sender.</param>
@@ -272,6 +277,15 @@ namespace Models.Core
                 yield return tag;
             foreach (ITag tag in FindAllDescendants<Manager>().SelectMany(m => m.Document()))
                 yield return tag;
+        }
+
+        /// <inheritdoc />
+        public IEnumerable<FactorLevel> GetSimulationDescription()
+        {
+            // Add a simulation descriptor.
+            var descriptors = new List<SimulationDescription.Descriptor>();
+            descriptors.Add(new SimulationDescription.Descriptor("SimulationName", Name));
+            yield return new FactorLevel(Name, descriptors, Enumerable.Empty<IReplacement>());
         }
     }
 }

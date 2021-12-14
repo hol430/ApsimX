@@ -20,20 +20,53 @@ namespace Models.Core.Run
         /// by this Run method) will be thrown as normal.
         /// </remarks>
         /// <param name="parent">The parent model instance.</param>
+        /// <param name="statusHandler">A callback for reporting status messages.</param>
+        /// <param name="progressHandler">A callback for reporting progress updates.</param>
+        /// <param name="errorHandler">A callback for reporting error.</param>
         /// <param name="cancel">An optional cancellation token.</param>
-        /// <param name="status">A callback for reporting status messages.</param>
-        public static void Run(this IModel parent, 
-                               CancellationTokenSource cancel = null,
-                               Action<string, MessageType> status = null)
+        public static void Run(this IModel parent,
+                               Action<string> statusHandler,
+                               Action<double> progressHandler,
+                               Action<Exception> errorHandler,
+                               CancellationTokenSource cancel = null)
         {
-            var task = new Serial(new IRunnable[]
+            parent.CreateRunnable().Run(statusHandler, progressHandler, errorHandler, cancel);
+        }
+
+        /// <summary>
+        /// Run all simulations under a model.
+        /// </summary>
+        /// <remarks>
+        /// Exceptions thrown by a simulation or a post simulation tool are reported
+        /// back to the caller via the status argument. Other exceptions (i.e. thrown
+        /// by this Run method) will be thrown as normal.
+        /// </remarks>
+        /// <param name="parent">The parent model instance.</param>
+        public static IRunnable CreateRunnable(this IModel parent)
+        {
+            return new Serial(new IRunnable[]
             {
                 new Parallel(FindSimulations(parent)),
                 new Serial(FindPostSimulationTools<IPostSimulationTool>(parent)),
                 new Serial(FindPostSimulationTools<ITest>(parent))
             });
+        }
 
-            task.Run(cancel, status);
+        /// <summary>
+        /// Run all simulations under a model.
+        /// </summary>
+        /// <remarks>
+        /// Exceptions thrown by a simulation or a post simulation tool are reported
+        /// back to the caller via the status argument. Other exceptions (i.e. thrown
+        /// by this Run method) will be thrown as normal.
+        /// </remarks>
+        /// <param name="parent">The parent model instance.</param>
+        public static IRunnable CreatePostSimulationToolsTask(this IModel parent)
+        {
+            return new Serial(new IRunnable[]
+            {
+                new Serial(FindPostSimulationTools<IPostSimulationTool>(parent)),
+            });
         }
 
         /// <summary>
@@ -43,8 +76,12 @@ namespace Models.Core.Run
         /// <returns>A collection of runnable simulations.</returns>
         private static IEnumerable<IRunnable> FindSimulations(IModel parent)
         {
-            foreach (var runnableModel in parent.FindAllDescendants<ISimulationsRunnable>())
-                yield return new Factorial(runnableModel.BaseSimulation, runnableModel.GetSimulationDescription());
+            // Find all descendants of the model
+            return parent.FindAllDescendants<ISimulationsRunnable>()
+            // Where the descendant is not an IModel OR the descendant is an IModel
+            // and none of its ancestors are an ISimulationsRunnable.
+                         .Where(r => !(r is IModel) || (r as IModel).FindAncestor<ISimulationsRunnable>() == null)
+                         .Select(r => new Factorial(r.BaseSimulation, r.GetSimulationDescription()));
         }
 
         /// <summary>
@@ -107,7 +144,7 @@ namespace Models.Core.Run
 
                 status($"Running {toolName}");
                 simulations?.Links.Resolve(tool as IModel);
-                tool.Run();
+                tool.Run(status, progressCallback, errorCallback, cancelToken);
             }
         }
     }

@@ -45,7 +45,10 @@ namespace UnitTests.Server
             foreach (var experiment in simulations.FindAllDescendants<Experiment>())
                 thingsToRun.Add(new Models.Core.Run.Factorial(experiment.BaseSimulation, experiment.GetSimulationDescription()));
 
-            Parallel.Run(thingsToRun);
+            Action<string> statusCallback = s => { };
+            Action<double> progressCallback = p => { };
+            Action<Exception> errorCallback = e => { };
+            Parallel.Run(thingsToRun, statusCallback, progressCallback, errorCallback);
 
             File.WriteAllText(@"C:\Users\hol353\Temp\Timing.txt", stopWatch.Elapsed.TotalSeconds.ToString());
         }

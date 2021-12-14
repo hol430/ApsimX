@@ -100,9 +100,8 @@
         {
             try
             {
-                Runner runner = new Runner(explorerPresenter.ApsimXFile, runSimulations: false, wait: false);
-                RunCommand command = new RunCommand("Post-simulation tools", runner, explorerPresenter);
-                runner.AllSimulationsCompleted += RefreshRightHandPanel;
+                IRunnable task = explorerPresenter.CurrentNode.CreatePostSimulationToolsTask();
+                RunCommand command = new RunCommand("Post-simulation tools", task, explorerPresenter, () => command = null);
                 command.Do();
             }
             catch (Exception err)
@@ -170,9 +169,7 @@
             {
                 if (!Configuration.Settings.AutoSave || this.explorerPresenter.Save())
                 {
-                    Model model = this.explorerPresenter.ApsimXFile.FindByPath(this.explorerPresenter.CurrentNodePath)?.Value as Model;
-                    var runner = new Runner(model, runType: Runner.RunTypeEnum.MultiThreaded, wait: false);
-                    this.command = new RunCommand(model.Name, runner, this.explorerPresenter);
+                    this.command = new RunCommand(explorerPresenter.CurrentNode, this.explorerPresenter, () => command = null);
                     this.command.Do();
                 }
             }
@@ -424,13 +421,8 @@
         /// <returns>True when APSIM is not running</returns>
         public bool RunAPSIMEnabled()
         {
-            bool isRunning = this.command != null && this.command.IsRunning;
-            if (!isRunning)
-            {
-                this.command = null;
-            }
-
-            return !isRunning;
+            bool isNotRunning = command == null;
+            return isNotRunning;
         }
 
         /// <summary>
