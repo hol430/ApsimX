@@ -10,45 +10,28 @@ namespace Models.Core.Run
     /// This is a post-simulation tool which will run all child post-simulation
     /// tools in parallel.
     /// </summary>
-    [ValidParent(typeof(IDataStore))]
-    [ValidParent(typeof(Parallel))]
-    [ValidParent(typeof(Serial))]
-    public class Serial : Model, IRunnable
+    public class Serial : CompositeTask, IRunnable
     {
-        /// <summary>
-        /// The task list.
-        /// </summary>
-        private IReadOnlyList<IRunnable> tasks;
-
         /// <summary>
         /// Aggregated progress of all tasks.
         /// </summary>
-        public double Progress
+        public override double Progress
         {
             get
             {
-                    IReadOnlyList<double> progresses = tasks.Select(t => t.Progress)
-                                                            .Where(p => !double.IsNaN(p))
-                                                            .ToList();
+                IReadOnlyList<double> progresses = tasks.Select(t => t.Progress)
+                                                        .Where(p => !double.IsNaN(p))
+                                                        .ToList();
                 return progresses.Sum() / progresses.Count;
             }
-        }
-
-        /// <summary>
-        /// Default constructor - runs all child models serially.
-        /// </summary>
-        public Serial()
-        {
-            tasks = FindAllChildren<IRunnable>().ToList();
         }
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="tasks">A collection of tasks to run.</param>
-        public Serial(IEnumerable<IRunnable> tasks)
+        public Serial(IReadOnlyList<IRunnable> tasks) : base(tasks)
         {
-            this.tasks = tasks.ToList();
         }
 
         /// <summary>
@@ -63,7 +46,7 @@ namespace Models.Core.Run
                                Action<Exception> errorCallback,
                                CancellationTokenSource cancel = null)
         {
-            var serial = new Serial(tasks);
+            var serial = new Serial(tasks.ToList());
             serial.Run(statusCallback, errorCallback, cancel);
         }
 
@@ -71,7 +54,7 @@ namespace Models.Core.Run
         /// <param name="statusCallback">A status callback.</param>
         /// <param name="errorCallback">A status callback.</param>
         /// <param name="cancelToken">An optional cancellation token.</param>
-        public void Run(Action<string> statusCallback, Action<Exception> errorCallback,
+        public override void Run(Action<string> statusCallback, Action<Exception> errorCallback,
             CancellationTokenSource cancelToken = null)
         {
             int numCompleted = 0;

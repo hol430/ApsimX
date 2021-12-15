@@ -27,5 +27,11 @@ namespace Models.Core
         /// <summary>Connect all events in the specified simulation.</summary>
         void DisconnectEvents();
 
+        /// <summary>
+        /// Disconnect all event callbacks in the given model from the event
+        /// sources.
+        /// </summary>
+        /// <param name="model">A model.</param>
+        void DisconnectEvents(IModel model);
     }
 }

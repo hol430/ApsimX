@@ -15,8 +15,8 @@
     [ViewName("UserInterface.Views.PropertyView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType=typeof(DataStore))]
-    [ValidParent(typeof(Parallel))]
-    [ValidParent(ParentType = typeof(Serial))]
+    [ValidParent(typeof(ParallelPostSimulationTool))]
+    [ValidParent(typeof(SerialPostSimulationTool))]
     [Serializable]
     public class TimeSeriesStats : Model, IPostSimulationTool
     {

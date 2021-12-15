@@ -19,8 +19,8 @@
     [ViewName("UserInterface.Views.PropertyView")]
     [PresenterName("UserInterface.Presenters.PropertyPresenter")]
     [ValidParent(ParentType=typeof(DataStore))]
-    [ValidParent(ParentType=typeof(Parallel))]
-    [ValidParent(ParentType = typeof(Serial))]
+    [ValidParent(typeof(ParallelPostSimulationTool))]
+    [ValidParent(typeof(SerialPostSimulationTool))]
     public class ExcelInput : Model, IPostSimulationTool, IReferenceExternalFiles
     {
         private string[] filenames;

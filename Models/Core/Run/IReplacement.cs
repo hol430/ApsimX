@@ -8,7 +8,9 @@
     {
         /// <summary>Perform the actual replacement.</summary>
         /// <param name="simulation">The simulation to perform the replacements on.</param>
-        void Replace(IModel simulation);
+        /// <param name="links">Links service - required to redirect links in model replacements.</param>
+        /// <param name="eventService">Events service - required to redirect event callbacks.</param>
+        void Replace(IModel simulation, Links links, IEvent eventService);
 
         /// <summary>
         /// Revert a simulation to the state it was in before the replacement.

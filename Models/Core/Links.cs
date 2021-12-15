@@ -15,6 +15,11 @@
         /// <summary>A collection of services that can be linked to</summary>
         private List<object> services;
 
+        /// <summary>
+        /// This dictionary maps a model to all links which are connected to that model.
+        /// </summary>
+        private IDictionary<IModel, IEnumerable<(IModel, IVariable)>> linksCache;
+
         /// <summary>Constructor</summary>
         /// <param name="linkableServices">A collection of services that can be linked to</param>
         public Links(IEnumerable<object> linkableServices = null)
@@ -98,6 +103,16 @@
                         declaration.Value = null;
                 }
             }
+        }
+
+        /// <summary>
+        /// Reconnect all links which point to the given model.
+        /// </summary>
+        /// <param name="old">THe old model.</param>
+        /// <param name="recursive">Recursively reconnect all links pointing to descendants of the old model?</param>
+        public void Reconnect(IModel old, bool recursive)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>

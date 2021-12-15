@@ -11,33 +11,25 @@ namespace Models.Core.Run
     /// tools in parallel.
     /// </summary>
     [ValidParent(typeof(IDataStore))]
-    [ValidParent(typeof(Parallel))]
-    [ValidParent(typeof(Serial))]
-    public class Parallel : Model, IRunnable
+    public class Parallel : CompositeTask, IRunnable
     {
-        /// <summary>
-        /// The internal task list.
-        /// </summary>
-        private IReadOnlyList<IRunnable> tasks;
-
         /// <inheritdoc />
-        public double Progress => tasks.Sum(t => t.Progress) / tasks.Count;
+        public override double Progress => tasks.Sum(t => t.Progress) / tasks.Count;
 
-        /// <summary>
-        /// Default constructor - runs all child models asynchronously.
-        /// </summary>
-        public Parallel()
-        {
-            tasks = FindAllChildren<IRunnable>().ToList();
-        }
+        // /// <summary>
+        // /// Default constructor - runs all child models asynchronously.
+        // /// </summary>
+        // public Parallel()
+        // {
+        //     tasks = FindAllChildren<IRunnable>().ToList();
+        // }
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="tasks">A collection of tasks to run.</param>
-        public Parallel(IEnumerable<IRunnable> tasks)
+        public Parallel(IReadOnlyList<IRunnable> tasks) : base(tasks)
         {
-            this.tasks = tasks.ToList();
         }
 
         /// <summary>
@@ -50,7 +42,7 @@ namespace Models.Core.Run
         public static void Run(IEnumerable<IRunnable> tasks, Action<string> statusHandler,
                                Action<Exception> errorHandler, CancellationTokenSource cancel = null)
         {
-            var parallel = new Parallel(tasks);
+            var parallel = new Parallel(tasks.ToList());
             parallel.Run(statusHandler, errorHandler, cancel);
         }
 
@@ -58,12 +50,14 @@ namespace Models.Core.Run
         /// <param name="statusCallback">A status callback.</param>
         /// <param name="errorCallback">A status callback.</param>
         /// <param name="cancelToken">An optional cancellation token.</param>
-        public void Run(Action<string> statusCallback, Action<Exception> errorCallback,
+        public override void Run(Action<string> statusCallback, Action<Exception> errorCallback,
             CancellationTokenSource cancelToken = null)
         {
+            if (tasks.Count == 0)
+                return;
+
             var lockInstance = new object();
-            int numCompleted = 0;
-            statusCallback($"{numCompleted} of {tasks.Count} complete");
+            statusCallback($"{GetNumTasksCompleted()} of {GetNumTasks()} complete");
             System.Threading.Tasks.Parallel.ForEach(tasks, task =>
             {
                 try
@@ -82,8 +76,7 @@ namespace Models.Core.Run
                 {
                     lock (lockInstance)
                     {
-                        numCompleted++;
-                        statusCallback($"{numCompleted} of {tasks.Count} complete");
+                        statusCallback($"{GetNumTasksCompleted()} of {GetNumTasks()} complete");
                     }
                 }
             });

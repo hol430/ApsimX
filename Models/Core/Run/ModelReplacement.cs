@@ -86,16 +86,17 @@
         /// </summary>
         public void Undo()
         {
-            foreach (var replacement in replacements)
+            // Need to undo changes in reverse order, in case any of them
+            // overwrite each other.
+            foreach (var replacement in replacements.Reverse<(IModel, IModel)>())
                 ReplaceModel(replacement.Item2, replacement.Item1);
         }
-
 
         /// <summary>Perform the actual replacement.</summary>
         private void ReplaceModel(IModel existingModel, IModel newModel)
         {
             // Fixme - this code should be in Structure.cs.
-            int index = existingModel.Parent.Children.IndexOf(existingModel as Model);
+            int index = existingModel.Parent.Children.IndexOf(existingModel);
             existingModel.Parent.Children.Insert(index, newModel as Model);
             newModel.Parent = existingModel.Parent;
             newModel.Name = existingModel.Name;

@@ -16,7 +16,7 @@ namespace Models.Core.Run
     /// the description to the simulation, runs the simulation and unapplies the description 
     /// in readiness for the next run.
     /// </summary>
-    public class Factorial : IRunnable
+    public class Factorial : CompositeTask
     {
         /// <summary>The base simulation to run.</summary>
         private IModel rootModel;
@@ -28,14 +28,27 @@ namespace Models.Core.Run
         private IEnumerable<FactorLevel> simulationDescriptions;
 
         /// <inheritdoc />
-        public double Progress => simulationToRun.FindChild<IClock>().FractionComplete;
+        public override double Progress
+        {
+            get
+            {
+                if (tasks.Count == 0)
+                    return 1;
+                return (numComplete + simulationToRun.FindChild<IClock>().FractionComplete) / tasks.Count;
+            }
+        }
+
+        /// <summary>
+        /// Number of factor levels which have already been run.
+        /// </summary>
+        private int numComplete;
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="simulation">The base simulation to run.</param>
         /// <param name="simulationDescriptions">A collection of descriptions of simulations to run.</param>
-        public Factorial(Simulation simulation, IEnumerable<FactorLevel> simulationDescriptions)
+        public Factorial(Simulation simulation, IEnumerable<FactorLevel> simulationDescriptions) : base(CreateProxyTasks(simulationDescriptions))
         {
             simulationToRun = simulation;
             this.simulationDescriptions = simulationDescriptions;
@@ -46,18 +59,64 @@ namespace Models.Core.Run
                 rootModel = rootModel.Parent;
         }
 
+        private class ProxyTask : IRunnable
+        {
+            public double Progress => throw new NotImplementedException();
+
+            public void Run(Action<string> statusCallback, Action<Exception> errorCallback, CancellationTokenSource cancel = null)
+            {
+                throw new NotImplementedException();
+            }
+
+            public string Name { get; private set; }
+
+            public ProxyTask(FactorLevel level)
+            {
+                Name = level.Name;
+            }
+        }
+
+        private static IReadOnlyList<IRunnable> CreateProxyTasks(IEnumerable<FactorLevel> simulationDescriptions)
+        {
+            return simulationDescriptions.Select(d => new ProxyTask(d)).ToList();
+        }
+
         /// <summary>The run method.</summary>
         /// <param name="status">A status callback.</param>
         /// <param name="errorCallback">A status callback.</param>
         /// <param name="cancelToken">An optional cancellation token.</param>
-        public void Run(Action<string> status, Action<Exception> errorCallback,
+        public override void Run(Action<string> status, Action<Exception> errorCallback,
             CancellationTokenSource cancelToken = null)
         {
-            Prepare();
+            try
+            {
+                Prepare();
+            }
+            catch
+            {
+                numComplete = tasks.Count;
+                throw;
+            }
 
             // Now run simulation for each simulation description.
+            numComplete = 0;
             foreach (FactorLevel description in simulationDescriptions)
-                cancelToken = Run(description, cancelToken);
+            {
+                try
+                {
+                    cancelToken = Run(description, cancelToken);
+                }
+                finally
+                {
+                    numComplete++;
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        protected override int GetNumTasksCompleted()
+        {
+            return numComplete;
         }
 
         /// <summary>
@@ -81,7 +140,7 @@ namespace Models.Core.Run
 
                 // Perform replacements from a top level Replacements node.
                 foreach (var replacement in GetGlobalReplacements())
-                    replacement.Replace(simulationToRun);
+                    replacement.Replace(simulationToRun, links, events);
 
                 var services = GetServices();
                 simulationToRun.Services = services;
