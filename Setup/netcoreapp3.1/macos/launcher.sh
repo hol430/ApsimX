@@ -189,4 +189,14 @@ if /bin/expr "x$1" : '^x-psn_' > /dev/null; then
     shift 1
 fi
 
+# ~/.config/ApsimInitiative/ApsimX/ApsimX.xml -> <DarkTheme>true</DarkTheme>
+config_file="$HOME/.config/ApsimInitiative/ApsimX/ApsimX.xml"
+theme=Adwaita
+if test -f "$config_file"; then
+	if test -n "`grep DarkTheme "$config_file" | grep true`"; then
+		theme=Adwaita:dark
+	fi
+fi
+export GTK_THEME=$theme
+
 $EXEC "$EXE_PATH" "$@" $EXTRA_ARGS
