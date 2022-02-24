@@ -58,9 +58,9 @@ namespace UserInterface.Views
         {
             try
             {
-                propertyEditor.MainWidget.Dispose();
+                propertyEditor.MainWidget.Cleanup();
                 propertyEditor = null;
-                (scriptEditor as ViewBase)?.MainWidget?.Dispose();
+                (scriptEditor as ViewBase)?.MainWidget?.Cleanup();
                 scriptEditor = null;
                 mainWidget.Destroyed -= _mainWidget_Destroyed;
                 owner = null;

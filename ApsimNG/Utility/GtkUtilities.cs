@@ -8,6 +8,30 @@ namespace Utility
     public static class GtkUtil
     {
         /// <summary>
+        /// Create a gtk image instance from the given resource file. This is
+        /// provided because the default constructor with these arguments leaks
+        /// memory.
+        /// </summary>
+        /// <param name="assembly">The assembly.</param>
+        /// <param name="resourceName">Name of the resource.</param>
+        /// <returns></returns>
+        public static Image CreateImage(Assembly assembly, string resourceName)
+        {
+            if (assembly == null)
+                assembly = System.Reflection.Assembly.GetCallingAssembly();
+            using (var pixbuf = CreatePixbuf(assembly, resourceName))
+                return new Gtk.Image(pixbuf);
+        }
+
+        public static Gdk.Pixbuf CreatePixbuf(Assembly assembly, string resourceName)
+        {
+            if (assembly == null)
+                assembly = System.Reflection.Assembly.GetCallingAssembly();
+            System.IO.Stream s = assembly.GetManifestResourceStream(resourceName);
+            return new Gdk.Pixbuf(s);
+        }
+
+        /// <summary>
         /// Detaches all event handlers on the widget and all descendants.
         /// </summary>
         /// <param name="widget">The widget.</param>

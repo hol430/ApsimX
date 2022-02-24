@@ -9,6 +9,12 @@ namespace UserInterface.Extensions
     /// </summary>
     internal static class WidgetExtensions
     {
+        public static void Cleanup(this Widget widget)
+        {
+            widget.Destroy();
+            widget.Dispose();
+        }
+
         public static string GetActiveText(this ComboBox combo)
         {
             if (combo.GetActiveIter(out TreeIter iter))
@@ -39,15 +45,19 @@ namespace UserInterface.Extensions
         /// <param name="image">Image to be displayed on the menu item.</param>
         public static MenuItem CreateImageMenuItem(string text, Image image)
         {
-            HBox container = new HBox();
-            Label label = new Label(text);
-            MenuItem imageItem = new MenuItem();
+            using (HBox container = new HBox())
+            {
+                using (Label label = new Label(text))
+                {
+                    MenuItem imageItem = new MenuItem();
 
-            container.PackStart(image, false, false, 0);
-            container.PackStart(label, false, false, 0);
-            imageItem.Add(container);
+                    container.PackStart(image, false, false, 0);
+                    container.PackStart(label, false, false, 0);
+                    imageItem.Add(container);
 
-            return imageItem;
+                    return imageItem;
+                }
+            }
         }
     }
 }

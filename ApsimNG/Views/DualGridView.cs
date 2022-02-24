@@ -52,9 +52,9 @@ namespace UserInterface.Views
             try
             {
                 mainWidget.Destroyed -= _mainWidget_Destroyed;
-                mainWidget.Dispose();
-                //Grid1.Dispose();
-                //Grid2.Dispose();
+                mainWidget.Cleanup();
+                //Grid1.Cleanup();
+                //Grid2.Cleanup();
                 owner = null;
             }
             catch (Exception err)

@@ -86,6 +86,7 @@
             this.weatherDataView.GraphRefreshClicked -= this.GraphRefreshValueChanged;
             this.weatherDataView.ExcelSheetChangeClicked -= this.ExcelSheetValueChanged;
             this.weatherDataView.ConstantsFileSelected -= OnConstantsFileSelected;
+            graphMetData.Dispose();
         }
 
         /// <summary>Called after the user has selected a new met file.</summary>

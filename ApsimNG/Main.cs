@@ -25,8 +25,8 @@
                 Task.Run(() => Intellisense.CodeCompletionService.Init());
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-                Gtk.Application.Init();
-
+                Gtk.Application.Init("APSIM", ref args);
+                GLib.Object.WarnOnFinalize = true;
                 Gtk.Settings.Default.SetProperty("gtk-overlay-scrolling", new GLib.Value(0));
 
                 IntellisensePresenter.Init();
@@ -35,6 +35,7 @@
 
                 mainPresenter.Attach(mainForm, args);
                 mainForm.MainWidget.ShowAll();
+                GC.Collect();
                 if (args.Length == 0 || Path.GetExtension(args[0]) != ".cs")
                     Gtk.Application.Run();
             }

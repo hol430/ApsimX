@@ -180,7 +180,7 @@
 
             Gdk.Pixbuf screenshot = window.Pixbuf;
             byte[] buffer = screenshot.SaveToBuffer("png");
-            window.Dispose();
+            window.Cleanup();
             using (MemoryStream stream = new MemoryStream(buffer))
             {
                 System.Drawing.Bitmap bitmap = new Bitmap(stream);

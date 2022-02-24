@@ -452,10 +452,11 @@ namespace UserInterface.Views
         {
             Gdk.Pixbuf pixbuf = null;
             if (MasterView != null && MasterView.HasResource(description.ResourceNameForImage))
-                pixbuf = new Gdk.Pixbuf(null, description.ResourceNameForImage);
+                pixbuf = Utility.GtkUtil.CreatePixbuf(null, description.ResourceNameForImage);
             string tick = description.Checked ? "✓" : "";
             treemodel.SetValues(node, description.Name, pixbuf, description.ToolTip, tick, description.Colour, description.Strikethrough);
-
+            if (pixbuf != null)
+                pixbuf.Dispose();
             foreach (TreeViewNode child in description.Children)
             {
                 string path = GetFullPath(treemodel.GetPath(node));

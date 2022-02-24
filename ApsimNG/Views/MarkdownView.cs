@@ -106,6 +106,7 @@ namespace UserInterface.Views
             mainWidget.Realized += OnRealized;
             textView.FocusInEvent += OnGainFocus;
             textView.FocusOutEvent += OnLoseFocus;
+            textView.Destroyed += OnTextViewDestroyed;
 
             handCursor = new Gdk.Cursor(Gdk.CursorType.Hand2);
             regularCursor = new Gdk.Cursor(Gdk.CursorType.Xterm);
@@ -506,7 +507,10 @@ namespace UserInterface.Views
             TextIter iter = tmpView.Buffer.StartIter;
             ProcessMarkdownBlocks(cell, ref iter, tmpView, 0, false);
             string result = tmpView.Buffer.Text;
-            tmpView.Dispose();
+            tmpView.Buffer.TagTable.Foreach(t => t.Dispose());
+            tmpView.Buffer.TagTable.Dispose();
+            tmpView.Buffer.Dispose();
+            tmpView.Cleanup();
             return result;
         }
 
@@ -522,6 +526,8 @@ namespace UserInterface.Views
 
             label.Layout.SetText(text);
             label.Layout.GetPixelSize(out int width, out _);
+            label.Layout.Dispose();
+            label.Cleanup();
             return width;
         }
 
@@ -677,13 +683,15 @@ namespace UserInterface.Views
                 }
             }
 
-            Gdk.Window window = textView.GetWindow(TextWindowType.Text);
-            if (window != null)
+            using (Gdk.Window window = textView.GetWindow(TextWindowType.Text))
             {
-                if (foundLink)
-                    window.Cursor = handCursor;
-                else
-                    window.Cursor = regularCursor;
+                if (window != null)
+                {
+                    if (foundLink)
+                        window.Cursor = handCursor;
+                    else
+                        window.Cursor = regularCursor;
+                }
             }
         }
 
@@ -779,6 +787,20 @@ namespace UserInterface.Views
             }
         }
 
+        private void OnTextViewDestroyed(object sender, EventArgs args)
+        {
+            try
+            {
+                textView.Buffer.TagTable.Foreach(t => t.Dispose());
+                textView.Buffer.TagTable.Dispose();
+                textView.Buffer.Dispose();
+            }
+            catch (Exception error)
+            {
+                ShowError(error);
+            }
+        }
+
         /// <summary>Widget is destroyed.</summary>
         /// <param name="sender">Sender of the event.</param>
         /// <param name="e">The event aruments.</param>
@@ -791,6 +813,8 @@ namespace UserInterface.Views
                 textView.VisibilityNotifyEvent -= OnVisibilityNotify;
                 textView.MotionNotifyEvent -= OnMotionNotify;
                 textView.WidgetEventAfter -= OnWidgetEventAfter;
+                textView.Cleanup();
+                mainWidget.Cleanup();
                 mainWidget.Destroyed -= OnDestroyed;
                 owner = null;
             }

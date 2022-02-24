@@ -49,6 +49,7 @@ namespace UserInterface.Intellisense
             get
             {
                 // tbi
+                // fixme - this will leak!
                 Pixbuf functionPixbuf = new Pixbuf(null, "ApsimNG.Resources.Function.png", 16, 16);
                 Pixbuf propertyPixbuf = new Pixbuf(null, "ApsimNG.Resources.Property.png", 16, 16);
                 return isProperty ? propertyPixbuf : functionPixbuf;

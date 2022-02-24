@@ -140,6 +140,8 @@
             vbox2 = (VBox)builder.GetObject("vbox2");
             hpaned1 = (HPaned)builder.GetObject("hpaned1");
             hbox1 = (Widget)builder.GetObject("vbox3");
+            builder.Dispose();
+            builder = null;
             mainWidget = window1;
             window1.Icon = new Gdk.Pixbuf(null, "ApsimNG.Resources.apsim logo32.png");
             listButtonView1 = new ListButtonView(this);
@@ -183,10 +185,11 @@
             else
                 tag.Foreground = "brown";
             statusWindow.Buffer.TagTable.Add(tag);
-            tag = new TextTag("normal");
-            tag.Foreground = "blue";
+            // tag = new TextTag("normal");
+            // tag.Foreground = "blue";
             statusWindow.Visible = false;
-            stopButton.Image = new Gtk.Image(new Gdk.Pixbuf(null, "ApsimNG.Resources.MenuImages.Delete.png", 12, 12));
+            using (var pixbuf = new Gdk.Pixbuf(null, "ApsimNG.Resources.MenuImages.Delete.png", 12, 12))
+                stopButton.Image = new Gtk.Image(pixbuf);
             stopButton.ImagePosition = PositionType.Right;
             stopButton.Image.Visible = true;
             stopButton.Clicked += OnStopClicked;
@@ -365,7 +368,9 @@
             HBox headerBox = new HBox();
             Button closeBtn = new Button();
             string imageName = Utility.Configuration.Settings.DarkTheme ? "Close.dark.svg" : "Close.light.svg";
-            Gtk.Image closeImg = new Gtk.Image(new Gdk.Pixbuf(null, $"ApsimNG.Resources.TreeViewImages.{imageName}", 12, 12));
+            var pixbuf = new Gdk.Pixbuf(null, $"ApsimNG.Resources.TreeViewImages.{imageName}", 12, 12);
+            Gtk.Image closeImg = new Gtk.Image(pixbuf);
+            pixbuf.Dispose();
 
             closeBtn.Image = closeImg;
             closeBtn.Relief = ReliefStyle.None;
@@ -483,7 +488,8 @@
             // Are we looking for a resource?
             if (HasResource(icon))
             {
-                image = new Gtk.Image(new Gdk.Pixbuf(null, icon, 12, 12));
+                using (var pixbuf = new Gdk.Pixbuf(null, icon, 12, 12))
+                    image = new Gtk.Image(pixbuf);
             }
 
             // Or maybe a file?
@@ -534,7 +540,7 @@
             notebook2.SwitchPage -= OnChangeTab;
             stopButton.Clicked -= OnStopClicked;
             window1.DeleteEvent -= OnClosing;
-            mainWidget.Dispose();
+            mainWidget.Cleanup();
 
             // Let all the destruction stuff be carried out, just in 
             // case we've got any unmanaged resources that should be 
@@ -783,7 +789,7 @@
             MessageDialog md = new MessageDialog(MainWidget.Toplevel as Window, DialogFlags.Modal, Gtk.MessageType.Question, ButtonsType.YesNo, message);
             md.Title = "Save changes";
             int result = md.Run();
-            md.Dispose();
+            md.Cleanup();
             switch ((ResponseType)result)
             {
                 case ResponseType.Yes:
@@ -956,7 +962,7 @@
                 Configuration.Settings.Save();
                 ChangeFont(newFont);
                 if (args.ResponseId != ResponseType.Apply)
-                    fontDialog.Dispose();
+                    fontDialog.Cleanup();
             }
             catch (Exception err)
             {
@@ -1125,7 +1131,7 @@
             md.Title = title;
             md.WindowPosition = WindowPosition.Center;
             int result = md.Run();
-            md.Dispose();
+            md.Cleanup();
             return result;
         }
 

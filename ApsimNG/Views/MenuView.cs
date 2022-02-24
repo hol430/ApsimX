@@ -27,7 +27,7 @@
         public void Destroy()
         {
             ClearMenu();
-            menu.Dispose();
+            menu.Cleanup();
         }
 
         /// <summary>Populate the main menu tool strip.</summary>
@@ -49,8 +49,11 @@
                     ManifestResourceInfo info = Assembly.GetExecutingAssembly().GetManifestResourceInfo(description.ResourceNameForImage);
                     if (info != null)
                     {
-                        MenuItem imageItem = WidgetExtensions.CreateImageMenuItem(description.Name, new Gtk.Image(null, description.ResourceNameForImage));
-                        item = imageItem;
+                        using (var image = Utility.GtkUtil.CreateImage(null, description.ResourceNameForImage))
+                        {
+                            MenuItem imageItem = WidgetExtensions.CreateImageMenuItem(description.Name, image);
+                            item = imageItem;
+                        }
                     }
                     else
                     {
@@ -129,7 +132,7 @@
                     }
                 }
                 menu.Remove(w);
-                w.Dispose();
+                w.Cleanup();
             }
         }
     }

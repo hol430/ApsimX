@@ -30,19 +30,21 @@ namespace Utility
 
         public MarkdownFindView()
         {
-            Builder builder = ViewBase.BuilderFromResource("ApsimNG.Resources.Glade.FindAndReplace.glade");
-            window1 = (Window)builder.GetObject("window1");
-            chkMatchCase = (CheckButton)builder.GetObject("chkMatchCase");
-            chkMatchWholeWord = (CheckButton)builder.GetObject("chkMatchWholeWord");
-            txtLookFor = (Entry)builder.GetObject("txtLookFor");
-            txtReplaceWith = (Entry)builder.GetObject("txtReplaceWith");
-            btnReplace = (Button)builder.GetObject("btnReplace");
-            btnReplaceAll = (Button)builder.GetObject("btnReplaceAll");
-            btnHighlightAll = (Button)builder.GetObject("btnHighlightAll");
-            btnCancel = (Button)builder.GetObject("btnCancel");
-            btnFindPrevious = (Button)builder.GetObject("btnFindPrevious");
-            btnFindNext = (Button)builder.GetObject("btnFindNext");
-            lblReplaceWith = (Label)builder.GetObject("lblReplaceWith");
+            using (Builder builder = ViewBase.BuilderFromResource("ApsimNG.Resources.Glade.FindAndReplace.glade"))
+            {
+                window1 = (Window)builder.GetObject("window1");
+                chkMatchCase = (CheckButton)builder.GetObject("chkMatchCase");
+                chkMatchWholeWord = (CheckButton)builder.GetObject("chkMatchWholeWord");
+                txtLookFor = (Entry)builder.GetObject("txtLookFor");
+                txtReplaceWith = (Entry)builder.GetObject("txtReplaceWith");
+                btnReplace = (Button)builder.GetObject("btnReplace");
+                btnReplaceAll = (Button)builder.GetObject("btnReplaceAll");
+                btnHighlightAll = (Button)builder.GetObject("btnHighlightAll");
+                btnCancel = (Button)builder.GetObject("btnCancel");
+                btnFindPrevious = (Button)builder.GetObject("btnFindPrevious");
+                btnFindNext = (Button)builder.GetObject("btnFindNext");
+                lblReplaceWith = (Label)builder.GetObject("lblReplaceWith");
+            }
 
             // We use the same glade form as the FindAndReplaceForm, but we don't
             // allow for replacing text (the view is readonly). Therefore we need
@@ -88,7 +90,7 @@ namespace Utility
 
         public void Destroy()
         {
-            window1.Dispose();
+            window1.Cleanup();
         }
 
         private void Window1_DeleteEvent(object o, DeleteEventArgs args)
@@ -109,7 +111,7 @@ namespace Utility
         {
             MessageDialog md = new MessageDialog(window1, DialogFlags.Modal, MessageType.Info, ButtonsType.Ok, message);
             md.Run();
-            md.Dispose();
+            md.Cleanup();
         }
 
         private void UpdateTitleBar()

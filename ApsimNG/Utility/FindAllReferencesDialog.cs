@@ -193,7 +193,7 @@ namespace Utility
         private void OnKeyPress(object sender, KeyPressEventArgs args)
         {
             if (args.Event.Key == Gdk.Key.Escape)
-                window.Dispose();
+                window.Cleanup();
         }
 
         /// <summary>
@@ -210,7 +210,7 @@ namespace Utility
                 if (tree != null)
                 {
                     tree.CursorChanged -= OnSelectionChanged;
-                    tree.Dispose();
+                    tree.Cleanup();
                     tree = null;
                 }
                 if (data != null)
@@ -223,7 +223,7 @@ namespace Utility
                 {
                     window.DeleteEvent -= OnClose;
                     window.Destroyed -= OnClose;
-                    window.Dispose();
+                    window.Cleanup();
                     window = null;
                 }
             }
@@ -236,7 +236,7 @@ namespace Utility
         public void Dispose()
         {
             data?.Dispose();
-            tree?.Dispose();
+            tree?.Cleanup();
         }
     }
 }

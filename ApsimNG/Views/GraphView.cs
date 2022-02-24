@@ -196,8 +196,8 @@
                     }
                 }
                 Clear();
-                popup.Dispose();
-                plot1.Dispose();
+                popup.Cleanup();
+                plot1.Cleanup();
                 mainWidget.Destroyed -= _mainWidget_Destroyed;
                 owner = null;
             }
@@ -1225,7 +1225,7 @@
                     if (widget != label2)
                     {
                         expander1.Remove(widget);
-                        widget.Dispose();
+                        widget.Cleanup();
                     }
                 });
                 expander1.Add(editor);

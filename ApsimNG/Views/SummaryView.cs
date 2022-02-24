@@ -182,13 +182,13 @@
             try
             {
                 btnJumpToSimLog.Clicked -= OnJumpToSimulationLog;
-                captureRules.Dispose();
-                VerbosityDropDown.MainWidget.Dispose();
-                MessagesFilter.MainWidget.Dispose();
-                simulationFilter.Dispose();
-                SimulationDropDown.MainWidget.Dispose();
-                mainControl.Dispose();
-                ((ViewBase)SummaryDisplay).MainWidget.Dispose();
+                captureRules.Cleanup();
+                VerbosityDropDown.MainWidget.Cleanup();
+                MessagesFilter.MainWidget.Cleanup();
+                simulationFilter.Cleanup();
+                SimulationDropDown.MainWidget.Cleanup();
+                mainControl.Cleanup();
+                ((ViewBase)SummaryDisplay).MainWidget.Cleanup();
                 mainWidget.Destroyed -= MainWidgetDestroyed;
                 owner = null;
             }

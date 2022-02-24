@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Gtk;
+using UserInterface.Extensions;
 
 namespace UserInterface.Hotkeys
 {
@@ -100,12 +101,12 @@ namespace UserInterface.Hotkeys
                 foreach (ShortcutsGroup group in section)
                 {
                     foreach (ShortcutsShortcut shortcut in group)
-                        shortcut.Dispose();
-                    group.Dispose();
+                        shortcut.Cleanup();
+                    group.Cleanup();
                 }
-                section.Dispose();
+                section.Cleanup();
             }
-            window.Dispose();
+            window.Cleanup();
         }
     }
 }

@@ -123,7 +123,7 @@ namespace UserInterface.Views
                 Listview.SelectionChanged -= OnSelectionChanged;
                 Listview.ButtonPressEvent -= OnDoubleClick;
                 ClearPopup();
-                popup.Dispose();
+                popup.Cleanup();
                 listmodel.Dispose();
                 accel.Dispose();
                 mainWidget.Destroyed -= _mainWidget_Destroyed;
@@ -175,7 +175,7 @@ namespace UserInterface.Views
                         if (!exists)
                             (exists, resourceName) = ExplorerPresenter.CheckIfIconExists("Simulations");
 
-                        image = new Gdk.Pixbuf(null, resourceName);
+                        image = Utility.GtkUtil.CreatePixbuf(null, resourceName);
                     }
                     string tooltip = isModels ? val : StringUtilities.PangoString(val);
                     listmodel.AppendValues(text, image, tooltip);
@@ -202,7 +202,7 @@ namespace UserInterface.Views
             string searchName = Path.GetFileNameWithoutExtension(fileName);
             (bool exists, string resourceName) = ExplorerPresenter.CheckIfIconExists(searchName);
             if (exists)
-                image = new Gdk.Pixbuf(null, resourceName);
+                image = Utility.GtkUtil.CreatePixbuf(null, resourceName);
             else
             {
                 // Add an image index.
@@ -212,13 +212,13 @@ namespace UserInterface.Views
                     string shortImageName = parts.Length > 1 ? parts[parts.Length - 2] : StringUtilities.GetAfter(imageName, ".LargeImages.").Replace(".png", "");
                     if (result.ToLower().Contains(shortImageName.ToLower()))
                     {
-                        image = new Gdk.Pixbuf(null, imageName);
+                        image = Utility.GtkUtil.CreatePixbuf(null, imageName);
                         break;
                     }
                 }
             }
             if (image == null)
-                image = new Gdk.Pixbuf(null, "ApsimNG.Resources.apsim logo32.png");
+                image = Utility.GtkUtil.CreatePixbuf(null, "ApsimNG.Resources.apsim logo32.png");
 
             return result;
         }
@@ -428,7 +428,7 @@ namespace UserInterface.Views
                 }
                 else if (!String.IsNullOrEmpty(description.ResourceNameForImage) && MasterView.HasResource(description.ResourceNameForImage))
                 {
-                    item = WidgetExtensions.CreateImageMenuItem(description.Name, new Image(null, description.ResourceNameForImage));
+                    item = WidgetExtensions.CreateImageMenuItem(description.Name, Utility.GtkUtil.CreateImage(null, description.ResourceNameForImage));
                 }
                 else
                 {
@@ -488,7 +488,7 @@ namespace UserInterface.Views
                     }
                 }
                 popup.Remove(w);
-                w.Dispose();
+                w.Cleanup();
             }
         }
     }

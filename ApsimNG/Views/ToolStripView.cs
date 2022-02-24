@@ -5,6 +5,7 @@
     using System;
     using System.Collections.Generic;
     using System.Reflection;
+    using Extensions;
 
     /// <summary>
     /// Encapsulates a toolstrip (button bar)
@@ -78,7 +79,7 @@
                     }
                 }
                 toolStrip.Remove(child);
-                child.Dispose();
+                child.Cleanup();
             }
         }
 
@@ -90,18 +91,18 @@
             foreach (Widget child in toolStrip.Children)
             {
                 toolStrip.Remove(child);
-                child.Dispose();
+                child.Cleanup();
             }
             foreach (MenuDescriptionArgs description in menuDescriptions)
             {
                 Gtk.Image image = null;
-                Gdk.Pixbuf pixbuf = null;
                 ManifestResourceInfo info = Assembly.GetExecutingAssembly().GetManifestResourceInfo(description.ResourceNameForImage);
 
                 if (info != null)
                 {
-                    pixbuf = new Gdk.Pixbuf(null, description.ResourceNameForImage, 20, 20);
-                    image = new Gtk.Image(pixbuf);
+                    using (var pixbuf = new Gdk.Pixbuf(null, description.ResourceNameForImage, 20, 20))
+                        // pixbuf = Utility.GtkUtil.CreatePixbuf(null, description.ResourceNameForImage);
+                        image = new Gtk.Image(pixbuf);
                 }
                 ToolItem item = new ToolItem();
                 item.Expand = true;

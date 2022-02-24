@@ -5,6 +5,7 @@ using System.Linq;
 using APSIM.Shared.Utilities;
 using Gtk;
 using UserInterface.Hotkeys;
+using UserInterface.Extensions;
 
 namespace UserInterface.Views
 {
@@ -173,7 +174,7 @@ The APSIM Initiative would appreciate an acknowledgement in your research paper 
                 website.ButtonPressEvent += OnWebsiteClicked;
                 window.DeleteEvent -= OnDelete;
                 window.Destroyed -= OnClose;
-                window.Dispose();
+                window.Cleanup();
             }
             catch (Exception err)
             {

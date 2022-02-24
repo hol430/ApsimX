@@ -86,7 +86,7 @@
 
             editView1 = new EditView(this);
 
-            Image helpImage = new Image(null, "ApsimNG.Resources.MenuImages.Help.svg");
+            Image helpImage = Utility.GtkUtil.CreateImage(null, "ApsimNG.Resources.MenuImages.Help.svg");
             helpBox = new EventBox();
             helpBox.Add(helpImage);
             helpBox.ButtonReleaseEvent += Help_ButtonPressEvent;
@@ -142,25 +142,25 @@
             {
                 mainWidget.Destroyed -= _mainWidget_Destroyed;
                 helpBox.ButtonReleaseEvent -= Help_ButtonPressEvent;
-                dataSourceDropDown.MainWidget.Dispose();
-                xDropDown.MainWidget.Dispose();
-                yDropDown.MainWidget.Dispose();
-                x2DropDown.MainWidget.Dispose();
-                y2DropDown.MainWidget.Dispose();
-                seriesDropDown.MainWidget.Dispose();
-                lineTypeDropDown.MainWidget.Dispose();
-                markerTypeDropDown.MainWidget.Dispose();
-                colourDropDown.MainWidget.Dispose();
-                lineThicknessDropDown.MainWidget.Dispose();
-                markerSizeDropDown.MainWidget.Dispose();
-                checkBoxView1.MainWidget.Dispose();
-                checkBoxView2.MainWidget.Dispose();
-                checkBoxView3.MainWidget.Dispose();
-                checkBoxView4.MainWidget.Dispose();
-                checkBoxView5.MainWidget.Dispose();
-                checkBoxView6.MainWidget.Dispose();
-                graphView1.MainWidget.Dispose();
-                editView1.MainWidget.Dispose();
+                dataSourceDropDown.MainWidget.Cleanup();
+                xDropDown.MainWidget.Cleanup();
+                yDropDown.MainWidget.Cleanup();
+                x2DropDown.MainWidget.Cleanup();
+                y2DropDown.MainWidget.Cleanup();
+                seriesDropDown.MainWidget.Cleanup();
+                lineTypeDropDown.MainWidget.Cleanup();
+                markerTypeDropDown.MainWidget.Cleanup();
+                colourDropDown.MainWidget.Cleanup();
+                lineThicknessDropDown.MainWidget.Cleanup();
+                markerSizeDropDown.MainWidget.Cleanup();
+                checkBoxView1.MainWidget.Cleanup();
+                checkBoxView2.MainWidget.Cleanup();
+                checkBoxView3.MainWidget.Cleanup();
+                checkBoxView4.MainWidget.Cleanup();
+                checkBoxView5.MainWidget.Cleanup();
+                checkBoxView6.MainWidget.Cleanup();
+                graphView1.MainWidget.Cleanup();
+                editView1.MainWidget.Cleanup();
                 owner = null;
             }
             catch (Exception err)

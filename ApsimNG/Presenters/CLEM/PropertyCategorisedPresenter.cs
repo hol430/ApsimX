@@ -168,7 +168,7 @@ namespace UserInterface.Presenters
             this.treeview.SelectedNodeChanged -= this.OnNodeSelected;
 
             this.HideRightHandView();
-            (treeview as ViewBase).MainWidget.Dispose();
+            (treeview as ViewBase).MainWidget.Cleanup();
         }
 
         /// <summary>

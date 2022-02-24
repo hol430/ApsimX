@@ -429,7 +429,7 @@
                 // This may break if Gtk# changes the way they implement event handlers.
                 textEditor.DetachAllHandlers();
                 accel.Dispose();
-                textEditor.Dispose();
+                textEditor.Cleanup();
                 textEditor = null;
                 owner = null;
             }

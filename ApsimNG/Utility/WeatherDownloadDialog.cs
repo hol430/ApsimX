@@ -141,7 +141,7 @@ namespace Utility
             MessageDialog md = new MessageDialog(dialog1, DialogFlags.Modal, type, ButtonsType.Ok, msg);
             md.Title = title;
             md.Run();
-            md.Dispose();
+            md.Cleanup();
         }
 
         /// <summary>
@@ -202,7 +202,7 @@ namespace Utility
                         explorerPresenter.CommandHistory.Add(command, true);
                     }
                 }
-                dialog1.Dispose();
+                dialog1.Cleanup();
             }
             catch (Exception err)
             {
@@ -326,7 +326,7 @@ namespace Utility
         {
             try
             {
-                dialog1.Dispose();
+                dialog1.Cleanup();
             }
             catch (Exception err)
             {
@@ -587,7 +587,7 @@ namespace Utility
                         string stationString = (string)list.GetValue(iter, 0);
                         stationNumber = Int32.Parse(stationString);
                     }
-                    md.Dispose();
+                    md.Cleanup();
                 }
                 if (stationNumber >= 0) // Phew! We finally have a station number. Now fetch the data.
                 {

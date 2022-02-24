@@ -74,7 +74,7 @@ namespace UserInterface.Views
                 foreach (Widget child in rightHandView.Children)
                 {
                     rightHandView.Remove(child);
-                    child.Dispose();
+                    child.Cleanup();
                 }
             }
             treeview1.CursorChanged -= OnAfterSelect;
@@ -148,7 +148,7 @@ namespace UserInterface.Views
             foreach (Widget child in rightHandView.Children)
             {
                 rightHandView.Remove(child);
-                child.Dispose();
+                child.Cleanup();
             }
             //create new Right Hand View
             ViewBase view = control as ViewBase;

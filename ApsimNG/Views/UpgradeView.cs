@@ -156,7 +156,7 @@
                 PopulateForm();
                 window1.Window.Cursor = null;
                 if (loadFailure)
-                    window1.Dispose();
+                    window1.Cleanup();
             }
             catch (Exception err)
             {
@@ -361,7 +361,7 @@
                             if (waitDlg != null)
                             {
                                 web.DownloadProgressChanged -= OnDownloadProgressChanged;
-                                waitDlg.Dispose();
+                                waitDlg.Cleanup();
                                 waitDlg = null;
                             }
                             if (window1 != null && window1.Window != null)
@@ -427,7 +427,7 @@
                 {
                     if (waitDlg != null)
                     {
-                        waitDlg.Dispose();
+                        waitDlg.Cleanup();
                         waitDlg = null;
                     }
                 });
@@ -468,7 +468,7 @@
                                 window1.Window.Cursor = null;
 
                                 // Shutdown the user interface
-                                window1.Dispose();
+                                window1.Cleanup();
                                 tabbedExplorerView.Close();
                             });
                         }

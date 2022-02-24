@@ -1,3 +1,4 @@
+using UserInterface.Extensions;
 
 namespace UserInterface.Intellisense
 {
@@ -157,7 +158,7 @@ namespace UserInterface.Intellisense
                 if (methodSignaturePopup != null)
                 {
                     methodSignaturePopup.Hide();
-                    methodSignaturePopup.Dispose();
+                    methodSignaturePopup.Cleanup();
                 }
 
                 // TBI - parameter names, descriptions.
@@ -189,7 +190,7 @@ namespace UserInterface.Intellisense
                 if (args.Event.Key == Gdk.Key.Escape)
                 {
                     methodSignaturePopup.Hide();
-                    methodSignaturePopup.Dispose();
+                    methodSignaturePopup.Cleanup();
                 }
             }
             catch (Exception err)

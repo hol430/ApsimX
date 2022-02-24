@@ -233,7 +233,7 @@
             this.HideRightHandPanel();
             if (this.view is Views.ExplorerView)
             {
-                (this.view as Views.ExplorerView).MainWidget.Dispose();
+                (this.view as Views.ExplorerView).MainWidget.Cleanup();
             }
 
             this.ContextMenu = null;
@@ -707,9 +707,14 @@
             return true;
         }
 
+        private long memprev;
+
         /// <summary>Hide the right hand panel.</summary>
         public void HideRightHandPanel()
         {
+            long mem = GC.GetTotalMemory(true);
+            Console.WriteLine($"Memory usage: {mem}.\tPrevious: {memprev}\tDelta: {mem - memprev}");
+            memprev = mem;
             if (this.currentRightHandPresenter != null)
             {
                 try
@@ -722,8 +727,8 @@
                     MainPresenter.ShowError(err);
                 }
             }
-
             this.view.AddRightHandView(null);
+            GC.Collect();
         }
 
         /// <summary>Display a view on the right hand panel in view.</summary>

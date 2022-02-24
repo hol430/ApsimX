@@ -140,7 +140,7 @@ namespace UserInterface.Views
 
             if (image1 != null)
             {
-                image1.Dispose();
+                image1.Cleanup();
             }
 
             if (table != null)

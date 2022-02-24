@@ -35,6 +35,8 @@ namespace UserInterface.Views
             Tree = new TreeView(owner, treeviewWidget);
             rightHandView = (VBox)builder.GetObject("vbox2");
             //rightHandView.ShadowType = ShadowType.EtchedOut;
+            builder.Dispose();
+            builder = null;
 
             mainWidget.Destroyed += OnDestroyed;
         }
@@ -60,7 +62,7 @@ namespace UserInterface.Views
                 if (child != (descriptionView as ViewBase)?.MainWidget)
                 {
                     rightHandView.Remove(child);
-                    child.Dispose();
+                    child.Cleanup();
                 }
             }
 
@@ -85,7 +87,7 @@ namespace UserInterface.Views
                 {
                     Widget descriptionWidget = (descriptionView as ViewBase).MainWidget;
                     rightHandView.Remove(descriptionWidget);
-                    descriptionWidget.Dispose();
+                    descriptionWidget.Cleanup();
                 }
                 descriptionView = null;
             }
@@ -148,7 +150,7 @@ namespace UserInterface.Views
                     foreach (Widget child in rightHandView.Children)
                     {
                         rightHandView.Remove(child);
-                        child.Dispose();
+                        child.Cleanup();
                     }
                 }
                 ToolStrip.Destroy();

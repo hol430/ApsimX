@@ -100,7 +100,7 @@ namespace UserInterface.Views
 
             // Dispose of current properties table.
             box.Remove(propertyTable);
-            propertyTable.Dispose();
+            propertyTable.Cleanup();
 
             // Construct a new properties table.
             propertyTable = new Grid();

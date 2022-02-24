@@ -58,7 +58,7 @@ namespace UserInterface.Views
 
             box.Remove(propertyTable);
 
-            propertyTable.Dispose();
+            propertyTable.Cleanup();
 
 
             propertyTable = new Grid();

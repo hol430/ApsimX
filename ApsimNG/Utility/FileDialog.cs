@@ -1,4 +1,6 @@
-﻿namespace Utility
+﻿using UserInterface.Extensions;
+
+namespace Utility
 {
     using UserInterface.Interfaces;
     using System;
@@ -7,7 +9,6 @@
     using Gtk;
     using APSIM.Shared.Utilities;
     using Models.Core;
-    using UserInterface.Extensions;
     using UserInterface.Views;
 
 

@@ -1083,7 +1083,7 @@
 
             ClearGridColumns();
             gridModel.Dispose();
-            popupMenu.Dispose();
+            popupMenu.Cleanup();
             accel.Dispose();
             if (table != null)
                 table.Dispose();

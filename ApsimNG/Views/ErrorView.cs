@@ -126,7 +126,7 @@ namespace UserInterface.Views
             copyButton.Clicked -= Copy;
             closeButton.Clicked -= Close;
             if (errorWindow != null)
-                errorWindow.Dispose();
+                errorWindow.Cleanup();
         }
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace UserInterface.Views
         {
             try
             {
-                errorWindow.Dispose();
+                errorWindow.Cleanup();
             }
             catch (Exception err)
             {

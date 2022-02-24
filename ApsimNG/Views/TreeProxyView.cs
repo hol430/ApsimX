@@ -12,6 +12,7 @@
     using System.Drawing;
     using EventArguments;
     using APSIM.Interop.Graphing.Extensions;
+    using Extensions;
 
     /// <summary>
     /// A view that contains a graph and click zones for the user to allow
@@ -396,7 +397,7 @@
         {
             try
             {
-                mainWidget.Dispose();
+                mainWidget.Cleanup();
                 mainWidget.Destroyed -= MainWidgetDestroyed;
                 owner = null;
             }

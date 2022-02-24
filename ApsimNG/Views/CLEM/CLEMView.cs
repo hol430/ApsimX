@@ -125,7 +125,7 @@ namespace UserInterface.Views
             foreach (Widget child in newViewport.Children)
             {
                 newViewport.Remove(child);
-                child.Dispose();
+                child.Cleanup();
             }
             if (typeof(ViewBase).IsInstanceOfType(control))
             {
