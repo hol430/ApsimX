@@ -106,9 +106,10 @@
         }
 
         /// <summary>Low level method to show the menu</summary>
-        public void Show()
+        /// <param name="event">The sending event.</param>
+        public void Show(Gdk.Event @event)
         {
-            menu.Popup();
+            menu.PopupAtPointer(@event);
         }
     }
 }

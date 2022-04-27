@@ -771,7 +771,7 @@ namespace UserInterface.Views
             try
             {
                 if (e.Event.Button == 3 && ContextMenu != null)
-                    ContextMenu.Show();
+                    ContextMenu.Show(e.Event);
             }
             catch (Exception err)
             {
