@@ -73,15 +73,15 @@ namespace ApsimNG.Cloud.Azure
         /// </summary>
         public AzureCredentialsSetup() : base("Azure Batch and Storage Account Information")
         {
-            WidthRequest = 500;
+            WidthRequest = 720;
             // initialise input fields with the last values used
-            batchAccountInput = new Entry();
-            batchUrlInput = new Entry();
-            batchKeyInput = new Entry();
-            storageAccountInput = new Entry();
-            storageKeyInput = new Entry();
-            emailSenderInput = new Entry();
-            emailPWInput = new Entry();
+            batchAccountInput = new Entry() { Hexpand = true };
+            batchUrlInput = new Entry() { Hexpand = true };
+            batchKeyInput = new Entry() { Hexpand = true };
+            storageAccountInput = new Entry() { Hexpand = true };
+            storageKeyInput = new Entry() { Hexpand = true };
+            emailSenderInput = new Entry() { Hexpand = true };
+            emailPWInput = new Entry() { Hexpand = true };
 
             try
             {
@@ -136,6 +136,8 @@ namespace ApsimNG.Cloud.Azure
             primaryContainer.Attach(buttonContainer, 0, 9, 2, 1);
 
             primaryContainer.Margin = 15;
+            primaryContainer.ColumnSpacing = 5;
+            primaryContainer.RowSpacing = 5;
             Add(primaryContainer);
 
             WindowPosition = WindowPosition.Center;

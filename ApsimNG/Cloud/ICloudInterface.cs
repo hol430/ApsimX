@@ -10,7 +10,7 @@ namespace ApsimNG.Cloud
     /// <summary>
     /// Interface for cloud functionality.
     /// </summary>
-    public interface ICloudInterface
+    public interface ICloudInterface : IDisposable
     {
         /// <summary>
         /// Submit a job to be run on a cloud platform.

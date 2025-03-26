@@ -1,4 +1,4 @@
-﻿using APSIM.Shared.Utilities;
+using APSIM.Shared.Utilities;
 using ApsimNG.Cloud.Azure;
 using Microsoft.Azure.Batch;
 using Microsoft.Azure.Batch.Auth;
@@ -17,16 +17,23 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using UserInterface.Views;
 
 namespace ApsimNG.Cloud
 {
     /// <summary>
     /// This class handles communications with Microsoft's Azure API.
     /// </summary>
+    /// <remarks>
+    /// TODO:
+    /// - Make the setup options for modern authentication user-configurable
+    /// - Rationalise modern/legacy auth selection
+    /// </remarks>
     public class AzureInterface : ICloudInterface
     {
         private BatchClient batchClient;
         private CloudBlobClient storageClient;
+        private static ModernAzureAuthService modernAuth;
 
         /// <summary>The results are compressed into a file with this name.</summary>
         private const string resultsFileName = "Results.zip";
@@ -36,22 +43,68 @@ namespace ApsimNG.Cloud
 
         public AzureInterface()
         {
-            AzureCredentialsSetup.GetCredentialsIfNotExist(Initialise);
+            MainView.MasterView.ClearStatusPanel();
+            // Try modern auth first, fall back to legacy if it fails
+            InitializeAsync().ContinueWith(t =>
+            {
+                if (t.IsFaulted)
+                {
+                    // Fall back to legacy auth
+                    AzureCredentialsSetup.GetCredentialsIfNotExist(InitializeLegacy);
+                }
+            });
         }
 
-        /// <summary>
-        /// Initialise the batch and storage clients for communication with Microsoft's APIs.
-        /// </summary>
-        private void Initialise()
+        public void Dispose()
         {
-            Licence licence = new Licence(AzureSettings.Default.LicenceFilePath);
+            batchClient.Dispose();
+            // Storage client is not IDisposable (nor the auth service).
+        }
 
-            // Setup Azure batch/storage clients using the given credentials.
-            var credentials = new Microsoft.Azure.Storage.Auth.StorageCredentials(licence.StorageAccount, licence.StorageKey);
-            var storageAccount = new CloudStorageAccount(credentials, true);
+        private async Task InitializeAsync()
+        {
+            modernAuth ??= new ModernAzureAuthService();
+
+            try
+            {
+                var credentials = await modernAuth.GetCredentialsAsync();
+                InitializeWithCredentials(credentials);
+                MainView.MasterView.ShowMessage("Successfully authenticated to azure!", MessageType.Information, withButton: false);
+            }
+            catch (Exception ex)
+            {
+                // Log the error and rethrow - the constructor will handle falling back to legacy
+                MainView.MasterView.ShowError(ex);
+                throw;
+            }
+        }
+
+        private void InitializeLegacy()
+        {
+            var licence = new Licence(AzureSettings.Default.LicenceFilePath);
+            var credentials = new AzureCredentials(
+                licence.BatchUrl,
+                licence.BatchAccount,
+                licence.BatchKey,
+                licence.StorageAccount,
+                licence.StorageKey);
+
+            InitializeWithCredentials(credentials);
+                MainView.MasterView.ShowMessage("Successfully authenticated to azure via legacy auth!", MessageType.Information, withButton: false);
+        }
+
+        private void InitializeWithCredentials(AzureCredentials credentials)
+        {
+            var storageCredentials = new Microsoft.Azure.Storage.Auth.StorageCredentials(
+                credentials.StorageAccount,
+                credentials.StorageKey);
+            var storageAccount = new CloudStorageAccount(storageCredentials, true);
             storageClient = storageAccount.CreateCloudBlobClient();
 
-            var sharedCredentials = new BatchSharedKeyCredentials(licence.BatchUrl, licence.BatchAccount, licence.BatchKey);
+            var sharedCredentials = new BatchSharedKeyCredentials(
+                credentials.BatchUrl,
+                credentials.BatchAccount,
+                credentials.BatchKey);
             batchClient = BatchClient.Open(sharedCredentials);
         }
 
@@ -399,7 +452,7 @@ namespace ApsimNG.Cloud
             }
             catch (Exception err)
             {
-                throw new Exception($"Results were successfully extracted to {resultTempDirectory} but an error wasn encountered while attempting to merge the individual .db files", err);
+                throw new Exception($"Results were successfully extracted to {resultTempDirectory} but an error encountered while attempting to merge the individual .db files", err);
             }
         }
 
