@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure;
@@ -11,6 +12,7 @@ using Azure.ResourceManager.Resources;
 using Azure.ResourceManager.Storage;
 using Azure.ResourceManager.Storage.Models;
 using Gtk;
+using Microsoft.CodeAnalysis.Elfie.Serialization;
 using UserInterface.Views;
 
 namespace ApsimNG.Cloud.Azure
@@ -84,25 +86,60 @@ namespace ApsimNG.Cloud.Azure
             public string PreferredRegion { get; set; } = "australiasoutheast";
         }
 
-        private readonly ArmClient armClient;
+        private readonly InteractiveBrowserCredential browserCredential;
+        private ArmClient armClient;
+        private const string tokenCacheName = "apsim.azure";
 
         /// <summary>
         /// Creates a new instance of the ModernAzureAuthService class.
         /// </summary>
         /// <remarks>
-        /// The constructor will attempt to authenticate using DefaultAzureCredential, 
+        /// The constructor will attempt to authenticate using InteractiveBrowserCredential, 
         /// which tries multiple authentication methods in sequence. The user must be 
         /// authenticated through one of the supported methods for this to succeed.
         /// </remarks>
         public ModernAzureAuthService()
         {
-            armClient = new ArmClient(new DefaultAzureCredential());
+            // Initial client for tenant discovery - no specific tenant
+            var opts = new InteractiveBrowserCredentialOptions
+            {
+                TokenCachePersistenceOptions = new TokenCachePersistenceOptions { Name = tokenCacheName }
+            };
+            browserCredential = new InteractiveBrowserCredential(opts);
+
+            armClient = new ArmClient(browserCredential);
         }
 
         private void WriteMessage(string message)
         {
             Console.WriteLine(message);
             MainView.MasterView.ShowMessage(message, Models.Core.MessageType.Information, false, false, false);
+        }
+
+        /// <summary>
+        /// Create a credential object which reuses an AuthenticationRecord from
+        /// a successful previous authentication.
+        /// </summary>
+        /// <param name="auth">The authentication record.</param>
+        /// <param name="tenantId">The tenant ID.</param>
+        /// <returns>The credential.</returns>
+        /// <remarks>
+        /// If we don't reuse the auth record, we would need to re-authenticate.
+        /// If relying on the interactive browser approach, this would mean that
+        /// when we use the client created from the credential returned from
+        /// this method, a browser would open again, and the user would need to
+        /// manually login again.
+        /// </remarks>
+        private TokenCredential GetCredential(AuthenticationRecord auth, string tenantId = null)
+        {
+            var browserOptions = new InteractiveBrowserCredentialOptions
+            {
+                TokenCachePersistenceOptions = new TokenCachePersistenceOptions { Name = tokenCacheName },
+                AuthenticationRecord = auth,
+                TenantId = tenantId
+            };
+
+            return new InteractiveBrowserCredential(browserOptions);
         }
 
         /// <summary>
@@ -133,8 +170,59 @@ namespace ApsimNG.Cloud.Azure
             if (string.IsNullOrEmpty(options.PreferredRegion))
                 throw new ArgumentException("Must specify a preferred region");
 
-            WriteMessage("Getting default subscription...");
-            SubscriptionResource subscription = await armClient.GetDefaultSubscriptionAsync();
+            // Authenticate once, and reuse the auth record in the creation of
+            // future clients.
+            WriteMessage("Authenticating...");
+            AuthenticationRecord auth = await browserCredential.AuthenticateAsync();
+
+            // First get all available tenants
+            WriteMessage("Checking available Azure tenants...");
+
+            var tenants = armClient.GetTenants().ToList();
+            WriteMessage($"Discovered {tenants.Count} tenants");
+
+            if (tenants.Count == 0)
+                throw new InvalidOperationException("No Azure tenants found. Please ensure you have access to at least one Azure Active Directory tenant.");
+
+            // Get subscriptions across all tenants using their specific TenantIds
+            List<SubscriptionResource> allSubscriptions = new List<SubscriptionResource>();
+            
+            foreach (var tenant in tenants)
+            {
+                try
+                {
+                    Guid? tenantId = tenant.Data.TenantId;
+                    WriteMessage($"Discovering subscriptions for tenant {tenantId} ({tenant.Data.DisplayName})");
+                    TokenCredential tenantCredential = GetCredential(auth, tenantId.ToString());
+                    var tenantClient = new ArmClient(tenantCredential);
+                    var tenantSubscriptions = tenantClient.GetSubscriptions().ToList();
+                    allSubscriptions.AddRange(tenantSubscriptions);
+                }
+                catch (Exception ex)
+                {
+                    // Log but continue - some tenants might not be accessible
+                    WriteMessage($"Warning: Could not access subscriptions for tenant {tenant.Data.DisplayName}: {ex.Message}");
+                }
+            }
+
+            allSubscriptions = allSubscriptions.DistinctBy(s => s.Id).ToList();
+            WriteMessage($"Discovered {allSubscriptions.Count} subscriptions");
+
+            if (allSubscriptions.Count == 0)
+                throw new InvalidOperationException("No Azure subscriptions found. Please ensure you have access to at least one subscription.");
+
+            if (allSubscriptions.Count > 1)
+            {
+                // TODO: need to implement subscription selection.
+                var subscriptionNames = string.Join("\n", allSubscriptions.Select(s => $"- {s.Data.DisplayName} ({s.Data.SubscriptionId})"));
+                throw new InvalidOperationException(
+                    $"Multiple Azure subscriptions found. Please select one using the Azure portal or Azure CLI.\n" +
+                    $"Available subscriptions:\n{subscriptionNames}\n" +
+                    $"TODO: implement selection of susbcription via GUI.");
+            }
+
+            SubscriptionResource subscription = allSubscriptions[0];
+            WriteMessage($"Using subscription: {subscription.Data.DisplayName}");
 
             // Create or discover the resource group.
             ResourceGroupResource resourceGroup = await EnsureResourceGroupExistsAsync(
